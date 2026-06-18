@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Safe Space — Crisis Alerts</title>
+  <meta name="description" content="Real-time crisis monitoring and alert management for campus professionals.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/alerts.css">
+</head>
+<body>
+  <script src="js/auth-guard.js" data-page="crisis-alerts" data-allowed-roles="PROFESSIONAL"></script>
+  <nav class="navbar" id="navbar"></nav>
+
+  <div class="alerts-layout">
+    <!-- Header -->
+    <header class="alerts-header" id="alertsHeader">
+      <div class="alerts-header-inner">
+        <div class="alerts-header-left">
+          <div class="alerts-header-icon"><i class="fas fa-bell"></i></div>
+          <div>
+            <h1>Crisis Alerts</h1>
+            <p>Real-time crisis monitoring &amp; response management</p>
+          </div>
+        </div>
+        <div class="stats-chips" id="statsChips">
+          <div class="stat-chip"><span class="stat-num" id="statActive">—</span>Active</div>
+          <div class="stat-chip"><span class="stat-num" id="statCritical">—</span>Critical</div>
+          <div class="stat-chip"><span class="stat-num" id="statToday">—</span>Today</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tabs -->
+    <div class="alerts-tabs" id="alertTabs">
+      <button class="alert-tab active" data-tab="active" id="tabActive">
+        <i class="fas fa-circle-exclamation"></i> Active
+        <span class="tab-count" id="activeCount" style="display:none;">0</span>
+      </button>
+      <button class="alert-tab" data-tab="unresolved" id="tabUnresolved">
+        <i class="fas fa-clock"></i> Unresolved
+      </button>
+      <button class="alert-tab" data-tab="history" id="tabHistory">
+        <i class="fas fa-clock-rotate-left"></i> History
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="alerts-content">
+      <!-- Active Panel -->
+      <div class="alert-panel active" id="panelActive">
+        <div class="severity-filters" id="sevFilters">
+          <button class="sev-pill active" data-sev="ALL">All</button>
+          <button class="sev-pill" data-sev="CRITICAL">🔴 Critical</button>
+          <button class="sev-pill" data-sev="HIGH">🟠 High</button>
+          <button class="sev-pill" data-sev="MODERATE">🟡 Moderate</button>
+          <button class="sev-pill" data-sev="LOW">🟢 Low</button>
+        </div>
+        <div id="activeContainer"></div>
+      </div>
+
+      <!-- Unresolved Panel -->
+      <div class="alert-panel" id="panelUnresolved">
+        <div id="unresolvedContainer"></div>
+      </div>
+
+      <!-- History Panel -->
+      <div class="alert-panel" id="panelHistory">
+        <div class="severity-filters" id="historyFilters">
+          <button class="sev-pill active" data-status="ALL">All</button>
+          <button class="sev-pill" data-status="RESOLVED">✅ Resolved</button>
+          <button class="sev-pill" data-status="ESCALATED">⬆ Escalated</button>
+          <button class="sev-pill" data-status="ACKNOWLEDGED">👁 Acknowledged</button>
+        </div>
+        <div id="historyContainer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resolution Modal -->
+  <div class="modal-backdrop" id="resolveModal">
+    <div class="modal-box">
+      <h3 id="modalTitle">Resolve Alert</h3>
+      <p style="font-size:0.78rem;color:#6b7280;margin-bottom:0.75rem;" id="modalDesc">
+        Add notes about how this alert was handled.
+      </p>
+      <textarea id="modalNotes" placeholder="Resolution notes (optional)..."></textarea>
+      <div class="modal-btns">
+        <button class="cancel" onclick="closeModal()">Cancel</button>
+        <button class="confirm" id="modalConfirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:8080/api/alerts';
+    let currentSevFilter = 'ALL';
+    let currentHistoryFilter = 'ALL';
+    let pendingAction = null;
+
+    // ── Init ──
+    document.addEventListener('DOMContentLoaded', () => {
+      // Tabs
+      document.querySelectorAll('.alert-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+      });
+
+      // Severity filters
+      document.querySelectorAll('#sevFilters .sev-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          document.querySelectorAll('#sevFilters .sev-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          currentSevFilter = pill.dataset.sev;
+          renderActiveAlerts();
+        });
+      });
+
+      // History filters
+      document.querySelectorAll('#historyFilters .sev-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          document.querySelectorAll('#historyFilters .sev-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          currentHistoryFilter = pill.dataset.status;
+          loadHistory();
+        });
+      });
+
+      loadStats();
+      loadActiveAlerts();
+
+      // Auto-refresh every 15 seconds
+      setInterval(() => {
+        loadStats();
+        const activePanel = document.querySelector('.alert-panel.active');
+        if (activePanel && activePanel.id === 'panelActive') loadActiveAlerts();
+      }, 15000);
+    });
+
+    // ── Tab Switching ──
+    function switchTab(tabId) {
+      document.querySelectorAll('.alert-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.alert-panel').forEach(p => p.classList.remove('active'));
+      document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+      const panelMap = { active: 'panelActive', unresolved: 'panelUnresolved', history: 'panelHistory' };
+      document.getElementById(panelMap[tabId]).classList.add('active');
+
+      if (tabId === 'active') loadActiveAlerts();
+      if (tabId === 'unresolved') loadUnresolved();
+      if (tabId === 'history') loadHistory();
+    }
+
+    // ── Load Stats ──
+    let cachedActiveAlerts = [];
+    async function loadStats() {
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/stats`);
+        const s = await res.json();
+        document.getElementById('statActive').textContent = s.active || 0;
+        document.getElementById('statCritical').textContent = s.todayCritical || 0;
+        document.getElementById('statToday').textContent = s.todayTotal || 0;
+      } catch (e) { console.warn('Stats error:', e); }
+    }
+
+    // ── Load Active Alerts ──
+    async function loadActiveAlerts() {
+      try {
+        const res = await SafeSpaceAuth.authFetch(API);
+        cachedActiveAlerts = await res.json();
+
+        const badge = document.getElementById('activeCount');
+        badge.textContent = cachedActiveAlerts.length;
+        badge.style.display = cachedActiveAlerts.length > 0 ? '' : 'none';
+
+        renderActiveAlerts();
+      } catch (e) { console.warn('Active error:', e); }
+    }
+
+    function renderActiveAlerts() {
+      const container = document.getElementById('activeContainer');
+      let filtered = cachedActiveAlerts;
+      if (currentSevFilter !== 'ALL') {
+        filtered = filtered.filter(a => a.severity === currentSevFilter);
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="alerts-empty"><i class="fas fa-check-circle" style="color:#22c55e;"></i><p>${currentSevFilter !== 'ALL' ? 'No ' + currentSevFilter.toLowerCase() + ' alerts' : 'All clear — no active alerts'}</p></div>`;
+        return;
+      }
+      container.innerHTML = filtered.map(a => buildAlertCard(a, true)).join('');
+    }
+
+    // ── Load Unresolved ──
+    async function loadUnresolved() {
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/unresolved`);
+        const alerts = await res.json();
+        const container = document.getElementById('unresolvedContainer');
+        if (alerts.length === 0) {
+          container.innerHTML = '<div class="alerts-empty"><i class="fas fa-check-double" style="color:#22c55e;"></i><p>No unresolved alerts — great work!</p></div>';
+          return;
+        }
+        container.innerHTML = alerts.map(a => buildAlertCard(a, true)).join('');
+      } catch (e) { console.warn('Unresolved error:', e); }
+    }
+
+    // ── Load History ──
+    async function loadHistory() {
+      try {
+        const statusParam = currentHistoryFilter !== 'ALL' ? `?status=${currentHistoryFilter}` : '';
+        const res = await SafeSpaceAuth.authFetch(`${API}/history${statusParam}`);
+        const alerts = await res.json();
+        const container = document.getElementById('historyContainer');
+        if (alerts.length === 0) {
+          container.innerHTML = '<div class="alerts-empty"><i class="fas fa-inbox"></i><p>No alert history found.</p></div>';
+          return;
+        }
+        container.innerHTML = alerts.map(a => buildAlertCard(a, false)).join('');
+      } catch (e) { console.warn('History error:', e); }
+    }
+
+    // ── Alert Card ──
+    function buildAlertCard(a, showActions) {
+      const sevIcon = { CRITICAL: 'fa-skull-crossbones', HIGH: 'fa-triangle-exclamation', MODERATE: 'fa-exclamation', LOW: 'fa-info-circle', INFO: 'fa-info' };
+      const typeLabels = {
+        CRISIS_POST: 'Crisis Post', HIGH_ENERGY_POST: 'High Energy',
+        CRISIS_CHAT: 'Crisis Chat', REPEAT_CRISIS: 'Repeat Crisis',
+        ENERGY_SPIKE: 'Energy Spike', SYSTEM_EVENT: 'System'
+      };
+      const canAck = showActions && a.status === 'ACTIVE';
+      const canResolve = showActions && (a.status === 'ACTIVE' || a.status === 'ACKNOWLEDGED');
+
+      return `
+        <div class="alert-card sev-${a.severity}">
+          <div class="alert-sev-icon ${a.severity}">
+            <i class="fas ${sevIcon[a.severity] || 'fa-bell'}"></i>
+          </div>
+          <div class="alert-body">
+            <div class="alert-top">
+              <div class="alert-title">${escapeHtml(a.title)}</div>
+              <div class="alert-time">${timeAgo(a.createdAt)}</div>
+            </div>
+            <div class="alert-msg">${escapeHtml(a.message)}</div>
+            <div class="alert-meta">
+              <span class="alert-tag type">${typeLabels[a.alertType] || a.alertType}</span>
+              <span class="alert-tag sev-${a.severity?.toLowerCase()}">${a.severity}</span>
+              ${a.emotionTag ? `<span class="alert-tag emotion">${getEmoji(a.emotionTag)} ${a.emotionTag}</span>` : ''}
+              ${a.energyScore ? `<span class="alert-tag type">⚡ ${a.energyScore}/10</span>` : ''}
+              ${a.pseudonym ? `<span class="alert-tag type">👤 ${escapeHtml(a.pseudonym)}</span>` : ''}
+              <span class="alert-tag status-${a.status?.toLowerCase()}">${a.status}</span>
+              ${a.acknowledgedBy ? `<span class="alert-tag type">👁 ${a.acknowledgedBy}</span>` : ''}
+              ${a.resolvedBy ? `<span class="alert-tag type">✓ ${a.resolvedBy}</span>` : ''}
+            </div>
+            ${a.resolutionNotes ? `<div style="margin-top:0.4rem;font-size:0.72rem;color:#6b7280;font-style:italic;">📝 ${escapeHtml(a.resolutionNotes)}</div>` : ''}
+          </div>
+          ${(canAck || canResolve) ? `
+          <div class="alert-actions">
+            ${canAck ? `<button class="btn-alert ack" onclick="acknowledgeAlert('${a.alertId}')"><i class="fas fa-eye"></i> Ack</button>` : ''}
+            ${canResolve ? `<button class="btn-alert resolve" onclick="openResolve('${a.alertId}','resolve')"><i class="fas fa-check"></i> Resolve</button>` : ''}
+            ${canResolve ? `<button class="btn-alert escalate" onclick="openResolve('${a.alertId}','escalate')"><i class="fas fa-arrow-up"></i> Escalate</button>` : ''}
+            ${(canResolve && a.pseudonym) ? `<button class="btn-alert chat" onclick="initiateChatFromAlert('${a.alertId}')"><i class="fas fa-comments"></i> Chat</button>` : ''}
+          </div>` : ''}
+        </div>
+      `;
+    }
+
+    // ── Actions ──
+    async function acknowledgeAlert(alertId) {
+      try {
+        await SafeSpaceAuth.authFetch(`${API}/${alertId}/acknowledge`, { method: 'PUT', body: '{}' });
+        showToast('Alert acknowledged ✓');
+        loadActiveAlerts();
+        loadStats();
+        SafeSpaceAuth.refreshBadges?.();
+      } catch (e) { console.warn('Ack error:', e); }
+    }
+
+    function openResolve(alertId, action) {
+      pendingAction = { alertId, action };
+      const modal = document.getElementById('resolveModal');
+      document.getElementById('modalTitle').textContent = action === 'resolve' ? 'Resolve Alert' : 'Escalate Alert';
+      document.getElementById('modalDesc').textContent = action === 'resolve'
+        ? 'Add notes about how this alert was handled.'
+        : 'Provide reason for escalation to higher authority.';
+      document.getElementById('modalNotes').value = '';
+      document.getElementById('modalConfirm').textContent = action === 'resolve' ? 'Resolve' : 'Escalate';
+      document.getElementById('modalConfirm').onclick = confirmAction;
+      modal.classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('resolveModal').classList.remove('active');
+      pendingAction = null;
+    }
+
+    async function confirmAction() {
+      if (!pendingAction) return;
+      const notes = document.getElementById('modalNotes').value;
+      const endpoint = `${API}/${pendingAction.alertId}/${pendingAction.action}`;
+      try {
+        await SafeSpaceAuth.authFetch(endpoint, { method: 'PUT', body: JSON.stringify({ notes }) });
+        showToast(pendingAction.action === 'resolve' ? 'Alert resolved ✓' : 'Alert escalated ⬆');
+        closeModal();
+        loadActiveAlerts();
+        loadStats();
+        SafeSpaceAuth.refreshBadges?.();
+      } catch (e) {
+        showToast('Action failed. Try again.');
+      }
+    }
+
+    // ── Initiate Chat from Alert ──
+    async function initiateChatFromAlert(alertId) {
+      try {
+        const fullName = SafeSpaceAuth.getFullName() || SafeSpaceAuth.getUsername() || 'Counselor';
+        const res = await SafeSpaceAuth.authFetch(`${API}/${alertId}/chat`, {
+          method: 'POST',
+          body: JSON.stringify({ professionalName: fullName })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          showToast(err.error || 'Failed to start chat.');
+          return;
+        }
+        const data = await res.json();
+        showToast('Chat session created ✓ Redirecting...');
+        // Redirect to the anonymous chat page with the session ID
+        setTimeout(() => {
+          window.location.href = `anon-chat.html?session=${data.sessionId}`;
+        }, 800);
+      } catch (e) {
+        console.warn('Chat initiation error:', e);
+        showToast('Failed to initiate chat. Try again.');
+      }
+    }
+
+    // ── Helpers ──
+    function escapeHtml(t) {
+      if (!t) return '';
+      const d = document.createElement('div'); d.textContent = t; return d.innerHTML;
+    }
+    function getEmoji(e) {
+      const m = { Sad:'😢', Angry:'😤', Anxious:'😰', Lonely:'🥺', Frustrated:'😩', Neutral:'😐', Relieved:'😌', Happy:'😊' };
+      return m[e] || '💭';
+    }
+    function timeAgo(ds) {
+      if (!ds) return '';
+      const d = new Date(ds), n = new Date(), s = Math.floor((n - d) / 1000);
+      if (s < 60) return 'just now';
+      if (s < 3600) return Math.floor(s / 60) + 'm ago';
+      if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+      return Math.floor(s / 86400) + 'd ago';
+    }
+    function showToast(msg) {
+      const old = document.querySelector('.alert-toast'); if (old) old.remove();
+      const t = document.createElement('div'); t.className = 'alert-toast'; t.textContent = msg;
+      document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
+    }
+  </script>
+</body>
+</html>

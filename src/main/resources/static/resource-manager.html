@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Safe Space — Resource Linker</title>
+  <meta name="description" content="Manage and deliver contextual wellness resources for student mental health support.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/resources.css">
+</head>
+<body>
+  <script src="js/auth-guard.js" data-page="resource-manager" data-allowed-roles="PROFESSIONAL"></script>
+  <nav class="navbar" id="navbar"></nav>
+
+  <div class="res-layout">
+    <!-- Header -->
+    <header class="res-header">
+      <div class="res-header-inner">
+        <div class="res-header-left">
+          <div class="res-header-icon"><i class="fas fa-hand-holding-heart"></i></div>
+          <div>
+            <h1>Resource Linker</h1>
+            <p>Manage wellness resources served to students based on emotional state</p>
+          </div>
+        </div>
+        <div class="res-stats" id="resStats">
+          <div class="res-stat green"><span class="stat-num" id="statTotal">—</span>Total</div>
+          <div class="res-stat red"><span class="stat-num" id="statHotlines">—</span>Hotlines</div>
+          <div class="res-stat blue"><span class="stat-num" id="statCampus">—</span>Campus</div>
+          <div class="res-stat purple"><span class="stat-num" id="statCrisis">—</span>Crisis</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tabs -->
+    <div class="res-tabs" id="resTabs">
+      <button class="res-tab active" data-tab="all" id="tabAll">
+        <i class="fas fa-layer-group"></i> All Resources
+        <span class="tab-badge" id="allCount" style="display:none;">0</span>
+      </button>
+      <button class="res-tab" data-tab="hotlines" id="tabHotlines">
+        <i class="fas fa-phone-volume"></i> Hotlines
+      </button>
+      <button class="res-tab" data-tab="campus" id="tabCampus">
+        <i class="fas fa-building-columns"></i> Campus
+      </button>
+      <button class="res-tab" data-tab="links" id="tabLinks">
+        <i class="fas fa-globe"></i> Links & Chat
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="res-content">
+      <!-- All Panel -->
+      <div class="res-panel active" id="panelAll">
+        <div class="res-toolbar">
+          <div class="res-search">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Search resources..." />
+          </div>
+          <div class="cat-filter" id="catFilter">
+            <button class="cat-pill active" data-cat="ALL">All</button>
+            <button class="cat-pill" data-cat="HOTLINE">Hotlines</button>
+            <button class="cat-pill" data-cat="CAMPUS">Campus</button>
+            <button class="cat-pill" data-cat="EXTERNAL_LINK">Links</button>
+            <button class="cat-pill" data-cat="CHAT_SERVICE">Chat</button>
+          </div>
+          <button class="btn-add-resource" id="btnAddResource" onclick="openCreateModal()">
+            <i class="fas fa-plus"></i> Add Resource
+          </button>
+        </div>
+        <div class="res-grid" id="resourceGrid"></div>
+      </div>
+
+      <!-- Hotlines Panel -->
+      <div class="res-panel" id="panelHotlines">
+        <div class="res-grid" id="hotlinesGrid"></div>
+      </div>
+
+      <!-- Campus Panel -->
+      <div class="res-panel" id="panelCampus">
+        <div class="res-grid" id="campusGrid"></div>
+      </div>
+
+      <!-- Links & Chat Panel -->
+      <div class="res-panel" id="panelLinks">
+        <div class="res-grid" id="linksGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create/Edit Modal -->
+  <div class="res-modal-overlay" id="resourceModal">
+    <div class="res-modal">
+      <div class="res-modal-header">
+        <h3><i class="fas fa-hand-holding-heart"></i> <span id="modalTitle">Add Resource</span></h3>
+        <button class="res-modal-close" onclick="closeModal()"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="res-modal-body">
+        <form id="resourceForm" onsubmit="return false;">
+          <input type="hidden" id="editId" />
+
+          <div class="form-row">
+            <label for="fTitle">Title *</label>
+            <input type="text" id="fTitle" placeholder="e.g., National Crisis Hotline" required />
+          </div>
+
+          <div class="form-row">
+            <label for="fDescription">Description</label>
+            <textarea id="fDescription" placeholder="Brief description of the resource..."></textarea>
+          </div>
+
+          <div class="form-row">
+            <label for="fLink">Link / Phone / URL *</label>
+            <input type="text" id="fLink" placeholder="e.g., tel:1553 or https://..." required />
+            <div class="hint">Use tel: for phone, sms: for text, mailto: for email, or https:// for web links</div>
+          </div>
+
+          <div class="form-row-inline">
+            <div class="form-row">
+              <label for="fCategory">Category *</label>
+              <select id="fCategory" required>
+                <option value="HOTLINE">🔴 Hotline</option>
+                <option value="CAMPUS">🏛️ Campus Service</option>
+                <option value="EXTERNAL_LINK">🔗 External Link</option>
+                <option value="CHAT_SERVICE">💬 Chat Service</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label for="fIcon">Icon (FontAwesome class)</label>
+              <input type="text" id="fIcon" placeholder="fas fa-phone-volume" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label for="fEmotionTags">Emotion Tags</label>
+            <input type="text" id="fEmotionTags" placeholder="e.g., Sad,Anxious,Lonely" />
+            <div class="hint">Comma-separated. Leave empty for all emotions.</div>
+          </div>
+
+          <div class="form-row-inline">
+            <div class="form-row">
+              <label for="fMinEnergy">Min Energy Score</label>
+              <input type="number" id="fMinEnergy" min="0" max="10" value="0" />
+            </div>
+            <div class="form-row">
+              <label for="fMaxEnergy">Max Energy Score</label>
+              <input type="number" id="fMaxEnergy" min="0" max="10" value="10" />
+            </div>
+          </div>
+
+          <div class="form-row-inline">
+            <div class="form-row">
+              <label for="fPriority">Display Priority</label>
+              <input type="number" id="fPriority" min="0" max="999" value="50" />
+              <div class="hint">Lower = shown first</div>
+            </div>
+            <div class="form-row">
+              <label>&nbsp;</label>
+              <div class="checkbox-wrap">
+                <input type="checkbox" id="fCrisisOnly" />
+                <label for="fCrisisOnly">Crisis-only resource</label>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="res-modal-footer">
+        <button class="btn-res" onclick="closeModal()">Cancel</button>
+        <button class="btn-res primary" id="btnSaveResource" onclick="saveResource()">
+          <i class="fas fa-check"></i> Save Resource
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:8080/api/resources';
+    let allResources = [];
+    let currentCatFilter = 'ALL';
+    let searchQuery = '';
+
+    // ── Init ──
+    document.addEventListener('DOMContentLoaded', () => {
+      // Tab switching
+      document.querySelectorAll('.res-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+      });
+
+      // Category filter
+      document.querySelectorAll('#catFilter .cat-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          document.querySelectorAll('#catFilter .cat-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          currentCatFilter = pill.dataset.cat;
+          renderGrid();
+        });
+      });
+
+      // Search
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+        searchQuery = e.target.value.toLowerCase();
+        renderGrid();
+      });
+
+      loadAll();
+    });
+
+    // ── Tab Switching ──
+    function switchTab(tabId) {
+      document.querySelectorAll('.res-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.res-panel').forEach(p => p.classList.remove('active'));
+      document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+
+      const panelMap = {
+        all: 'panelAll',
+        hotlines: 'panelHotlines',
+        campus: 'panelCampus',
+        links: 'panelLinks'
+      };
+      document.getElementById(panelMap[tabId]).classList.add('active');
+
+      if (tabId !== 'all') {
+        renderCategoryPanel(tabId);
+      }
+    }
+
+    // ── Load Data ──
+    async function loadAll() {
+      try {
+        const [resAll, resStats] = await Promise.all([
+          SafeSpaceAuth.authFetch(`${API}/all`),
+          SafeSpaceAuth.authFetch(`${API}/stats`)
+        ]);
+        allResources = await resAll.json();
+        const stats = await resStats.json();
+
+        // Update stats
+        document.getElementById('statTotal').textContent = stats.total || 0;
+        document.getElementById('statHotlines').textContent = stats.hotlines || 0;
+        document.getElementById('statCampus').textContent = stats.campus || 0;
+        document.getElementById('statCrisis').textContent = stats.crisisOnly || 0;
+
+        const badge = document.getElementById('allCount');
+        badge.textContent = allResources.length;
+        badge.style.display = allResources.length > 0 ? '' : 'none';
+
+        renderGrid();
+      } catch (e) {
+        console.warn('Load error:', e);
+      }
+    }
+
+    // ── Render Main Grid ──
+    function renderGrid() {
+      const container = document.getElementById('resourceGrid');
+      let filtered = allResources;
+
+      if (currentCatFilter !== 'ALL') {
+        filtered = filtered.filter(r => r.category === currentCatFilter);
+      }
+
+      if (searchQuery) {
+        filtered = filtered.filter(r =>
+          (r.title || '').toLowerCase().includes(searchQuery) ||
+          (r.description || '').toLowerCase().includes(searchQuery) ||
+          (r.link || '').toLowerCase().includes(searchQuery) ||
+          (r.emotionTags || '').toLowerCase().includes(searchQuery)
+        );
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="res-empty"><i class="fas fa-box-open"></i><p>${searchQuery ? 'No resources match your search' : 'No resources found. Click "Add Resource" to create one.'}</p></div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(r => buildCard(r, true)).join('');
+    }
+
+    // ── Render Category Panels ──
+    function renderCategoryPanel(tabId) {
+      const catMap = {
+        hotlines: { grid: 'hotlinesGrid', cats: ['HOTLINE'] },
+        campus: { grid: 'campusGrid', cats: ['CAMPUS'] },
+        links: { grid: 'linksGrid', cats: ['EXTERNAL_LINK', 'CHAT_SERVICE'] }
+      };
+      const cfg = catMap[tabId];
+      if (!cfg) return;
+
+      const container = document.getElementById(cfg.grid);
+      const filtered = allResources.filter(r => r.active && cfg.cats.includes(r.category));
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="res-empty"><i class="fas fa-box-open"></i><p>No resources in this category yet.</p></div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(r => buildCard(r, true)).join('');
+    }
+
+    // ── Build Resource Card ──
+    function buildCard(r, showActions) {
+      const catLabels = {
+        HOTLINE: 'Hotline', CAMPUS: 'Campus',
+        EXTERNAL_LINK: 'External', CHAT_SERVICE: 'Chat'
+      };
+
+      const emotionTags = r.emotionTags
+        ? r.emotionTags.split(',').map(t => `<span class="res-tag emotion">${t.trim()}</span>`).join('')
+        : '<span class="res-tag emotion">All emotions</span>';
+
+      const energyRange = `${r.minEnergy || 0}-${r.maxEnergy || 10}`;
+      const linkDisplay = (r.link || '').length > 45 ? r.link.substring(0, 45) + '...' : r.link;
+      const iconClass = r.icon || 'fas fa-link';
+
+      return `
+        <div class="res-card ${r.active ? '' : 'inactive'}" data-id="${r.id}">
+          <div class="res-card-top">
+            <div class="res-icon ${r.category}">
+              <i class="${iconClass}"></i>
+            </div>
+            <div class="res-card-info">
+              <div class="res-card-title">
+                ${esc(r.title)}
+                ${r.crisisOnly ? '<span class="crisis-badge">Crisis</span>' : ''}
+                ${!r.active ? '<span class="crisis-badge" style="background:#f1f5f9;color:#9ca3af;">Inactive</span>' : ''}
+              </div>
+              <div class="res-card-desc">${esc(r.description || 'No description')}</div>
+            </div>
+          </div>
+
+          <a class="res-card-link" href="${esc(r.link)}" target="_blank" rel="noopener">
+            <i class="fas fa-arrow-up-right-from-square"></i> ${esc(linkDisplay)}
+          </a>
+
+          <div class="res-tags">
+            <span class="res-tag cat">${catLabels[r.category] || r.category}</span>
+            <span class="res-tag energy">⚡ ${energyRange}</span>
+            <span class="res-tag priority">↑ P${r.priority}</span>
+            ${emotionTags}
+          </div>
+
+          ${showActions ? `
+          <div class="res-card-actions">
+            <button class="btn-res" onclick="openEditModal(${r.id})"><i class="fas fa-pen"></i> Edit</button>
+            ${r.active
+              ? `<button class="btn-res danger" onclick="toggleActive(${r.id}, false)"><i class="fas fa-eye-slash"></i> Deactivate</button>`
+              : `<button class="btn-res" onclick="toggleActive(${r.id}, true)"><i class="fas fa-eye"></i> Reactivate</button>`
+            }
+            <button class="btn-res danger" onclick="deleteResource(${r.id})"><i class="fas fa-trash"></i></button>
+          </div>` : ''}
+        </div>
+      `;
+    }
+
+    // ── Modal: Create ──
+    function openCreateModal() {
+      document.getElementById('editId').value = '';
+      document.getElementById('modalTitle').textContent = 'Add Resource';
+      document.getElementById('resourceForm').reset();
+      document.getElementById('fMinEnergy').value = 0;
+      document.getElementById('fMaxEnergy').value = 10;
+      document.getElementById('fPriority').value = 50;
+      document.getElementById('resourceModal').classList.add('active');
+    }
+
+    // ── Modal: Edit ──
+    function openEditModal(id) {
+      const r = allResources.find(x => x.id === id);
+      if (!r) return;
+
+      document.getElementById('editId').value = r.id;
+      document.getElementById('modalTitle').textContent = 'Edit Resource';
+      document.getElementById('fTitle').value = r.title || '';
+      document.getElementById('fDescription').value = r.description || '';
+      document.getElementById('fLink').value = r.link || '';
+      document.getElementById('fCategory').value = r.category || 'HOTLINE';
+      document.getElementById('fIcon').value = r.icon || '';
+      document.getElementById('fEmotionTags').value = r.emotionTags || '';
+      document.getElementById('fMinEnergy').value = r.minEnergy || 0;
+      document.getElementById('fMaxEnergy').value = r.maxEnergy || 10;
+      document.getElementById('fPriority').value = r.priority || 50;
+      document.getElementById('fCrisisOnly').checked = r.crisisOnly || false;
+      document.getElementById('resourceModal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('resourceModal').classList.remove('active');
+    }
+
+    // ── Save (Create / Update) ──
+    async function saveResource() {
+      const editId = document.getElementById('editId').value;
+      const title = document.getElementById('fTitle').value.trim();
+      const link = document.getElementById('fLink').value.trim();
+      if (!title || !link) { showToast('Title and Link are required'); return; }
+
+      const body = {
+        title,
+        description: document.getElementById('fDescription').value.trim(),
+        link,
+        category: document.getElementById('fCategory').value,
+        icon: document.getElementById('fIcon').value.trim() || null,
+        emotionTags: document.getElementById('fEmotionTags').value.trim() || null,
+        minEnergy: parseInt(document.getElementById('fMinEnergy').value) || 0,
+        maxEnergy: parseInt(document.getElementById('fMaxEnergy').value) || 10,
+        priority: parseInt(document.getElementById('fPriority').value) || 50,
+        crisisOnly: document.getElementById('fCrisisOnly').checked
+      };
+
+      try {
+        const url = editId ? `${API}/${editId}` : API;
+        const method = editId ? 'PUT' : 'POST';
+        const res = await SafeSpaceAuth.authFetch(url, {
+          method,
+          body: JSON.stringify(body)
+        });
+        const result = await res.json();
+        if (result.error) throw new Error(result.error);
+
+        showToast(editId ? 'Resource updated ✓' : 'Resource created ✓');
+        closeModal();
+        loadAll();
+      } catch (e) {
+        showToast('Error: ' + e.message);
+      }
+    }
+
+    // ── Toggle Active ──
+    async function toggleActive(id, activate) {
+      try {
+        if (activate) {
+          await SafeSpaceAuth.authFetch(`${API}/${id}/reactivate`, { method: 'PUT' });
+          showToast('Resource reactivated ✓');
+        } else {
+          await SafeSpaceAuth.authFetch(`${API}/${id}`, { method: 'DELETE' });
+          showToast('Resource deactivated');
+        }
+        loadAll();
+      } catch (e) {
+        showToast('Action failed');
+      }
+    }
+
+    // ── Delete Permanent ──
+    async function deleteResource(id) {
+      if (!confirm('Permanently delete this resource? This cannot be undone.')) return;
+      try {
+        await SafeSpaceAuth.authFetch(`${API}/${id}/permanent`, { method: 'DELETE' });
+        showToast('Resource deleted permanently');
+        loadAll();
+      } catch (e) {
+        showToast('Delete failed');
+      }
+    }
+
+    // ── Helpers ──
+    function esc(t) {
+      if (!t) return '';
+      const d = document.createElement('div'); d.textContent = t; return d.innerHTML;
+    }
+
+    function showToast(msg) {
+      const old = document.querySelector('.res-toast'); if (old) old.remove();
+      const t = document.createElement('div'); t.className = 'res-toast'; t.textContent = msg;
+      document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
+    }
+  </script>
+</body>
+</html>

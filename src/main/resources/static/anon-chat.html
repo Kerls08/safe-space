@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safe Space — Anonymous Chat</title>
+  <meta name="description" content="Chat anonymously with a mental health professional. Your identity is protected — only your chosen pseudonym is visible.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/chat.css">
+</head>
+<body>
+  <script src="js/auth-guard.js" data-page="anon-chat" data-allowed-roles="STUDENT,PROFESSIONAL"></script>
+
+  <!-- Navigation -->
+  <nav class="navbar" id="navbar"></nav>
+
+  <!-- Chat Layout -->
+  <div class="chat-layout" id="chatLayout">
+
+    <!-- Sidebar — Session List -->
+    <aside class="chat-sidebar" id="chatSidebar">
+      <div class="sidebar-header">
+        <h3><i class="fas fa-comments"></i> My Chats</h3>
+        <button class="new-chat-btn" id="newChatBtn" style="display:none;">
+          <i class="fas fa-plus"></i> New Conversation
+        </button>
+      </div>
+      <div class="sidebar-list" id="sessionList">
+        <div class="sidebar-empty" id="sidebarEmpty">
+          <i class="fas fa-comment-slash"></i>
+          <p>No conversations yet.<br>Start one to talk anonymously.</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Chat Area -->
+    <main class="chat-main" id="chatMain">
+      <!-- Welcome State -->
+      <div class="chat-welcome" id="chatWelcome">
+        <div class="welcome-icon">
+          <i class="fas fa-shield-heart"></i>
+        </div>
+        <h2>Anonymous & Safe</h2>
+        <p>Start a private conversation with a mental health professional. Your real identity is never stored or shared.</p>
+        <div class="welcome-features">
+          <div class="welcome-feature">
+            <i class="fas fa-user-secret"></i>
+            <span>Pseudonym Only</span>
+          </div>
+          <div class="welcome-feature">
+            <i class="fas fa-lock"></i>
+            <span>Private & Secure</span>
+          </div>
+          <div class="welcome-feature">
+            <i class="fas fa-heart-pulse"></i>
+            <span>Professional Help</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Chat View (hidden initially) -->
+      <div id="chatView" style="display:none; flex:1; flex-direction:column; height:100%;">
+        <!-- Chat Header -->
+        <div class="chat-header" id="chatHeader">
+          <div class="chat-header-left">
+            <button class="mobile-sidebar-toggle" onclick="toggleMobileSidebar()" style="display:none;">
+              <i class="fas fa-arrow-left"></i>
+            </button>
+            <div class="chat-header-avatar" id="headerAvatar"><i class="fas fa-user-shield"></i></div>
+            <div class="chat-header-info">
+              <h4 id="headerName">Waiting for professional...</h4>
+              <span id="headerStatus">
+                <span class="session-status-badge waiting" id="headerBadge">WAITING</span>
+                <span class="availability-indicator offline" id="availIndicator" style="display:none;">
+                  <span class="avail-dot"></span>
+                  <span id="availText">Checking...</span>
+                </span>
+              </span>
+            </div>
+          </div>
+          <div class="chat-header-actions">
+            <button title="Refresh" onclick="refreshMessages()"><i class="fas fa-rotate-right"></i></button>
+            <button title="Close session" class="danger" id="closeSessionBtn" onclick="closeCurrentSession()"><i class="fas fa-xmark"></i></button>
+          </div>
+        </div>
+
+        <!-- Accept Session Banner (professional only, shown for WAITING sessions) -->
+        <div id="acceptSessionBanner" style="display:none; padding:0.75rem 1.5rem; background:linear-gradient(135deg,#f0fdf4,#dcfce7); border-bottom:2px solid #86efac; text-align:center;">
+          <span style="font-size:0.85rem; color:#166534; font-weight:500; margin-right:0.75rem;">This session is waiting to be accepted.</span>
+          <button id="acceptSessionBtn" onclick="acceptCurrentSession()" style="background:linear-gradient(135deg,#16a34a,#15803d); color:#fff; border:none; padding:0.6rem 1.5rem; border-radius:0.5rem; font-size:0.9rem; font-weight:700; cursor:pointer; font-family:Inter,sans-serif; box-shadow:0 2px 8px rgba(22,163,74,0.3); letter-spacing:0.01em;">
+            <i class="fas fa-check"></i> Accept Session
+          </button>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-messages" id="chatMessages"></div>
+
+        <!-- Input Area (shown when session is active/waiting) -->
+        <div class="chat-input-area" id="chatInputArea">
+          <div class="chat-input-container">
+            <textarea id="messageInput" placeholder="Type your message..." rows="1" 
+              onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendMessage();}"
+              oninput="autoResizeTextarea(this)"></textarea>
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+          <div class="chat-input-note">
+            <i class="fas fa-shield-halved"></i>
+            Your identity is anonymous — only your pseudonym is visible.
+          </div>
+        </div>
+
+        <!-- Closed Bar (shown when session is closed) -->
+        <div class="chat-closed-bar" id="chatClosedBar" style="display:none;">
+          <i class="fas fa-lock"></i> This session has been closed.
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- New Chat Modal -->
+  <div class="modal-overlay" id="newChatModal" style="display:none;">
+    <div class="chat-modal">
+      <div class="chat-modal-header">
+        <h3><i class="fas fa-plus-circle"></i> New Conversation</h3>
+        <button class="chat-modal-close" onclick="closeModal()"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="chat-modal-body">
+        <div class="form-group">
+          <label class="form-label">Pseudonym (optional)</label>
+          <input class="form-input" id="modalPseudonym" placeholder="e.g. Anon-Cloud or leave blank for auto">
+        </div>
+        <div class="form-group">
+          <label class="form-label">What would you like to talk about?</label>
+          <textarea class="form-input" id="modalTopic" placeholder="e.g. I've been feeling overwhelmed with school lately..." rows="3"></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">How are you feeling?</label>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+            <select class="form-input" id="modalEmotion" style="padding:0.6rem 0.8rem;">
+              <option value="Anxious">😟 Anxious</option>
+              <option value="Sad">😢 Sad</option>
+              <option value="Angry">😠 Angry</option>
+              <option value="Lonely">😔 Lonely</option>
+              <option value="Frustrated">😤 Frustrated</option>
+              <option value="Neutral" selected>😐 Neutral</option>
+              <option value="Relieved">😌 Relieved</option>
+              <option value="Happy">😊 Happy</option>
+            </select>
+            <select class="form-input" id="modalEnergy" style="padding:0.6rem 0.8rem;">
+              <option value="1">Energy: 1 (Very Low)</option>
+              <option value="2">Energy: 2</option>
+              <option value="3">Energy: 3</option>
+              <option value="4">Energy: 4</option>
+              <option value="5" selected>Energy: 5 (Moderate)</option>
+              <option value="6">Energy: 6</option>
+              <option value="7">Energy: 7</option>
+              <option value="8">Energy: 8</option>
+              <option value="9">Energy: 9</option>
+              <option value="10">Energy: 10 (Very High)</option>
+            </select>
+          </div>
+        </div>
+        <div class="privacy-note" style="margin-top:1rem;">
+          <i class="fas fa-shield-halved"></i>
+          <span>Your real identity is <strong>never stored</strong>. Only your chosen pseudonym is visible to the professional. All conversations are confidential.</span>
+        </div>
+      </div>
+      <div class="chat-modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="modalCreateBtn" onclick="createSession()">
+          <i class="fas fa-paper-plane"></i> Start Chat
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    //  Safe Space — Anonymous Chat Frontend
+    //  Role-aware: STUDENT creates sessions,
+    //  PROFESSIONAL accepts & responds interactively.
+    // ============================================
+
+    const API = 'http://localhost:8080/api/chat';
+
+    // ── Role Detection ──
+    const userRole = SafeSpaceAuth.getRole();
+    const username = SafeSpaceAuth.getUsername();
+    const fullName = SafeSpaceAuth.getFullName() || username;
+    const isProfessional = userRole === 'PROFESSIONAL';
+
+    // State
+    let sessions = [];
+    let currentSessionId = null;
+    let currentPseudonym = null;
+    let pollInterval = null;
+    let heartbeatInterval = null;
+    let counselorOnline = false;
+
+    // ── Persistence ──
+    function savePseudonym(pseudonym) {
+      currentPseudonym = pseudonym;
+      const stored = JSON.parse(localStorage.getItem('safespace_pseudonyms') || '[]');
+      if (!stored.includes(pseudonym)) stored.push(pseudonym);
+      localStorage.setItem('safespace_pseudonyms', JSON.stringify(stored));
+    }
+    function getStoredPseudonyms() {
+      return JSON.parse(localStorage.getItem('safespace_pseudonyms') || '[]');
+    }
+
+    // ── Heartbeat (professional only) ──
+    function startHeartbeat() {
+      sendHeartbeat();
+      heartbeatInterval = setInterval(sendHeartbeat, 30000);
+    }
+    async function sendHeartbeat() {
+      try { await SafeSpaceAuth.authFetch(`${API}/heartbeat`, { method:'POST', body:JSON.stringify({professionalId:username}) }); } catch(e){}
+    }
+
+    // ── Init ──
+    async function init() {
+      if (isProfessional) {
+        document.getElementById('newChatBtn').style.display = 'none';
+        document.querySelector('#sidebarEmpty p').innerHTML = 'No sessions in queue.<br>Waiting for students...';
+        startHeartbeat();
+        await loadProfessionalSessions();
+      } else {
+        document.getElementById('newChatBtn').style.display = 'block';
+        await loadStudentSessions();
+      }
+      renderSessionList();
+    }
+
+    async function loadStudentSessions() {
+      const pseudonyms = getStoredPseudonyms();
+      for (const p of pseudonyms) {
+        try {
+          const res = await SafeSpaceAuth.authFetch(`${API}/sessions/student/${encodeURIComponent(p)}`);
+          if (res.ok) {
+            const data = await res.json();
+            data.forEach(s => {
+              const idx = sessions.findIndex(x => x.sessionId === s.sessionId);
+              if (idx !== -1) {
+                // Update existing session with fresh data (status, unreadCount, etc.)
+                sessions[idx] = s;
+              } else {
+                sessions.push(s);
+              }
+            });
+            if (!currentPseudonym && data.length > 0) currentPseudonym = p;
+          }
+        } catch (e) { console.warn('Failed to load sessions for', p); }
+      }
+    }
+
+    async function loadProfessionalSessions() {
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/sessions/professional/${encodeURIComponent(username)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        sessions = [];
+        (data.waiting||[]).forEach(s => { if (!sessions.find(x=>x.sessionId===s.sessionId)) sessions.push(s); });
+        (data.active||[]).forEach(s => { if (!sessions.find(x=>x.sessionId===s.sessionId)) sessions.push(s); });
+      } catch (e) { console.warn('Failed to load professional sessions:', e); }
+    }
+
+    // ── Session List Rendering ──
+    function renderSessionList() {
+      const list = document.getElementById('sessionList');
+      const empty = document.getElementById('sidebarEmpty');
+
+      if (sessions.length === 0) {
+        empty.style.display = 'flex';
+        return;
+      }
+
+      empty.style.display = 'none';
+      // Sort: active first, then waiting, then closed; within each group newest first
+      const sorted = [...sessions].sort((a, b) => {
+        const order = { ACTIVE: 0, WAITING: 1, CLOSED: 2 };
+        const diff = (order[a.status] || 3) - (order[b.status] || 3);
+        if (diff !== 0) return diff;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+
+      // Remove existing cards, keep empty
+      list.querySelectorAll('.session-card').forEach(c => c.remove());
+
+      sorted.forEach(s => {
+        const card = document.createElement('div');
+        const hasUnread = s.unreadCount > 0 && s.sessionId !== currentSessionId;
+        card.className = `session-card${s.sessionId === currentSessionId ? ' active' : ''}${hasUnread ? ' has-unread' : ''}`;
+        card.onclick = () => openSession(s.sessionId);
+
+        const avatarClass = s.crisisFlag ? 'crisis' : (s.status === 'WAITING' ? 'waiting' : '');
+        const statusClass = s.status.toLowerCase();
+        const initials = s.studentPseudonym.split('-').slice(1, 2).join('').substring(0, 2).toUpperCase() || 'AN';
+        const time = formatTime(s.createdAt);
+        const topic = s.topic ? truncate(s.topic, 40) : 'No topic specified';
+
+        // Build unread badge text: "1", "2", ... "9+"
+        let unreadBadge = '';
+        if (hasUnread) {
+          const count = s.unreadCount > 9 ? '9+' : s.unreadCount;
+          unreadBadge = `<span class="session-unread-badge">${count}</span>`;
+        }
+
+        card.innerHTML = `
+          ${s.crisisFlag ? '<div class="session-crisis-dot"></div>' : ''}
+          <div class="session-avatar ${avatarClass}">${initials}</div>
+          <div class="session-info">
+            <div class="session-info-top">
+              <span class="session-name">${escapeHtml(s.studentPseudonym)}</span>
+              <span style="display:inline-flex;align-items:center;gap:0.35rem;">
+                ${unreadBadge}
+                <span class="session-time">${time}</span>
+              </span>
+            </div>
+            <div class="session-topic">${escapeHtml(topic)}</div>
+            <span class="session-status-badge ${statusClass}">
+              <i class="fas fa-${s.status === 'ACTIVE' ? 'circle' : s.status === 'WAITING' ? 'clock' : 'lock'}"></i>
+              ${s.status}
+            </span>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    // ── Create Session ──
+    function openModal() {
+      document.getElementById('newChatModal').style.display = 'flex';
+      document.getElementById('modalPseudonym').focus();
+    }
+
+    function closeModal() {
+      document.getElementById('newChatModal').style.display = 'none';
+    }
+
+    document.getElementById('newChatBtn').addEventListener('click', openModal);
+
+    async function createSession() {
+      const btn = document.getElementById('modalCreateBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+
+      try {
+        const body = {
+          pseudonym: document.getElementById('modalPseudonym').value.trim() || undefined,
+          topic: document.getElementById('modalTopic').value.trim() || undefined,
+          emotionTag: document.getElementById('modalEmotion').value,
+          energyScore: parseInt(document.getElementById('modalEnergy').value)
+        };
+
+        const res = await SafeSpaceAuth.authFetch(`${API}/sessions`, {
+          method: 'POST',
+          body: JSON.stringify(body)
+        });
+
+        if (!res.ok) throw new Error((await res.json()).error || 'Failed to create session');
+
+        const session = await res.json();
+        savePseudonym(session.studentPseudonym);
+        sessions.push(session);
+        closeModal();
+        renderSessionList();
+        openSession(session.sessionId);
+
+        // Clear form
+        document.getElementById('modalPseudonym').value = '';
+        document.getElementById('modalTopic').value = '';
+        document.getElementById('modalEmotion').value = 'Neutral';
+        document.getElementById('modalEnergy').value = '5';
+
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Start Chat';
+      }
+    }
+
+    // ── Accept Session (professional only) ──
+    async function acceptCurrentSession() {
+      if (!currentSessionId || !isProfessional) return;
+      const session = sessions.find(s => s.sessionId === currentSessionId);
+      if (!session || session.status !== 'WAITING') return;
+      const btn = document.getElementById('acceptSessionBtn');
+      btn.disabled = true;
+      btn.textContent = 'Accepting...';
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/sessions/${currentSessionId}/accept`, {
+          method: 'PUT',
+          body: JSON.stringify({ professionalId: username, professionalName: fullName })
+        });
+        if (!res.ok) throw new Error((await res.json()).error || 'Failed to accept');
+        const updated = await res.json();
+        const idx = sessions.findIndex(s => s.sessionId === currentSessionId);
+        if (idx !== -1) sessions[idx] = updated;
+        openSession(currentSessionId);
+        SafeSpaceAuth.refreshBadges?.();
+      } catch (e) { alert('Error: ' + e.message); }
+      finally { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Accept Session'; }
+    }
+
+    // ── Open Session ──
+    async function openSession(sessionId) {
+      currentSessionId = sessionId;
+      lastMessageFingerprint = ''; // Reset so messages render immediately
+
+      // Update UI
+      document.getElementById('chatWelcome').style.display = 'none';
+      const chatView = document.getElementById('chatView');
+      chatView.style.display = 'flex';
+
+      // Hide mobile sidebar
+      document.getElementById('chatSidebar').classList.remove('mobile-open');
+
+      // Find session
+      const session = sessions.find(s => s.sessionId === sessionId);
+      if (!session) return;
+
+      // Update header
+      const headerName = document.getElementById('headerName');
+      const headerBadge = document.getElementById('headerBadge');
+      const headerAvatar = document.getElementById('headerAvatar');
+
+      if (isProfessional) {
+        headerName.textContent = session.studentPseudonym + (session.status === 'WAITING' ? ' (waiting)' : '');
+      } else {
+        if (session.status === 'ACTIVE' && session.professionalName) {
+          headerName.textContent = session.professionalName;
+        } else if (session.status === 'WAITING') {
+          headerName.textContent = 'Waiting for professional...';
+        } else {
+          headerName.textContent = session.professionalName || 'Session Closed';
+        }
+      }
+
+      headerBadge.className = `session-status-badge ${session.status.toLowerCase()}`;
+      headerBadge.innerHTML = `<i class="fas fa-${session.status === 'ACTIVE' ? 'circle' : session.status === 'WAITING' ? 'clock' : 'lock'}"></i> ${session.status}`;
+
+      const initials = session.studentPseudonym.split('-').slice(1, 2).join('').substring(0, 2).toUpperCase() || 'SS';
+      headerAvatar.textContent = initials;
+
+      // Show/hide Accept banner (professional + WAITING only)
+      const acceptBanner = document.getElementById('acceptSessionBanner');
+      acceptBanner.style.display = (isProfessional && session.status === 'WAITING') ? 'block' : 'none';
+
+      // Show/hide input
+      if (session.status === 'CLOSED') {
+        document.getElementById('chatInputArea').style.display = 'none';
+        document.getElementById('chatClosedBar').style.display = 'flex';
+      } else if (isProfessional && session.status === 'WAITING') {
+        // Professional must accept before messaging
+        document.getElementById('chatInputArea').style.display = 'none';
+        document.getElementById('chatClosedBar').style.display = 'none';
+      } else {
+        document.getElementById('chatInputArea').style.display = 'block';
+        document.getElementById('chatClosedBar').style.display = 'none';
+      }
+
+      // Show/hide close button
+      document.getElementById('closeSessionBtn').style.display = session.status === 'CLOSED' ? 'none' : 'flex';
+
+      // Load messages
+      await loadMessages();
+      renderSessionList();
+
+      // Start polling
+      clearInterval(pollInterval);
+      if (session.status !== 'CLOSED') {
+        pollInterval = setInterval(pollSessionAndMessages, 3000);
+      }
+
+      // Check counselor availability
+      checkCounselorAvailability();
+    }
+
+    // ── Load Messages ──
+    let lastMessageFingerprint = '';
+
+    async function loadMessages() {
+      if (!currentSessionId) return;
+      try {
+        const viewerType = isProfessional ? 'professional' : 'student';
+        const res = await SafeSpaceAuth.authFetch(`${API}/sessions/${currentSessionId}/messages?viewer=${viewerType}`);
+        if (!res.ok) return;
+        const messages = await res.json();
+
+        // Build a fingerprint from message IDs + count to detect changes
+        const fingerprint = messages.length + ':' + messages.map(m => m.messageId + m.read).join(',');
+        if (fingerprint === lastMessageFingerprint) return; // No change — skip re-render
+        lastMessageFingerprint = fingerprint;
+
+        renderMessages(messages);
+        SafeSpaceAuth.refreshBadges?.();
+      } catch (e) { console.warn('Failed to load messages:', e); }
+    }
+
+    function renderMessages(messages) {
+      const container = document.getElementById('chatMessages');
+      const session = sessions.find(s => s.sessionId === currentSessionId);
+      container.innerHTML = '';
+
+      // System message at top
+      if (session) {
+        addInfoMessage(container, `Session started • ${formatDate(session.createdAt)}`);
+        if (session.crisisFlag) {
+          addInfoMessage(container, '⚠️ Crisis support resources have been shared with staff');
+        }
+        if (session.status === 'ACTIVE' && session.professionalName) {
+          addInfoMessage(container, `${session.professionalName} joined the conversation`);
+        }
+      }
+
+      messages.forEach(m => {
+        const div = document.createElement('div');
+
+        if (m.senderType === 'system') {
+          // Fallback / system messages — special styling
+          const isCrisis = m.content.includes('🚨') || m.content.includes('Crisis Hotline') || m.content.includes('1553');
+          div.className = `message system${isCrisis ? ' crisis-fallback' : ''}`;
+
+          // Format multi-line content with proper line breaks
+          const formattedContent = escapeHtml(m.content)
+            .replace(/\n/g, '<br>')
+            .replace(/•/g, '<span style="color:#7c3aed;font-weight:600;">•</span>');
+
+          div.innerHTML = `
+            <div class="message-avatar"><i class="fas fa-robot"></i></div>
+            <div class="message-content">
+              <div class="message-bubble">${formattedContent}</div>
+              <div class="message-meta">
+                <span>${m.senderName}</span>
+                <span>•</span>
+                <span>${formatTime(m.sentAt)}</span>
+                <span style="font-size:0.6rem;color:#7c3aed;">Auto-Response</span>
+              </div>
+            </div>
+          `;
+        } else {
+          // Student or Professional messages — align based on who is viewing
+          const isMine = isProfessional ? m.senderType === 'professional' : m.senderType === 'student';
+          div.className = `message ${isMine ? 'student' : 'professional'}`;
+          const initials = m.senderType === 'student'
+            ? (session?.studentPseudonym?.split('-').slice(1, 2).join('').substring(0, 2).toUpperCase() || 'AN')
+            : 'DR';
+
+          div.innerHTML = `
+            <div class="message-avatar">${initials}</div>
+            <div class="message-content">
+              <div class="message-bubble">${escapeHtml(m.content)}</div>
+              <div class="message-meta">
+                <span>${m.senderName}</span>
+                <span>•</span>
+                <span>${formatTime(m.sentAt)}</span>
+                ${m.read ? '<i class="fas fa-check-double message-read-icon"></i>' : ''}
+              </div>
+            </div>
+          `;
+        }
+        container.appendChild(div);
+      });
+
+      if (session?.status === 'CLOSED') {
+        addInfoMessage(container, `Session closed${session.closedBy ? ' by ' + session.closedBy : ''}`);
+      }
+
+      // Scroll to bottom
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function addInfoMessage(container, text) {
+      const div = document.createElement('div');
+      div.className = 'system-message';
+      div.innerHTML = `<span class="system-message-bubble"><i class="fas fa-info-circle"></i> ${text}</span>`;
+      container.appendChild(div);
+    }
+
+    // ── Send Message ──
+    async function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const content = input.value.trim();
+      if (!content || !currentSessionId) return;
+
+      const session = sessions.find(s => s.sessionId === currentSessionId);
+      if (!session || session.status === 'CLOSED') return;
+
+      // Professionals can only message ACTIVE sessions (must accept first)
+      if (isProfessional && session.status !== 'ACTIVE') return;
+
+      const sendBtn = document.getElementById('sendBtn');
+      sendBtn.disabled = true;
+
+      // Determine sender info based on role
+      const senderType = isProfessional ? 'professional' : 'student';
+      const senderName = isProfessional ? fullName : session.studentPseudonym;
+
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/sessions/${currentSessionId}/messages`, {
+          method: 'POST',
+          body: JSON.stringify({
+            senderType: senderType,
+            senderName: senderName,
+            content: content
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to send');
+        }
+
+        input.value = '';
+        input.style.height = 'auto';
+        lastMessageFingerprint = ''; // Force re-render after sending
+        // For students, wait briefly for possible fallback auto-response
+        if (!isProfessional) {
+          await new Promise(r => setTimeout(r, 800));
+        }
+        await loadMessages();
+        SafeSpaceAuth.refreshBadges?.();
+      } catch (e) {
+        alert('Error: ' + e.message);
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    // ── Poll for Updates ──
+    async function pollSessionAndMessages() {
+      if (!currentSessionId) return;
+      try {
+        // Refresh session state
+        const sessionRes = await SafeSpaceAuth.authFetch(`${API}/sessions/${currentSessionId}`);
+        if (sessionRes.ok) {
+          const updated = await sessionRes.json();
+          const idx = sessions.findIndex(s => s.sessionId === currentSessionId);
+          if (idx !== -1) {
+            const oldStatus = sessions[idx].status;
+            sessions[idx] = updated;
+
+            // If status changed, re-render header
+            if (oldStatus !== updated.status) {
+              openSession(currentSessionId);
+              return;
+            }
+          }
+        }
+
+        // Refresh messages
+        await loadMessages();
+
+        // Professional: also refresh session list to catch new waiting sessions
+        if (isProfessional) {
+          await loadProfessionalSessions();
+        } else {
+          // Student: refresh sessions to update unread counts
+          await loadStudentSessions();
+        }
+        renderSessionList();
+      } catch (e) { console.warn('Poll error:', e); }
+    }
+
+    async function refreshMessages() {
+      if (currentSessionId) await loadMessages();
+    }
+
+    // ── Close Session ──
+    async function closeCurrentSession() {
+      if (!currentSessionId) return;
+      if (!confirm('Are you sure you want to close this conversation?')) return;
+
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/sessions/${currentSessionId}/close`, {
+          method: 'PUT',
+          body: JSON.stringify({ closedBy: isProfessional ? 'professional' : 'student' })
+        });
+
+        if (res.ok) {
+          const updated = await res.json();
+          const idx = sessions.findIndex(s => s.sessionId === currentSessionId);
+          if (idx !== -1) sessions[idx] = updated;
+          clearInterval(pollInterval);
+          openSession(currentSessionId);
+        }
+      } catch (e) { alert('Error closing session: ' + e.message); }
+    }
+
+    // ── Mobile Sidebar ──
+    function toggleMobileSidebar() {
+      document.getElementById('chatSidebar').classList.toggle('mobile-open');
+    }
+    document.getElementById('mobileSidebarToggle')?.addEventListener('click', toggleMobileSidebar);
+
+    // ── Helpers ──
+    function autoResizeTextarea(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 96) + 'px';
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function truncate(str, len) {
+      return str.length > len ? str.substring(0, len) + '…' : str;
+    }
+
+    function formatTime(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      const now = new Date();
+      const diffMs = now - d;
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      const diffHrs = Math.floor(diffMins / 60);
+      if (diffHrs < 24) return `${diffHrs}h ago`;
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      return new Date(dateStr).toLocaleString('en-US', {
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+    }
+
+    // ── Keyboard shortcut ──
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // ── Counselor Availability ──
+    async function checkCounselorAvailability() {
+      const indicator = document.getElementById('availIndicator');
+      const text = document.getElementById('availText');
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/professional-status`);
+        if (!res.ok) return;
+        const data = await res.json();
+        counselorOnline = data.anyOnline;
+        indicator.style.display = 'inline-flex';
+        if (data.anyOnline) {
+          indicator.className = 'availability-indicator online';
+          text.textContent = `${data.onlineCount} counselor${data.onlineCount > 1 ? 's' : ''} online`;
+        } else {
+          indicator.className = 'availability-indicator offline';
+          text.textContent = 'Auto-assist active';
+        }
+      } catch (e) {
+        indicator.style.display = 'none';
+      }
+    }
+
+    // Check availability every 30 seconds
+    setInterval(checkCounselorAvailability, 30000);
+
+    // ── Boot ──
+    init();
+    checkCounselorAvailability();
+  </script>
+</body>
+</html>
