@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safe Space — Secure Login</title>
+  <meta name="description" content="Log in to Safe Space with your pre-registered institutional credentials. Your identity is protected.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+
+  <div class="login-page">
+    <div class="login-card">
+      <!-- Brand -->
+      <div class="login-brand">
+        <div class="brand-icon"><i class="fas fa-shield-heart"></i></div>
+        <h1>Safe<span>Space</span></h1>
+        <p>Sign in with your institutional credentials</p>
+      </div>
+
+      <!-- Error Banner -->
+      <div class="login-error" id="loginError">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="loginErrorText"></span>
+      </div>
+
+      <!-- Login Form -->
+      <form class="auth-form" id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label">Student / Employee ID</label>
+          <div class="input-wrapper">
+            <i class="fas fa-id-badge input-icon-left"></i>
+            <input class="form-input input-icon" type="text" id="loginUsername"
+              placeholder="e.g. 2021-00001" required autocomplete="username">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-wrapper">
+            <i class="fas fa-lock input-icon-left"></i>
+            <input class="form-input input-icon" type="password" id="loginPassword"
+              placeholder="Enter your password" required autocomplete="current-password">
+            <button type="button" class="input-toggle-pw" onclick="togglePasswordVisibility('loginPassword', this)">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="login-btn" id="loginBtn">
+          <i class="fas fa-right-to-bracket"></i>
+          Sign In
+        </button>
+      </form>
+
+      <div class="login-footer">
+        <i class="fas fa-shield-halved"></i>
+        Credentials are pre-registered by your institution.<br>
+        Contact the psychometrician if you need access.
+      </div>
+    </div>
+  </div>
+
+  <!-- Password Change Modal (shown when forcePasswordChange = true) -->
+  <div class="pw-change-overlay" id="pwChangeOverlay" style="display:none;">
+    <div class="login-card" style="animation: modal-slide 0.3s ease;">
+      <div class="login-brand">
+        <div class="brand-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+          <i class="fas fa-key"></i>
+        </div>
+        <h1>Change Password</h1>
+        <p>You must set a new password before continuing</p>
+      </div>
+
+      <div class="login-error" id="pwChangeError">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="pwChangeErrorText"></span>
+      </div>
+
+      <form class="auth-form" onsubmit="handlePasswordChange(event)">
+        <div class="form-group">
+          <label class="form-label">Current Password</label>
+          <div class="input-wrapper">
+            <i class="fas fa-lock input-icon-left"></i>
+            <input class="form-input input-icon" type="password" id="pwCurrent"
+              placeholder="Enter current password" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">New Password (min. 8 characters)</label>
+          <div class="input-wrapper">
+            <i class="fas fa-shield-halved input-icon-left"></i>
+            <input class="form-input input-icon" type="password" id="pwNew"
+              placeholder="Create a strong password" required minlength="8">
+            <button type="button" class="input-toggle-pw" onclick="togglePasswordVisibility('pwNew', this)">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Confirm New Password</label>
+          <div class="input-wrapper">
+            <i class="fas fa-check-double input-icon-left"></i>
+            <input class="form-input input-icon" type="password" id="pwConfirm"
+              placeholder="Re-enter new password" required minlength="8">
+          </div>
+        </div>
+
+        <button type="submit" class="login-btn" id="pwChangeBtn" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+          <i class="fas fa-check"></i>
+          Update Password
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:8080/api/auth';
+    let loginToken = null;
+    let loginUsername = null;
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('loginBtn');
+      const errDiv = document.getElementById('loginError');
+      const errText = document.getElementById('loginErrorText');
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+      errDiv.classList.remove('visible');
+
+      try {
+        const res = await fetch(`${API}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: document.getElementById('loginUsername').value.trim(),
+            password: document.getElementById('loginPassword').value
+          })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Login failed');
+        }
+
+        loginToken = data.token;
+        loginUsername = data.username;
+
+        // Store session
+        localStorage.setItem('ss_token', data.token);
+        localStorage.setItem('ss_username', data.username);
+        localStorage.setItem('ss_role', data.role);
+        localStorage.setItem('ss_fullName', data.fullName);
+
+        // Force password change?
+        if (data.forcePasswordChange) {
+          document.getElementById('pwChangeOverlay').style.display = 'flex';
+          document.getElementById('pwCurrent').focus();
+          return;
+        }
+
+        // Redirect based on role
+        redirectAfterLogin(data.role);
+
+      } catch (err) {
+        errText.textContent = err.message;
+        errDiv.classList.add('visible');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> Sign In';
+      }
+    }
+
+    async function handlePasswordChange(e) {
+      e.preventDefault();
+      const btn = document.getElementById('pwChangeBtn');
+      const errDiv = document.getElementById('pwChangeError');
+      const errText = document.getElementById('pwChangeErrorText');
+
+      const newPw = document.getElementById('pwNew').value;
+      const confirmPw = document.getElementById('pwConfirm').value;
+
+      if (newPw !== confirmPw) {
+        errText.textContent = 'Passwords do not match.';
+        errDiv.classList.add('visible');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+      errDiv.classList.remove('visible');
+
+      try {
+        const res = await fetch(`${API}/change-password`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${loginToken}`
+          },
+          body: JSON.stringify({
+            username: loginUsername,
+            currentPassword: document.getElementById('pwCurrent').value,
+            newPassword: newPw
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to change password');
+
+        // Success — redirect
+        const role = localStorage.getItem('ss_role');
+        redirectAfterLogin(role);
+
+      } catch (err) {
+        errText.textContent = err.message;
+        errDiv.classList.add('visible');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Update Password';
+      }
+    }
+
+    function redirectAfterLogin(role) {
+      switch (role) {
+        case 'PROFESSIONAL':
+          window.location.href = 'pro-dashboard.html';
+          break;
+        default:
+          window.location.href = 'rant-board.html';
+      }
+    }
+
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+      } else {
+        input.type = 'password';
+        btn.innerHTML = '<i class="fas fa-eye"></i>';
+      }
+    }
+
+    // Auto-focus
+    document.getElementById('loginUsername').focus();
+
+    // Check if already logged in
+    if (localStorage.getItem('ss_token')) {
+      const role = localStorage.getItem('ss_role');
+      if (role) redirectAfterLogin(role);
+    }
+  </script>
+</body>
+</html>
