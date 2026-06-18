@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safe Space — My Profile</title>
+  <meta name="description" content="View and manage your Safe Space profile, account details, and security settings.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/profile.css">
+</head>
+<body>
+  <script src="js/auth-guard.js" data-page="profile" data-allowed-roles="STUDENT,PROFESSIONAL"></script>
+  <nav class="navbar" id="navbar"></nav>
+
+  <div class="profile-layout">
+    <!-- Header -->
+    <div class="profile-header" id="profileHeader">
+      <div class="profile-avatar" id="profileAvatar">?</div>
+      <div class="profile-header-name" id="profileName">Loading...</div>
+      <div class="profile-header-role" id="profileRole">
+        <i class="fas fa-shield-halved"></i> <span id="profileRoleText">—</span>
+      </div>
+      <div class="profile-header-id" id="profileHeaderId"></div>
+    </div>
+
+    <!-- Content -->
+    <div class="profile-content">
+
+      <!-- Personal Information Card -->
+      <div class="profile-card">
+        <h3><i class="fas fa-user-pen"></i> Personal Information</h3>
+        <form id="profileForm" autocomplete="off">
+          <div class="profile-form-grid">
+            <div class="profile-field">
+              <label for="fieldFullName">Full Name</label>
+              <input type="text" id="fieldFullName" placeholder="Your full name" required>
+            </div>
+            <div class="profile-field">
+              <label for="fieldEmail">Email Address</label>
+              <input type="email" id="fieldEmail" placeholder="your.email@school.edu">
+            </div>
+            <div class="profile-field" id="fieldDeptWrap">
+              <label for="fieldDepartment" id="labelDepartment">Department / Program</label>
+              <input type="text" id="fieldDepartment" placeholder="e.g. Computer Science">
+            </div>
+            <div class="profile-field" id="fieldYearWrap">
+              <label for="fieldYearLevel" id="labelYearLevel">Year Level</label>
+              <input type="text" id="fieldYearLevel" placeholder="e.g. 3rd Year">
+            </div>
+          </div>
+
+          <!-- Read-Only Fields -->
+          <div class="profile-form-grid" style="margin-top: 1rem;">
+            <div class="profile-field">
+              <label>Institutional ID</label>
+              <input type="text" id="fieldInstId" readonly class="readonly">
+            </div>
+            <div class="profile-field">
+              <label>Username</label>
+              <input type="text" id="fieldUsername">
+            </div>
+          </div>
+
+          <div class="profile-actions">
+            <button type="button" class="btn-profile-secondary" onclick="resetForm()">
+              <i class="fas fa-undo"></i> Reset
+            </button>
+            <button type="submit" class="btn-profile-save" id="saveBtn">
+              <i class="fas fa-check"></i> Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Account Security Card -->
+      <div class="profile-card">
+        <h3><i class="fas fa-shield-check"></i> Account Security</h3>
+
+        <div class="security-row">
+          <span class="security-label">Password Status</span>
+          <span class="security-value" id="secPasswordStatus">—</span>
+        </div>
+        <div class="security-row">
+          <span class="security-label">Account Status</span>
+          <span class="security-value" id="secAccountStatus">—</span>
+        </div>
+        <div class="security-row">
+          <span class="security-label">Last Login</span>
+          <span class="security-value" id="secLastLogin">—</span>
+        </div>
+        <div class="security-row">
+          <span class="security-label">Account Created</span>
+          <span class="security-value" id="secCreatedAt">—</span>
+        </div>
+
+        <div class="profile-actions" style="margin-top:1rem;">
+          <button type="button" class="btn-profile-secondary" onclick="openChangePasswordModal()">
+            <i class="fas fa-key"></i> Change Password
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div class="pw-modal-overlay" id="pwModal" style="display:none;">
+    <div class="pw-modal">
+      <h3><i class="fas fa-key"></i> Change Password</h3>
+      <div style="display:flex;flex-direction:column;gap:1rem;">
+        <div class="profile-field">
+          <label for="pwCurrent">Current Password</label>
+          <input type="password" id="pwCurrent" placeholder="Enter current password">
+        </div>
+        <div class="profile-field">
+          <label for="pwNew">New Password</label>
+          <input type="password" id="pwNew" placeholder="Minimum 8 characters">
+        </div>
+        <div class="profile-field">
+          <label for="pwConfirm">Confirm New Password</label>
+          <input type="password" id="pwConfirm" placeholder="Re-enter new password">
+        </div>
+        <div id="pwError" style="display:none;font-size:0.8rem;color:#dc2626;font-weight:600;"></div>
+        <div class="profile-actions">
+          <button type="button" class="btn-profile-secondary" onclick="closeChangePasswordModal()">Cancel</button>
+          <button type="button" class="btn-profile-save" id="pwSubmitBtn" onclick="submitChangePassword()">
+            <i class="fas fa-check"></i> Update Password
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:8080/api/auth';
+    let originalData = {};
+
+    // ── Init ──
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadProfile();
+      document.getElementById('profileForm').addEventListener('submit', saveProfile);
+    });
+
+    // ── Load Profile ──
+    async function loadProfile() {
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/me`);
+        if (!res.ok) throw new Error('Failed to load profile');
+        const data = await res.json();
+
+        // Store original for reset
+        originalData = data;
+
+        // Header
+        const initials = (data.fullName || '?').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        document.getElementById('profileAvatar').textContent = initials;
+        document.getElementById('profileName').textContent = data.fullName || 'Unknown';
+        document.getElementById('profileRoleText').textContent = formatRole(data.role);
+        document.getElementById('profileHeaderId').textContent = data.institutionalId || '';
+
+        // Role-based avatar color
+        const avatar = document.getElementById('profileAvatar');
+        if (data.role === 'PROFESSIONAL') {
+          avatar.style.background = 'linear-gradient(135deg, #a78bfa, #7c3aed)';
+        }
+
+        // Adapt form fields based on role
+        adaptFieldsForRole(data.role);
+
+        // Form fields
+        document.getElementById('fieldFullName').value = data.fullName || '';
+        document.getElementById('fieldEmail').value = data.email || '';
+        document.getElementById('fieldDepartment').value = data.department || '';
+        document.getElementById('fieldYearLevel').value = data.yearLevel || '';
+        document.getElementById('fieldInstId').value = data.institutionalId || '';
+        document.getElementById('fieldUsername').value = data.username || '';
+
+        // Security card — data now comes from /me directly
+        document.getElementById('secPasswordStatus').textContent = data.passwordChanged ? '✓ Changed' : '⏳ Pending Change';
+        document.getElementById('secPasswordStatus').className = 'security-value ' + (data.passwordChanged ? 'changed' : 'pending');
+
+        document.getElementById('secAccountStatus').innerHTML = data.active
+          ? '<span style="color:#16a34a;">● Active</span>'
+          : '<span style="color:#dc2626;">● Inactive</span>';
+
+        document.getElementById('secLastLogin').textContent = data.lastLoginAt
+          ? formatDateTime(data.lastLoginAt) : 'Never';
+
+        document.getElementById('secCreatedAt').textContent = data.createdAt
+          ? formatDateTime(data.createdAt) : '—';
+
+      } catch (err) {
+        console.error('Profile load error:', err);
+        showToast('Failed to load profile.');
+      }
+    }
+
+    // ── Save Profile ──
+    async function saveProfile(e) {
+      e.preventDefault();
+      const btn = document.getElementById('saveBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+      try {
+        const body = {
+          username: document.getElementById('fieldUsername').value.trim(),
+          fullName: document.getElementById('fieldFullName').value.trim(),
+          email: document.getElementById('fieldEmail').value.trim(),
+          department: document.getElementById('fieldDepartment').value.trim(),
+          yearLevel: document.getElementById('fieldYearLevel').value.trim()
+        };
+
+        const res = await SafeSpaceAuth.authFetch(`${API}/me/profile`, {
+          method: 'PUT',
+          body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to update profile');
+
+        // Update header with new data
+        const initials = (data.fullName || '?').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        document.getElementById('profileAvatar').textContent = initials;
+        document.getElementById('profileName').textContent = data.fullName;
+
+        // Update stored session data
+        localStorage.setItem('ss_fullName', data.fullName);
+        localStorage.setItem('ss_username', data.username);
+
+        showToast('Profile updated successfully ✓');
+      } catch (err) {
+        showToast('Error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Save Changes';
+      }
+    }
+
+    // ── Reset Form ──
+    function resetForm() {
+      document.getElementById('fieldFullName').value = originalData.fullName || '';
+      document.getElementById('fieldEmail').value = originalData.email || '';
+      document.getElementById('fieldDepartment').value = originalData.department || '';
+      document.getElementById('fieldYearLevel').value = originalData.yearLevel || '';
+      document.getElementById('fieldUsername').value = originalData.username || '';
+      showToast('Form reset to original values.');
+    }
+
+    // ── Change Password ──
+    function openChangePasswordModal() {
+      document.getElementById('pwCurrent').value = '';
+      document.getElementById('pwNew').value = '';
+      document.getElementById('pwConfirm').value = '';
+      document.getElementById('pwError').style.display = 'none';
+      document.getElementById('pwModal').style.display = 'flex';
+      document.getElementById('pwCurrent').focus();
+    }
+
+    function closeChangePasswordModal() {
+      document.getElementById('pwModal').style.display = 'none';
+    }
+
+    async function submitChangePassword() {
+      const current = document.getElementById('pwCurrent').value;
+      const newPw = document.getElementById('pwNew').value;
+      const confirm = document.getElementById('pwConfirm').value;
+      const errorDiv = document.getElementById('pwError');
+
+      if (!current || !newPw || !confirm) {
+        errorDiv.textContent = 'All fields are required.';
+        errorDiv.style.display = 'block';
+        return;
+      }
+
+      if (newPw.length < 8) {
+        errorDiv.textContent = 'New password must be at least 8 characters.';
+        errorDiv.style.display = 'block';
+        return;
+      }
+
+      if (newPw !== confirm) {
+        errorDiv.textContent = 'New passwords do not match.';
+        errorDiv.style.display = 'block';
+        return;
+      }
+
+      const btn = document.getElementById('pwSubmitBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+
+      try {
+        const username = SafeSpaceAuth.getUsername();
+        const res = await SafeSpaceAuth.authFetch(`${API}/change-password`, {
+          method: 'POST',
+          body: JSON.stringify({
+            username: username,
+            currentPassword: current,
+            newPassword: newPw
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Password change failed');
+
+        closeChangePasswordModal();
+        showToast('Password changed successfully ✓');
+
+        // Update security card
+        document.getElementById('secPasswordStatus').textContent = '✓ Changed';
+        document.getElementById('secPasswordStatus').className = 'security-value changed';
+
+      } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Update Password';
+      }
+    }
+
+    // ── Helpers ──
+
+    /**
+     * Adapt form fields based on user role:
+     * - STUDENT:       Department / Program + Year Level
+     * - PROFESSIONAL:  Specialization + License / PRC No.
+     */
+    function adaptFieldsForRole(role) {
+      const deptLabel = document.getElementById('labelDepartment');
+      const deptInput = document.getElementById('fieldDepartment');
+      const yearLabel = document.getElementById('labelYearLevel');
+      const yearInput = document.getElementById('fieldYearLevel');
+      const deptWrap  = document.getElementById('fieldDeptWrap');
+      const yearWrap  = document.getElementById('fieldYearWrap');
+
+      if (role === 'PROFESSIONAL') {
+        deptLabel.textContent = 'Specialization';
+        deptInput.placeholder = 'e.g. Clinical Psychology';
+        yearLabel.textContent = 'License / PRC No.';
+        yearInput.placeholder = 'e.g. PRC-0012345';
+      }
+      // STUDENT keeps defaults (Department / Program, Year Level)
+    }
+
+    function formatRole(role) {
+      const map = {
+        'STUDENT': 'Student',
+        'PROFESSIONAL': 'Psychometrician'
+      };
+      return map[role] || role;
+    }
+
+    function formatDateTime(dateStr) {
+      if (!dateStr) return '—';
+      try {
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-US', {
+          year: 'numeric', month: 'short', day: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        });
+      } catch {
+        return dateStr;
+      }
+    }
+
+    function showToast(msg) {
+      const existing = document.querySelector('.profile-toast');
+      if (existing) existing.remove();
+      const t = document.createElement('div');
+      t.className = 'profile-toast';
+      t.innerHTML = `<i class="fas fa-check-circle"></i> ${escapeHtml(msg)}`;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Escape key closes modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeChangePasswordModal();
+    });
+  </script>
+</body>
+</html>

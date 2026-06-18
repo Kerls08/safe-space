@@ -1,0 +1,912 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Safe Space — Anonymous Rant Board</title>
+  <meta name="description" content="A safe, anonymous space to express how you feel. Your identity is protected.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/rant.css">
+</head>
+<body>
+  <script src="js/auth-guard.js" data-page="rant-board" data-allowed-roles="STUDENT,PROFESSIONAL"></script>
+  <nav class="navbar" id="navbar"></nav>
+
+  <div class="rant-layout">
+    <!-- ── Welcome Banner ── -->
+    <header class="rant-welcome" id="welcomeBanner">
+      <div class="rant-welcome-inner">
+        <div class="rant-welcome-icon">
+          <i class="fas fa-shield-heart"></i>
+        </div>
+        <div>
+          <h1>Welcome back, <span class="welcome-greeting" id="welcomeName"></span></h1>
+          <p>This is your anonymous, judgment-free space. Share what you feel — your identity is always protected.</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- ── Tab Navigation ── -->
+    <div class="rant-tabs" id="rantTabs">
+      <button class="rant-tab active" data-tab="share" id="tabShare">
+        <i class="fas fa-pen-to-square"></i> Share
+      </button>
+      <button class="rant-tab" data-tab="feed" id="tabFeed">
+        <i class="fas fa-users"></i> Peer Mirror
+      </button>
+      <button class="rant-tab" data-tab="mine" id="tabMine">
+        <i class="fas fa-bookmark"></i> My Posts
+        <span class="tab-badge" id="myPostsBadge" style="display:none;">0</span>
+      </button>
+      <button class="rant-tab" data-tab="calm" id="tabCalm">
+        <i class="fas fa-spa"></i> Calm-Down Kit
+      </button>
+      <button class="rant-tab" data-tab="resources" id="tabResources">
+        <i class="fas fa-hand-holding-heart"></i> Resources
+      </button>
+    </div>
+
+    <!-- ── Main Content ── -->
+    <div class="rant-content">
+
+      <!-- TAB 1: Share -->
+      <div class="tab-panel active" id="panelShare">
+        <div class="share-card">
+          <h2><i class="fas fa-feather"></i> Share your thoughts</h2>
+          <p class="share-subtitle">Your identity won't be shown to anyone. Be honest — this is your safe space.</p>
+
+          <form id="postForm" autocomplete="off">
+            <!-- Emotion Picker -->
+            <div style="margin-top:1rem;">
+              <label style="font-size:0.8rem;font-weight:700;color:#374151;">How are you feeling?</label>
+              <div class="emotion-picker" id="emotionPicker">
+                <button type="button" class="emotion-chip" data-emotion="Sad">😢 Sad</button>
+                <button type="button" class="emotion-chip" data-emotion="Angry">😤 Angry</button>
+                <button type="button" class="emotion-chip selected" data-emotion="Anxious">😰 Anxious</button>
+                <button type="button" class="emotion-chip" data-emotion="Lonely">🥺 Lonely</button>
+                <button type="button" class="emotion-chip" data-emotion="Frustrated">😩 Frustrated</button>
+                <button type="button" class="emotion-chip" data-emotion="Neutral">😐 Neutral</button>
+                <button type="button" class="emotion-chip" data-emotion="Relieved">😌 Relieved</button>
+                <button type="button" class="emotion-chip" data-emotion="Happy">😊 Happy</button>
+              </div>
+            </div>
+
+            <!-- Energy Score -->
+            <div class="energy-control">
+              <label>Energy Level <span style="font-weight:400;color:#9ca3af;">(1 = calm, 10 = intense)</span></label>
+              <div class="energy-slider-wrap">
+                <span style="font-size:0.7rem;color:#22c55e;">Calm</span>
+                <input type="range" id="energySlider" min="1" max="10" value="5">
+                <span style="font-size:0.7rem;color:#ef4444;">Intense</span>
+                <div class="energy-number energy-mid" id="energyNumber">5</div>
+              </div>
+            </div>
+
+            <!-- Textarea -->
+            <textarea class="share-textarea" id="postContent"
+                      placeholder="Write how you feel… be honest. This is completely anonymous."
+                      maxlength="5000" required></textarea>
+
+            <!-- Real-time Profanity Warning -->
+            <div class="sensitive-warning" id="sensitiveWarning" style="display:none;">
+              <div class="sensitive-warning-header">
+                <div class="sensitive-warning-icon">
+                  <i class="fas fa-ban"></i>
+                </div>
+                <div class="sensitive-warning-title">This content cannot be posted</div>
+              </div>
+              <div class="sensitive-warning-body">
+                Your message contains inappropriate language that cannot appear on the board.
+                Please rephrase your message to keep this a safe space for everyone.
+              </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="share-submit">
+              <button type="submit" class="btn-share" id="submitBtn">
+                <i class="fas fa-paper-plane"></i> Post Anonymously
+              </button>
+              <span class="char-count" id="charCount">0 / 5000</span>
+            </div>
+          </form>
+
+          <!-- Auto Reply (shown after post) -->
+          <div id="autoReplySection" style="display:none;"></div>
+
+          <!-- Contextual Resources (shown after post, from Resource Linker) -->
+          <div id="resourceLinkerSection" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- TAB 2: Peer Mirror Feed -->
+      <div class="tab-panel" id="panelFeed">
+        <div class="feed-controls">
+          <div class="feed-emotion-pills" id="feedPills">
+            <button class="feed-pill active" data-emotion="ALL">All</button>
+            <button class="feed-pill" data-emotion="Sad">😢 Sad</button>
+            <button class="feed-pill" data-emotion="Angry">😤 Angry</button>
+            <button class="feed-pill" data-emotion="Anxious">😰 Anxious</button>
+            <button class="feed-pill" data-emotion="Lonely">🥺 Lonely</button>
+            <button class="feed-pill" data-emotion="Frustrated">😩</button>
+            <button class="feed-pill" data-emotion="Neutral">😐</button>
+            <button class="feed-pill" data-emotion="Relieved">😌</button>
+            <button class="feed-pill" data-emotion="Happy">😊</button>
+          </div>
+          <span style="font-size:0.72rem;color:#9ca3af;" id="feedCount">Loading...</span>
+        </div>
+        <div id="feedContainer"></div>
+        <div class="load-more-wrap" id="loadMoreWrap" style="display:none;">
+          <button class="btn-load-more" id="loadMoreBtn">
+            <i class="fas fa-chevron-down"></i> Load more posts
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 3: My Posts -->
+      <div class="tab-panel" id="panelMine">
+        <div id="myPostsContainer"></div>
+      </div>
+
+      <!-- TAB 4: Calm-Down Kit -->
+      <div class="tab-panel" id="panelCalm">
+        <div class="kit-grid">
+          <div class="kit-card" data-kit="breathing" onclick="startKit('breathing')">
+            <div class="kit-icon breathing"><i class="fas fa-wind"></i></div>
+            <h4>Box Breathing</h4>
+            <p>Inhale 4s · Hold 4s · Exhale 4s · Hold 4s</p>
+          </div>
+          <div class="kit-card" data-kit="grounding" onclick="startKit('grounding')">
+            <div class="kit-icon grounding"><i class="fas fa-hand-holding-heart"></i></div>
+            <h4>5-4-3-2-1 Grounding</h4>
+            <p>Engage all five senses to anchor yourself</p>
+          </div>
+          <div class="kit-card" data-kit="muscle" onclick="startKit('muscle')">
+            <div class="kit-icon muscle"><i class="fas fa-dumbbell"></i></div>
+            <h4>Progressive Relaxation</h4>
+            <p>Tense and release muscle groups</p>
+          </div>
+          <div class="kit-card" data-kit="journal" onclick="startKit('journal')">
+            <div class="kit-icon journal"><i class="fas fa-pen-fancy"></i></div>
+            <h4>Micro Journal</h4>
+            <p>Write 3 things you're grateful for right now</p>
+          </div>
+        </div>
+        <div class="kit-timer" id="kitTimer">
+          <div class="timer-circle" id="timerCircle">4</div>
+          <div class="timer-instruction" id="timerInstruction">Inhale</div>
+          <div class="timer-sub" id="timerSub">Breathe in slowly through your nose</div>
+          <button class="btn-share" style="margin:1rem auto 0;" onclick="stopKit()">
+            <i class="fas fa-stop"></i> Stop Exercise
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 5: Resources (Student-facing resource browser) -->
+      <div class="tab-panel" id="panelResources">
+        <div class="share-card">
+          <h2><i class="fas fa-hand-holding-heart"></i> Wellness Resources</h2>
+          <p class="share-subtitle">Support resources available to you — hotlines, campus services, and professional support.</p>
+          <div id="studentResourceGrid" style="display:grid; gap:0.75rem; margin-top:1rem;"></div>
+          <div id="studentResourceEmpty" style="display:none; text-align:center; padding:2rem; color:#9ca3af;">
+            <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;"></i>
+            <p style="margin-top:0.5rem;">Loading resources...</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- .rant-content -->
+  </div><!-- .rant-layout -->
+
+  <script>
+    const API = 'http://localhost:8080/api/posts';
+    const RESOURCE_API = 'http://localhost:8080/api/resources';
+    let selectedEmotion = 'Anxious';
+    let feedPage = 0;
+    let feedEmotion = 'ALL';
+    let feedTotalPages = 0;
+    let kitInterval = null;
+    let contentBlocked = false;
+
+    // ── Client-side sensitive word list ──
+    // Only PROFANITY is blocked client-side.
+    // Crisis keywords are allowed to submit — the backend saves them as flagged
+    // (hidden from peers) and returns resources + calm-down kit.
+
+    const PROFANITY_WORDS = [
+      'fuck', 'shit', 'bitch', 'asshole', 'cunt',
+      'putangina', 'gago', 'tarantado', 'bobo', 'puta',
+      'pisti', 'giatay', 'buang'
+    ];
+
+    /**
+     * Client-side profanity check.
+     * Only blocks profanity. Crisis keywords are allowed through to the backend.
+     */
+    function checkSensitiveContent(text) {
+      if (!text || !text.trim()) return false;
+      const normalized = text.toLowerCase()
+        .replace(/[^a-z0-9\s']/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      // Check profanity (word-boundary match)
+      for (const word of PROFANITY_WORDS) {
+        const regex = new RegExp('\\b' + word + '\\b');
+        if (regex.test(normalized)) return true;
+      }
+
+      return false;
+    }
+
+    /**
+     * Update the UI based on whether profanity is detected.
+     * Crisis keywords no longer block the submit button.
+     */
+    function updateSensitiveWarning(text) {
+      const warning = document.getElementById('sensitiveWarning');
+      const textarea = document.getElementById('postContent');
+      const btn = document.getElementById('submitBtn');
+
+      const isProfanity = checkSensitiveContent(text);
+      contentBlocked = isProfanity;
+
+      if (isProfanity) {
+        warning.style.display = 'block';
+        textarea.classList.add('content-warning');
+        btn.classList.add('blocked');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-ban"></i> Cannot Post';
+      } else {
+        warning.style.display = 'none';
+        textarea.classList.remove('content-warning');
+        btn.classList.remove('blocked');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Post Anonymously';
+      }
+    }
+
+    // ── Init ──
+    document.addEventListener('DOMContentLoaded', () => {
+      // Welcome name
+      const name = SafeSpaceAuth.getFullName() || SafeSpaceAuth.getUsername() || 'Friend';
+      document.getElementById('welcomeName').textContent = name.split(' ')[0];
+
+      // Tabs
+      document.querySelectorAll('.rant-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+      });
+
+      // Emotion picker
+      document.querySelectorAll('.emotion-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          document.querySelectorAll('.emotion-chip').forEach(c => c.classList.remove('selected'));
+          chip.classList.add('selected');
+          selectedEmotion = chip.dataset.emotion;
+        });
+      });
+
+      // Energy slider
+      const slider = document.getElementById('energySlider');
+      const num = document.getElementById('energyNumber');
+      let resourceBannerShown = false;
+      slider.addEventListener('input', () => {
+        const v = parseInt(slider.value);
+        num.textContent = v;
+        num.className = 'energy-number ' + (v <= 4 ? 'energy-low' : v <= 7 ? 'energy-mid' : 'energy-high');
+
+        // Pre-submission: show crisis resource banner when energy >= 9
+        if (v >= 9 && !resourceBannerShown) {
+          resourceBannerShown = true;
+          showCrisisResourceBanner();
+        } else if (v < 9) {
+          resourceBannerShown = false;
+          hideCrisisResourceBanner();
+        }
+      });
+
+      // Char count + real-time sensitive word detection
+      const ta = document.getElementById('postContent');
+      const cc = document.getElementById('charCount');
+      let sensitiveCheckTimer = null;
+      ta.addEventListener('input', () => {
+        const len = ta.value.length;
+        cc.textContent = len + ' / 5000';
+        cc.className = 'char-count' + (len > 4500 ? ' danger' : len > 3500 ? ' warning' : '');
+
+        // Clear any pending debounce
+        clearTimeout(sensitiveCheckTimer);
+
+        // IMMEDIATE check: if content is clean or empty, hide warning instantly
+        const currentText = ta.value.trim();
+        if (!currentText || !checkSensitiveContent(currentText)) {
+          updateSensitiveWarning('');
+        } else {
+          // Content is sensitive — debounce the "show" to avoid flicker while typing
+          sensitiveCheckTimer = setTimeout(() => {
+            updateSensitiveWarning(ta.value);
+          }, 300);
+        }
+      });
+
+      // Post form
+      document.getElementById('postForm').addEventListener('submit', handlePost);
+
+      // Feed pills
+      document.querySelectorAll('.feed-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          document.querySelectorAll('.feed-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          feedEmotion = pill.dataset.emotion;
+          feedPage = 0;
+          loadFeed(false);
+        });
+      });
+
+      // Load more
+      document.getElementById('loadMoreBtn').addEventListener('click', () => {
+        feedPage++;
+        loadFeed(true);
+      });
+
+      // Load initial data
+      loadFeed(false);
+      loadMyPosts();
+      loadStudentResources();
+    });
+
+    // ── Tab Switching ──
+    function switchTab(tabId) {
+      document.querySelectorAll('.rant-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+      document.getElementById('panel' + tabId.charAt(0).toUpperCase() + tabId.slice(1)).classList.add('active');
+
+      if (tabId === 'feed') loadFeed(false);
+      if (tabId === 'mine') loadMyPosts();
+      if (tabId === 'resources') loadStudentResources();
+    }
+
+    // ── Post Submission ──
+    async function handlePost(e) {
+      e.preventDefault();
+      const content = document.getElementById('postContent').value.trim();
+      if (!content) return;
+
+      // Client-side block — should not reach here due to disabled button, but just in case
+      if (contentBlocked || checkSensitiveContent(content)) {
+        updateSensitiveWarning(content);
+        return;
+      }
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...';
+
+      try {
+        const res = await SafeSpaceAuth.authFetch(API, {
+          method: 'POST',
+          body: JSON.stringify({
+            content,
+            emotionTag: selectedEmotion,
+            energyScore: parseInt(document.getElementById('energySlider').value)
+          })
+        });
+
+        // Server-side backup: if the backend also blocks the post (400)
+        if (!res.ok) {
+          const errorData = await res.json();
+          const errorMsg = errorData.error || 'Your post could not be published.';
+
+          const section = document.getElementById('autoReplySection');
+          section.innerHTML = `
+            <div class="auto-reply-card crisis">
+              <h4><i class="fas fa-hand-holding-heart"></i> Your post was not published</h4>
+              <p>${escapeHtml(errorMsg)}</p>
+              <p style="margin-top:0.5rem;font-size:0.75rem;">
+                <strong>Need to talk to someone?</strong>
+                Use the <a href="anon-chat.html" style="color:#047857;font-weight:600;">Anonymous Chat</a> to connect with a counselor privately,
+                or call your campus counselor.
+              </p>
+            </div>
+          `;
+          section.style.display = 'block';
+          showToast('Your post could not be published.');
+          return;
+        }
+
+        const post = await res.json();
+
+        // Check if this is a crisis-flagged post (hidden from peers but saved)
+        if (post.flagged) {
+          // Show supportive crisis response instead of the standard auto-reply
+          const section = document.getElementById('autoReplySection');
+          section.innerHTML = `
+            <div class="auto-reply-card crisis">
+              <h4><i class="fas fa-hand-holding-heart"></i> Your thoughts have been heard</h4>
+              <p>We hear you, and we care about how you're feeling. Your post has been received — 
+              a counselor has been notified and may reach out to you through the 
+              <a href="anon-chat.html" style="color:#047857;font-weight:600;">Anonymous Chat</a>.</p>
+              <p style="margin-top:0.5rem;font-size:0.75rem;color:#6b7280;">
+                To protect other students who may be vulnerable, your post will not appear on the Peer Mirror. 
+                But your voice matters and help is on the way.
+              </p>
+            </div>
+          `;
+          section.style.display = 'block';
+
+          // Show contextual crisis resources from Resource Linker
+          renderPostResources(post.contextualResources, post.energyScore);
+
+          // Show Calm-Down Kit if prescribed
+          if (post.calmDownKit) {
+            renderCrisisCalmDownKit(post.calmDownKit);
+          }
+
+          showToast('Your thoughts have been heard. Help is on the way 💚');
+
+          // Reset form
+          document.getElementById('postContent').value = '';
+          document.getElementById('charCount').textContent = '0 / 5000';
+          updateSensitiveWarning('');
+          loadMyPosts();
+        } else {
+          // Normal clean post — show auto-reply
+          const section = document.getElementById('autoReplySection');
+          section.innerHTML = `
+            <div class="auto-reply-card">
+              <h4><i class="fas fa-heart"></i> Safe Space says</h4>
+              <p>${escapeHtml(post.autoReply)}</p>
+            </div>
+          `;
+          section.style.display = 'block';
+
+          // Show contextual resources from Resource Linker (if returned)
+          renderPostResources(post.contextualResources, post.energyScore);
+
+          showToast('Your post has been shared anonymously ✓');
+
+          // Reset form and refresh feeds
+          document.getElementById('postContent').value = '';
+          document.getElementById('charCount').textContent = '0 / 5000';
+          updateSensitiveWarning('');
+          feedPage = 0;
+          loadFeed(false);
+          loadMyPosts();
+        }
+
+      } catch (err) {
+        if (err.message !== 'Session expired. Redirecting to login.' && err.message !== 'Access denied.') {
+          showToast('Failed to post. Please try again.');
+        }
+      } finally {
+        // Restore button state (respect blocked state)
+        if (!contentBlocked) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-paper-plane"></i> Post Anonymously';
+        } else {
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fas fa-ban"></i> Cannot Post';
+          btn.classList.add('blocked');
+        }
+      }
+    }
+
+    // ── Load Feed (Paginated) ──
+    async function loadFeed(append) {
+      try {
+        const emotionParam = feedEmotion !== 'ALL' ? `&emotion=${feedEmotion}` : '';
+        const res = await SafeSpaceAuth.authFetch(`${API}?page=${feedPage}&size=10${emotionParam}`);
+        const data = await res.json();
+        feedTotalPages = data.totalPages;
+
+        const container = document.getElementById('feedContainer');
+        if (!append) container.innerHTML = '';
+
+        if (data.content.length === 0 && !append) {
+          container.innerHTML = '<div class="feed-empty"><i class="fas fa-leaf"></i><p>No posts yet. Be the first to share!</p></div>';
+        } else {
+          data.content.forEach(p => container.appendChild(createPostCard(p)));
+        }
+
+        document.getElementById('feedCount').textContent = `${data.totalElements} post${data.totalElements !== 1 ? 's' : ''}`;
+        document.getElementById('loadMoreWrap').style.display = (feedPage + 1 < feedTotalPages) ? '' : 'none';
+
+      } catch (err) {
+        console.warn('Feed error:', err);
+      }
+    }
+
+    // ── Load My Posts ──
+    async function loadMyPosts() {
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/mine`);
+        const posts = await res.json();
+        const container = document.getElementById('myPostsContainer');
+        container.innerHTML = '';
+
+        const badge = document.getElementById('myPostsBadge');
+        if (posts.length > 0) {
+          badge.textContent = posts.length;
+          badge.style.display = '';
+          posts.forEach(p => container.appendChild(createPostCard(p, true)));
+        } else {
+          badge.style.display = 'none';
+          container.innerHTML = '<div class="my-posts-empty"><i class="fas fa-inbox"></i><p>You haven\'t posted anything yet.<br>Share your thoughts in the <strong>Share</strong> tab.</p></div>';
+        }
+      } catch (err) {
+        console.warn('My posts error:', err);
+      }
+    }
+
+    // ── Post Card Builder ──
+    function createPostCard(post, showReply = false) {
+      const el = document.createElement('div');
+      el.className = 'post-card';
+
+      const initials = post.pseudonym.substring(0, 2).toUpperCase();
+      const energyClass = post.energyScore <= 4 ? 'low' : post.energyScore <= 7 ? 'mid' : 'high';
+      const timeAgo = getTimeAgo(post.createdAt);
+
+      el.innerHTML = `
+        <div class="post-header">
+          <div class="post-author">
+            <div class="post-avatar">${initials}</div>
+            <div>
+              <div class="post-name">${escapeHtml(post.pseudonym)}</div>
+              <div class="post-time">${timeAgo}</div>
+            </div>
+          </div>
+        </div>
+        <div class="post-body">${escapeHtml(post.content)}</div>
+        <div class="post-tags">
+          <span class="tag-emotion">${getEmoji(post.emotionTag)} ${post.emotionTag}</span>
+          <span class="tag-energy ${energyClass}">⚡ ${post.energyScore}/10</span>
+        </div>
+        ${(showReply || post.autoReply) && post.autoReply ? `<div class="post-reply"><strong>💚 Safe Space:</strong> ${escapeHtml(post.autoReply)}</div>` : ''}
+      `;
+      return el;
+    }
+
+    // ── Calm-Down Kit ──
+    const BREATHING_STEPS = [
+      { text: 'Inhale', sub: 'Breathe in slowly through your nose', duration: 4 },
+      { text: 'Hold', sub: 'Keep holding gently', duration: 4 },
+      { text: 'Exhale', sub: 'Breathe out slowly through your mouth', duration: 4 },
+      { text: 'Hold', sub: 'Rest before the next cycle', duration: 4 }
+    ];
+    const GROUNDING_STEPS = [
+      { text: '5 things you SEE', sub: 'Look around and name them silently', duration: 10 },
+      { text: '4 things you TOUCH', sub: 'Feel textures around you', duration: 8 },
+      { text: '3 things you HEAR', sub: 'Listen to sounds near and far', duration: 8 },
+      { text: '2 things you SMELL', sub: 'Notice any scents', duration: 6 },
+      { text: '1 thing you TASTE', sub: 'Focus on taste in your mouth', duration: 6 }
+    ];
+    let kitStepIndex = 0;
+    let kitSeconds = 0;
+    let kitSteps = [];
+
+    function startKit(type) {
+      document.querySelectorAll('.kit-card').forEach(c => c.classList.remove('active-kit'));
+      document.querySelector(`[data-kit="${type}"]`).classList.add('active-kit');
+
+      if (type === 'breathing') kitSteps = BREATHING_STEPS;
+      else if (type === 'grounding') kitSteps = GROUNDING_STEPS;
+      else if (type === 'muscle') {
+        kitSteps = [
+          { text: 'Tense your HANDS', sub: 'Make fists, squeeze tight', duration: 5 },
+          { text: 'Release', sub: 'Let go and feel the relief', duration: 5 },
+          { text: 'Tense your SHOULDERS', sub: 'Shrug them up to your ears', duration: 5 },
+          { text: 'Release', sub: 'Drop them down gently', duration: 5 },
+          { text: 'Tense your FACE', sub: 'Scrunch everything tight', duration: 5 },
+          { text: 'Release', sub: 'Relax every muscle', duration: 5 }
+        ];
+      } else if (type === 'journal') {
+        document.getElementById('kitTimer').classList.add('active');
+        document.getElementById('timerCircle').textContent = '✍️';
+        document.getElementById('timerInstruction').textContent = 'Micro Journal';
+        document.getElementById('timerSub').innerHTML = 'Write 3 things you\'re grateful for:<br><textarea style="width:100%;min-height:100px;margin-top:0.5rem;padding:0.75rem;border:1.5px solid #e5e7eb;border-radius:0.5rem;font-family:Inter,sans-serif;font-size:0.85rem;" placeholder="1. \n2. \n3. "></textarea>';
+        return;
+      }
+
+      kitStepIndex = 0;
+      kitSeconds = kitSteps[0].duration;
+      updateTimerDisplay();
+      document.getElementById('kitTimer').classList.add('active');
+
+      clearInterval(kitInterval);
+      kitInterval = setInterval(() => {
+        kitSeconds--;
+        if (kitSeconds <= 0) {
+          kitStepIndex = (kitStepIndex + 1) % kitSteps.length;
+          kitSeconds = kitSteps[kitStepIndex].duration;
+        }
+        updateTimerDisplay();
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      const step = kitSteps[kitStepIndex];
+      document.getElementById('timerCircle').textContent = kitSeconds;
+      document.getElementById('timerInstruction').textContent = step.text;
+      document.getElementById('timerSub').textContent = step.sub;
+    }
+
+    function stopKit() {
+      clearInterval(kitInterval);
+      document.getElementById('kitTimer').classList.remove('active');
+      document.querySelectorAll('.kit-card').forEach(c => c.classList.remove('active-kit'));
+      showToast('Great job taking care of yourself 💚');
+    }
+
+    // ── Helpers ──
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function getEmoji(emotion) {
+      const map = { Sad:'😢', Angry:'😤', Anxious:'😰', Lonely:'🥺', Frustrated:'😩', Neutral:'😐', Relieved:'😌', Happy:'😊' };
+      return map[emotion] || '💭';
+    }
+
+    function getTimeAgo(dateStr) {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diff = Math.floor((now - date) / 1000);
+      if (diff < 60) return 'just now';
+      if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+      if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+      return Math.floor(diff / 86400) + 'd ago';
+    }
+
+    function showToast(msg) {
+      const existing = document.querySelector('.rant-toast');
+      if (existing) existing.remove();
+      const t = document.createElement('div');
+      t.className = 'rant-toast';
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    }
+
+    // ══════════════════════════════════════════════
+    //  CRISIS CALM-DOWN KIT (inline after post)
+    // ══════════════════════════════════════════════
+
+    /**
+     * Render a Calm-Down Kit inline after a crisis post submission.
+     * Displays the prescribed kit (quote, breathing, or grounding) in the auto-reply area.
+     */
+    function renderCrisisCalmDownKit(kit) {
+      if (!kit) return;
+
+      const section = document.getElementById('autoReplySection');
+      let kitHtml = '';
+
+      if (kit.kitType === 'quote' && kit.quoteContent) {
+        kitHtml = `
+          <div class="auto-reply-card calm-kit">
+            <h4><i class="fas fa-spa"></i> A Moment of Reflection</h4>
+            <p style="font-style:italic;font-size:0.95rem;color:#374151;">&ldquo;${escapeHtml(kit.quoteContent.quote)}&rdquo;</p>
+            ${kit.quoteContent.reflectivePrompt ? `<p style="margin-top:0.5rem;color:#6b7280;"><i class="fas fa-lightbulb"></i> ${escapeHtml(kit.quoteContent.reflectivePrompt)}</p>` : ''}
+            ${kit.quoteContent.followUpTip ? `<p style="margin-top:0.4rem;font-size:0.8rem;color:#9ca3af;">${escapeHtml(kit.quoteContent.followUpTip)}</p>` : ''}
+          </div>
+        `;
+      } else if (kit.kitType === 'breathing' && kit.breathingContent) {
+        const bc = kit.breathingContent;
+        kitHtml = `
+          <div class="auto-reply-card calm-kit">
+            <h4><i class="fas fa-wind"></i> ${escapeHtml(bc.patternName)}</h4>
+            <p style="color:#6b7280;font-size:0.85rem;">${escapeHtml(bc.description)}</p>
+            <div style="margin-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+              <span class="calm-step"><i class="fas fa-lungs"></i> Inhale ${bc.inhaleSeconds}s</span>
+              <span class="calm-step"><i class="fas fa-pause"></i> Hold ${bc.holdSeconds}s</span>
+              <span class="calm-step"><i class="fas fa-wind"></i> Exhale ${bc.exhaleSeconds}s</span>
+              ${bc.holdAfterExhaleSeconds > 0 ? `<span class="calm-step"><i class="fas fa-pause"></i> Hold ${bc.holdAfterExhaleSeconds}s</span>` : ''}
+            </div>
+            <p style="margin-top:0.5rem;font-size:0.8rem;color:#9ca3af;">Repeat for ${bc.recommendedCycles} cycles (≈${bc.totalDurationSeconds}s total)</p>
+            <button class="calm-kit-start" onclick="document.querySelector('[data-tab=calm]').click()">
+              <i class="fas fa-play"></i> Open Calm-Down Kit
+            </button>
+          </div>
+        `;
+      } else if (kit.kitType === 'grounding' && kit.groundingContent) {
+        const gc = kit.groundingContent;
+        kitHtml = `
+          <div class="auto-reply-card calm-kit">
+            <h4><i class="fas fa-hand-sparkles"></i> ${escapeHtml(gc.techniqueName)}</h4>
+            <p style="color:#6b7280;font-size:0.85rem;">${escapeHtml(gc.introduction)}</p>
+            <div style="margin-top:0.75rem;">
+              ${gc.steps.map(s => `
+                <div class="grounding-step">
+                  <span class="grounding-count">${s.count}</span>
+                  <span>things you can <strong>${escapeHtml(s.sense)}</strong></span>
+                </div>
+              `).join('')}
+            </div>
+            <button class="calm-kit-start" onclick="document.querySelector('[data-tab=calm]').click()">
+              <i class="fas fa-play"></i> Open Calm-Down Kit
+            </button>
+          </div>
+        `;
+      }
+
+      if (kitHtml) {
+        section.insertAdjacentHTML('beforeend', kitHtml);
+      }
+    }
+
+    // ══════════════════════════════════════════════
+    //  RESOURCE LINKER INTEGRATION
+    // ══════════════════════════════════════════════
+
+    /**
+     * Render contextual resources returned after a successful post.
+     * These come from the backend ResourceLinkerService via PostResponse.contextualResources.
+     */
+    function renderPostResources(resources, energyScore) {
+      const section = document.getElementById('resourceLinkerSection');
+      if (!resources || resources.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+
+      const isHighEnergy = energyScore >= 8;
+      const headerText = isHighEnergy
+        ? 'We noticed your energy is high — here are some immediate support options:'
+        : 'Here are some resources that may help you right now:';
+      const headerClass = isHighEnergy ? 'resource-linker-header urgent' : 'resource-linker-header';
+
+      section.innerHTML = `
+        <div class="resource-linker-panel ${isHighEnergy ? 'urgent' : ''}">
+          <div class="${headerClass}">
+            <i class="fas fa-${isHighEnergy ? 'exclamation-triangle' : 'hand-holding-heart'}"></i>
+            <span>${headerText}</span>
+          </div>
+          <div class="resource-linker-grid">
+            ${resources.slice(0, 6).map(r => buildResourceCard(r)).join('')}
+          </div>
+        </div>
+      `;
+      section.style.display = 'block';
+    }
+
+    /**
+     * Build a single resource card HTML.
+     */
+    function buildResourceCard(r) {
+      const iconClass = r.icon || getCategoryIcon(r.category);
+      const catLabel = getCategoryLabel(r.category);
+      const isUrgent = r.crisisOnly;
+      const linkHref = r.link || '#';
+
+      // Determine link target
+      const isExternal = linkHref.startsWith('http') || linkHref.startsWith('tel:') || linkHref.startsWith('mailto:') || linkHref.startsWith('sms:');
+      const target = isExternal ? ' target="_blank" rel="noopener"' : '';
+
+      return `
+        <a class="resource-card ${isUrgent ? 'urgent' : ''}" href="${escapeHtml(linkHref)}"${target}>
+          <div class="resource-card-icon ${r.category || ''}">
+            <i class="${iconClass}"></i>
+          </div>
+          <div class="resource-card-body">
+            <div class="resource-card-title">
+              ${escapeHtml(r.title)}
+              ${isUrgent ? '<span class="resource-urgent-badge">Crisis</span>' : ''}
+            </div>
+            <div class="resource-card-desc">${escapeHtml(r.description || '')}</div>
+            <span class="resource-card-cat">${catLabel}</span>
+          </div>
+          <i class="fas fa-arrow-up-right-from-square resource-card-arrow"></i>
+        </a>
+      `;
+    }
+
+    function getCategoryIcon(cat) {
+      const map = {
+        'HOTLINE': 'fas fa-phone-volume',
+        'CAMPUS': 'fas fa-building-columns',
+        'EXTERNAL_LINK': 'fas fa-globe',
+        'CHAT_SERVICE': 'fas fa-comment-medical'
+      };
+      return map[cat] || 'fas fa-link';
+    }
+
+    function getCategoryLabel(cat) {
+      const map = {
+        'HOTLINE': 'Hotline',
+        'CAMPUS': 'Campus Service',
+        'EXTERNAL_LINK': 'External Resource',
+        'CHAT_SERVICE': 'Chat Support'
+      };
+      return map[cat] || 'Resource';
+    }
+
+    /**
+     * Pre-submission crisis resource banner.
+     * Fetched from /api/resources/crisis when energy slider >= 9.
+     */
+    async function showCrisisResourceBanner() {
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${RESOURCE_API}/crisis`);
+        if (!res.ok) return;
+        const crisisResources = await res.json();
+        if (!crisisResources || crisisResources.length === 0) return;
+
+        // Remove old banner if present
+        hideCrisisResourceBanner();
+
+        const banner = document.createElement('div');
+        banner.id = 'crisisResourceBanner';
+        banner.className = 'crisis-resource-banner';
+        banner.innerHTML = `
+          <div class="crisis-banner-header">
+            <div class="crisis-banner-icon"><i class="fas fa-heart-pulse"></i></div>
+            <div>
+              <strong>Your energy is very high</strong>
+              <p>If you're in distress, these resources are here for you right now.</p>
+            </div>
+            <button class="crisis-banner-dismiss" onclick="hideCrisisResourceBanner()">
+              <i class="fas fa-xmark"></i>
+            </button>
+          </div>
+          <div class="crisis-banner-resources">
+            ${crisisResources.slice(0, 4).map(r => `
+              <a class="crisis-banner-link" href="${escapeHtml(r.link || '#')}" target="_blank" rel="noopener">
+                <i class="${r.icon || 'fas fa-phone-volume'}"></i>
+                <span>${escapeHtml(r.title)}</span>
+              </a>
+            `).join('')}
+          </div>
+        `;
+
+        // Insert before the form
+        const form = document.getElementById('postForm');
+        form.parentNode.insertBefore(banner, form);
+      } catch (e) {
+        console.warn('Failed to fetch crisis resources:', e);
+      }
+    }
+
+    function hideCrisisResourceBanner() {
+      const banner = document.getElementById('crisisResourceBanner');
+      if (banner) banner.remove();
+    }
+
+    /**
+     * Load all active resources for the student Resources tab.
+     */
+    async function loadStudentResources() {
+      const grid = document.getElementById('studentResourceGrid');
+      const empty = document.getElementById('studentResourceEmpty');
+      empty.style.display = 'block';
+      grid.innerHTML = '';
+
+      try {
+        const res = await SafeSpaceAuth.authFetch(RESOURCE_API);
+        if (!res.ok) throw new Error('Failed to load');
+        const resources = await res.json();
+
+        empty.style.display = 'none';
+
+        if (resources.length === 0) {
+          grid.innerHTML = '<div style="text-align:center;padding:2rem;color:#9ca3af;"><i class="fas fa-box-open" style="font-size:1.5rem;"></i><p style="margin-top:0.5rem;">No resources available at this time.</p></div>';
+          return;
+        }
+
+        grid.innerHTML = resources.map(r => buildResourceCard(r)).join('');
+      } catch (e) {
+        empty.innerHTML = '<i class="fas fa-exclamation-triangle" style="font-size:1.5rem;color:#f59e0b;"></i><p style="margin-top:0.5rem;">Could not load resources. Try again later.</p>';
+        console.warn('Resource load error:', e);
+      }
+    }
+  </script>
+</body>
+</html>
