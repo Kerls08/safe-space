@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safe Space — Feature Test Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1><i class="fas fa-shield-heart"></i> Safe Space Test Dashboard</h1>
+    <p>One-click testing for all 5 backend features &bull; 24 API endpoints</p>
+    <div class="status-bar" id="statusBar"></div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-tab="rant">📝 Rant Board</div>
+    <div class="tab" data-tab="energy">📊 Energy Score</div>
+    <div class="tab" data-tab="reply">🤖 Auto-Reply</div>
+    <div class="tab" data-tab="calm">🧘 Calm-Down Kit</div>
+    <div class="tab" data-tab="chat">💬 Anon Chat</div>
+  </div>
+
+  <!-- 1. RANT BOARD -->
+  <div class="panel active" id="panel-rant">
+    <div class="row row2">
+      <div class="card">
+        <h3><i class="fas fa-plus"></i> Create Post</h3>
+        <div style="margin-bottom:.75rem">
+          <label>Content</label>
+          <textarea id="rant-content" placeholder="What's on your mind...">I feel stressed about upcoming exams and deadlines</textarea>
+        </div>
+        <div class="row row2" style="margin-bottom:.75rem">
+          <div><label>Emotion</label>
+            <select id="rant-emotion"><option>Anxious</option><option>Sad</option><option>Angry</option><option>Lonely</option><option>Frustrated</option><option>Neutral</option><option>Relieved</option><option>Happy</option></select></div>
+          <div><label>Energy (1-10)</label><input type="number" id="rant-energy" value="6" min="1" max="10"></div>
+        </div>
+        <button class="btn btn-p" onclick="createPost()"><i class="fas fa-paper-plane"></i> Submit Rant</button>
+        <div id="rant-create-result" class="result" style="display:none"></div>
+      </div>
+      <div class="card">
+        <h3><i class="fas fa-list"></i> All Posts</h3>
+        <button class="btn btn-s" onclick="loadPosts()"><i class="fas fa-refresh"></i> Load Posts</button>
+        <button class="btn btn-d" style="margin-left:.5rem" onclick="loadFlagged()"><i class="fas fa-flag"></i> Flagged</button>
+        <div id="rant-list-result" class="result" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. ENERGY SCORE -->
+  <div class="panel" id="panel-energy">
+    <div class="row row3">
+      <div class="card"><h3><i class="fas fa-chart-pie"></i> Stats</h3>
+        <button class="btn btn-p" onclick="loadEnergyStats()"><i class="fas fa-chart-bar"></i> Load Stats</button>
+        <div id="energy-stats-result" class="result" style="display:none"></div></div>
+      <div class="card"><h3><i class="fas fa-chart-line"></i> Trends</h3>
+        <button class="btn btn-a" onclick="loadEnergyTrends()"><i class="fas fa-arrow-trend-up"></i> Load Trends</button>
+        <div id="energy-trends-result" class="result" style="display:none"></div></div>
+      <div class="card"><h3><i class="fas fa-triangle-exclamation"></i> Alerts</h3>
+        <button class="btn btn-d" onclick="loadEnergyAlerts()"><i class="fas fa-bell"></i> Load Alerts</button>
+        <div id="energy-alerts-result" class="result" style="display:none"></div></div>
+    </div>
+  </div>
+
+  <!-- 3. AUTO-REPLY -->
+  <div class="panel" id="panel-reply">
+    <div class="row row2">
+      <div class="card">
+        <h3><i class="fas fa-robot"></i> Generate Reply</h3>
+        <div class="row row2" style="margin-bottom:.75rem">
+          <div><label>Emotion</label><select id="ar-emotion"><option>Anxious</option><option>Sad</option><option>Angry</option><option>Lonely</option><option>Frustrated</option><option>Neutral</option><option>Relieved</option><option>Happy</option></select></div>
+          <div><label>Energy (1-10)</label><input type="number" id="ar-energy" value="7" min="1" max="10"></div>
+        </div>
+        <div style="margin-bottom:.75rem"><label>Content (for crisis detection)</label>
+          <input id="ar-content" value="I feel really overwhelmed"></div>
+        <button class="btn btn-p" onclick="generateReply(true)"><i class="fas fa-paper-plane"></i> Generate (Log)</button>
+        <button class="btn btn-s" style="margin-left:.5rem" onclick="generateReply(false)"><i class="fas fa-eye"></i> Preview</button>
+        <div id="ar-result" class="result" style="display:none"></div>
+      </div>
+      <div class="card">
+        <h3><i class="fas fa-book"></i> Rules & Stats</h3>
+        <button class="btn btn-a" onclick="loadRules()"><i class="fas fa-list-check"></i> All Rules</button>
+        <button class="btn btn-s" style="margin-left:.5rem" onclick="loadReplyStats()"><i class="fas fa-chart-bar"></i> Stats</button>
+        <div id="ar-rules-result" class="result" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. CALM-DOWN KIT -->
+  <div class="panel" id="panel-calm">
+    <div class="row row2">
+      <div class="card">
+        <h3><i class="fas fa-spa"></i> Prescribe Kit</h3>
+        <div class="row row3" style="margin-bottom:.75rem">
+          <div><label>Energy</label><input type="number" id="cd-energy" value="5" min="1" max="10"></div>
+          <div><label>Emotion</label><select id="cd-emotion"><option>Anxious</option><option>Sad</option><option>Angry</option><option>Neutral</option></select></div>
+          <div><label>Content</label><input id="cd-content" value="feeling stressed"></div>
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <button class="btn btn-p" onclick="prescribeKit(2)"><i class="fas fa-quote-left"></i> Low (2)</button>
+          <button class="btn btn-a" onclick="prescribeKit(6)"><i class="fas fa-wind"></i> Mid (6)</button>
+          <button class="btn btn-d" onclick="prescribeKit(9)"><i class="fas fa-hand-sparkles"></i> High (9)</button>
+          <button class="btn btn-s" onclick="prescribeKit(null)"><i class="fas fa-wand-magic-sparkles"></i> Custom</button>
+        </div>
+        <div id="cd-result" class="result" style="display:none"></div>
+      </div>
+      <div class="card">
+        <h3><i class="fas fa-chart-bar"></i> Kit Stats & Complete</h3>
+        <button class="btn btn-a" onclick="loadCalmStats()"><i class="fas fa-chart-pie"></i> Load Stats</button>
+        <div style="margin-top:.75rem"><label>Session ID (from prescription)</label>
+          <div class="input-row"><input id="cd-session-id" placeholder="calm-...">
+            <button class="btn btn-p" onclick="completeSession()"><i class="fas fa-check"></i> Complete</button></div>
+        </div>
+        <div id="cd-stats-result" class="result" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. ANONYMOUS CHAT -->
+  <div class="panel" id="panel-chat">
+    <div class="row row2">
+      <div class="card">
+        <h3><i class="fas fa-comments"></i> Chat Session</h3>
+        <div class="row row2" style="margin-bottom:.75rem">
+          <div><label>Pseudonym</label><input id="ch-pseudo" placeholder="Anon-Butterfly"></div>
+          <div><label>Topic</label><input id="ch-topic" value="Need someone to talk to"></div>
+        </div>
+        <button class="btn btn-p" onclick="createChat()"><i class="fas fa-plus"></i> Create Chat</button>
+        <button class="btn btn-a" style="margin-left:.5rem" onclick="acceptChat()"><i class="fas fa-user-doctor"></i> Pro Accept</button>
+        <button class="btn btn-d" style="margin-left:.5rem" onclick="closeChat()"><i class="fas fa-xmark"></i> Close</button>
+        <div style="margin-top:.75rem"><label>Active Session: <span id="ch-sid" style="color:var(--p);font-weight:700">none</span></label></div>
+        <div class="chat-box" id="ch-messages"><div class="sys-msg">No messages yet. Create a session to start.</div></div>
+        <div class="input-row">
+          <select id="ch-sender" style="width:auto"><option value="student">Student</option><option value="professional">Professional</option></select>
+          <input id="ch-msg" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChatMsg()">
+          <button class="btn btn-p" onclick="sendChatMsg()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+      </div>
+      <div class="card">
+        <h3><i class="fas fa-chart-bar"></i> Chat Stats & Queue</h3>
+        <button class="btn btn-a" onclick="loadChatStats()"><i class="fas fa-chart-pie"></i> Stats</button>
+        <button class="btn btn-s" style="margin-left:.5rem" onclick="loadProQueue()"><i class="fas fa-list"></i> Pro Queue</button>
+        <div id="ch-stats-result" class="result" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:8080/api';
+let chatSessionId = null;
+let chatPseudonym = null;
+
+// Tabs
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('panel-' + t.dataset.tab).classList.add('active');
+}));
+
+// Helpers
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API + path, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(JSON.stringify(data));
+  return data;
+}
+
+function show(id, data, ok = true) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  el.className = 'result ' + (ok ? 'ok' : 'err');
+  el.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+}
+
+// Boot check
+async function checkAll() {
+  const bar = document.getElementById('statusBar');
+  const checks = [
+    ['Rant Board', '/posts'],
+    ['Energy', '/energy/stats'],
+    ['Auto-Reply', '/auto-reply/rules'],
+    ['Calm-Down', '/calm-down/stats'],
+    ['Chat', '/chat/stats']
+  ];
+  bar.innerHTML = '';
+  for (const [name, path] of checks) {
+    try {
+      await fetch(API + path);
+      bar.innerHTML += `<span class="status-pill ok"><i class="fas fa-check-circle"></i> ${name}</span>`;
+    } catch {
+      bar.innerHTML += `<span class="status-pill fail"><i class="fas fa-times-circle"></i> ${name}</span>`;
+    }
+  }
+}
+checkAll();
+
+// 1. RANT BOARD
+async function createPost() {
+  try {
+    const d = await api('POST', '/posts', {
+      content: document.getElementById('rant-content').value,
+      emotionTag: document.getElementById('rant-emotion').value,
+      energyScore: +document.getElementById('rant-energy').value
+    });
+    show('rant-create-result', d);
+  } catch (e) { show('rant-create-result', e.message, false); }
+}
+
+async function loadPosts() {
+  try { show('rant-list-result', await api('GET', '/posts')); }
+  catch (e) { show('rant-list-result', e.message, false); }
+}
+
+async function loadFlagged() {
+  try { show('rant-list-result', await api('GET', '/posts/flagged')); }
+  catch (e) { show('rant-list-result', e.message, false); }
+}
+
+// 2. ENERGY
+async function loadEnergyStats() {
+  try { show('energy-stats-result', await api('GET', '/energy/stats')); }
+  catch (e) { show('energy-stats-result', e.message, false); }
+}
+async function loadEnergyTrends() {
+  try { show('energy-trends-result', await api('GET', '/energy/trends')); }
+  catch (e) { show('energy-trends-result', e.message, false); }
+}
+async function loadEnergyAlerts() {
+  try { show('energy-alerts-result', await api('GET', '/energy/alerts')); }
+  catch (e) { show('energy-alerts-result', e.message, false); }
+}
+
+// 3. AUTO-REPLY
+async function generateReply(log) {
+  try {
+    const path = log ? '/auto-reply/generate' : '/auto-reply/preview';
+    const d = await api('POST', path, {
+      emotionTag: document.getElementById('ar-emotion').value,
+      energyScore: +document.getElementById('ar-energy').value,
+      content: document.getElementById('ar-content').value
+    });
+    show('ar-result', d);
+  } catch (e) { show('ar-result', e.message, false); }
+}
+async function loadRules() {
+  try { show('ar-rules-result', await api('GET', '/auto-reply/rules')); }
+  catch (e) { show('ar-rules-result', e.message, false); }
+}
+async function loadReplyStats() {
+  try { show('ar-rules-result', await api('GET', '/auto-reply/stats')); }
+  catch (e) { show('ar-rules-result', e.message, false); }
+}
+
+// 4. CALM-DOWN
+async function prescribeKit(energy) {
+  try {
+    const e = energy || +document.getElementById('cd-energy').value;
+    const d = await api('POST', '/calm-down/prescribe', {
+      energyScore: e,
+      emotionTag: document.getElementById('cd-emotion').value,
+      content: document.getElementById('cd-content').value
+    });
+    document.getElementById('cd-session-id').value = d.sessionId;
+    show('cd-result', d);
+  } catch (e) { show('cd-result', e.message, false); }
+}
+async function completeSession() {
+  try {
+    const sid = document.getElementById('cd-session-id').value;
+    if (!sid) return alert('Enter a session ID');
+    const d = await api('POST', '/calm-down/complete', {
+      sessionId: sid, durationSeconds: 60, feedbackRating: 'better'
+    });
+    show('cd-stats-result', d);
+  } catch (e) { show('cd-stats-result', e.message, false); }
+}
+async function loadCalmStats() {
+  try { show('cd-stats-result', await api('GET', '/calm-down/stats')); }
+  catch (e) { show('cd-stats-result', e.message, false); }
+}
+
+// 5. CHAT
+async function createChat() {
+  try {
+    const d = await api('POST', '/chat/sessions', {
+      pseudonym: document.getElementById('ch-pseudo').value || undefined,
+      topic: document.getElementById('ch-topic').value,
+      emotionTag: 'Anxious', energyScore: 6
+    });
+    chatSessionId = d.sessionId;
+    chatPseudonym = d.studentPseudonym;
+    document.getElementById('ch-sid').textContent = chatSessionId;
+    document.getElementById('ch-pseudo').value = chatPseudonym;
+    refreshChat();
+  } catch (e) { alert(e.message); }
+}
+
+async function acceptChat() {
+  if (!chatSessionId) return alert('Create a session first');
+  try {
+    await api('PUT', '/chat/sessions/' + chatSessionId + '/accept', {
+      professionalId: 'DR-001', professionalName: 'Dr. Santos'
+    });
+    refreshChat();
+  } catch (e) { alert(e.message); }
+}
+
+async function closeChat() {
+  if (!chatSessionId) return alert('No active session');
+  try {
+    await api('PUT', '/chat/sessions/' + chatSessionId + '/close', { closedBy: 'student' });
+    refreshChat();
+  } catch (e) { alert(e.message); }
+}
+
+async function sendChatMsg() {
+  if (!chatSessionId) return alert('Create a session first');
+  const input = document.getElementById('ch-msg');
+  const content = input.value.trim();
+  if (!content) return;
+  const senderType = document.getElementById('ch-sender').value;
+  const senderName = senderType === 'student' ? chatPseudonym : 'Dr. Santos';
+  try {
+    await api('POST', '/chat/sessions/' + chatSessionId + '/messages', {
+      senderType, senderName, content
+    });
+    input.value = '';
+    refreshChat();
+  } catch (e) { alert(e.message); }
+}
+
+async function refreshChat() {
+  if (!chatSessionId) return;
+  try {
+    const msgs = await api('GET', '/chat/sessions/' + chatSessionId + '/messages?viewer=student');
+    const session = await api('GET', '/chat/sessions/' + chatSessionId);
+    const box = document.getElementById('ch-messages');
+    box.innerHTML = `<div class="sys-msg">Session: ${session.status} | ${session.studentPseudonym}${session.professionalName ? ' ↔ ' + session.professionalName : ''}</div>`;
+    (Array.isArray(msgs) ? msgs : []).forEach(m => {
+      box.innerHTML += `<div class="msg ${m.senderType}"><div>${m.content}</div><div class="meta">${m.senderName} • ${new Date(m.sentAt).toLocaleTimeString()}${m.read ? ' ✓✓' : ''}</div></div>`;
+    });
+    box.scrollTop = box.scrollHeight;
+  } catch (e) { console.warn(e); }
+}
+
+async function loadChatStats() {
+  try { show('ch-stats-result', await api('GET', '/chat/stats')); }
+  catch (e) { show('ch-stats-result', e.message, false); }
+}
+async function loadProQueue() {
+  try { show('ch-stats-result', await api('GET', '/chat/sessions/professional/DR-001')); }
+  catch (e) { show('ch-stats-result', e.message, false); }
+}
+</script>
+</body>
+</html>
