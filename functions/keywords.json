@@ -1,0 +1,86 @@
+{
+  "english": {
+    "explicit": [
+      "suicide",
+      "suicidal",
+      "want to die",
+      "i want to die",
+      "kill myself",
+      "i will kill myself",
+      "i'm going to kill myself",
+      "end my life",
+      "i want to end my life",
+      "i can't go on",
+      "can't go on",
+      "i don't want to live",
+      "i don't want to live anymore",
+      "i'm done with life",
+      "i want to die by suicide",
+      "thinking about suicide",
+      "i want to die today",
+      "i'm going to end my life"
+    ],
+    "selfharm": [
+      "hurt myself",
+      "cut myself",
+      "cutting myself",
+      "slit my wrists",
+      "burn myself",
+      "self-harm",
+      "self harm",
+      "overdose",
+      "i will overdose",
+      "i want to overdose",
+      "poison myself",
+      "hang myself",
+      "shoot myself"
+    ]
+  },
+  "tagalog": {
+    "explicit": [
+      "magpakamatay",
+      "magpapakamatay",
+      "magpapatiwakal",
+      "gusto kong mamatay",
+      "gusto kong mamatay na",
+      "gusto ko mamatay",
+      "patayin ko ang sarili ko",
+      "patayin ang sarili",
+      "tatapusin ko na ang buhay ko",
+      "tapos na ako",
+      "ayaw ko nang mabuhay",
+      "wala na akong dahilan mabuhay",
+      "wala na akong silbi"
+    ],
+    "selfharm": [
+      "sasaktan ko ang sarili ko",
+      "sisaktan ko ang sarili ko",
+      "mag-o-overdose ako",
+      "magpapakamatay na ako",
+      "magpapatiwakal na ako",
+      "mag-overdose ako",
+      "susubukan kong magpakamatay",
+      "patayin ang sarili ko"
+    ]
+  },
+  "bisaya": {
+    "explicit": [
+      "gusto ko mamatay",
+      "gusto nako mamatay",
+      "magpakamatay ko",
+      "mamatay na ko",
+      "patyon nako ang akong kaugalingon",
+      "patayon nako ang akong kaugalingon",
+      "dili na ko gusto mabuhi",
+      "wala na koy rason mabuhi",
+      "wala na koy pulos"
+    ],
+    "selfharm": [
+      "mag-overdose ko",
+      "mag-overdose nako",
+      "magpakamatay na ko",
+      "patyon nako ang akong kaugalingon",
+      "gusto ko mopatay sa akong kaugalingon"
+    ]
+  }
+}

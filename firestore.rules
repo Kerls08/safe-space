@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return request.auth != null && (
+        (request.auth.token != null && request.auth.token.admin == true) ||
+        (request.auth.token != null && request.auth.token.role == 'psychometrist')
+      );
+    }
+
+    function validEmotion(e) {
+      return e == 'Sad' || e == 'Angry' || e == 'Anxious' || e == 'Lonely' || e == 'Frustrated' || e == 'Neutral' || e == 'Relieved' || e == 'Happy';
+    }
+
+    function isIntInRange(v, min, max) {
+      return (v is int) && v >= min && v <= max;
+    }
+
+    function isValidPost(d) {
+      return d.keys().hasAll(['content','emotion_tag','energy_score','pseudonym'])
+             && (d.content is string) && d.content.size() > 0 && d.content.size() <= 5000
+             && (d.pseudonym is string) && d.pseudonym.size() <= 100
+             && (d.emotion_tag is string) && validEmotion(d.emotion_tag)
+             && isIntInRange(d.energy_score, 1, 10)
+             && ((!('is_flagged' in d)) || (d.is_flagged is bool));
+    }
+
+    // Posts: allow creation from clients but validate content and fields.
+    match /posts/{postId} {
+      allow create: if isValidPost(request.resource.data);
+      allow read: if true;
+      // only admin/psychometrician can modify or delete posts
+      allow update, delete: if isAdmin();
+    }
+
+    // Crisis alerts should only be created/managed server-side (admin SDK or Cloud Functions).
+    match /crisis_alerts/{alertId} {
+      allow create: if false;
+      allow read: if isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // Private chats are managed server-side via Cloud Functions; block direct client access.
+    match /private_chats/{chatId} {
+      allow create: if false;
+      allow read: if isAdmin();
+      allow update, delete: if isAdmin();
+
+      match /messages/{messageId} {
+        allow create: if false;
+        allow read: if isAdmin();
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    // Default deny for other top-level collections unless explicitly allowed.
+    match /{document=**} {
+      allow read: if false;
+      allow write: if false;
+    }
+  }
+}
