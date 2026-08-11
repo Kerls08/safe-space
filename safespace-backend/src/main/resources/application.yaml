@@ -7,6 +7,10 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:safespace}
     username: ${SPRING_DATASOURCE_USERNAME:sa}
     password: ${SPRING_DATASOURCE_PASSWORD:}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 30000
 
   # ── JPA / Hibernate ──
   jpa:
