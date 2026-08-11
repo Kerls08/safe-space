@@ -2,12 +2,11 @@ spring:
   application:
     name: safe-space
 
-  # ── H2 In-Memory Database ──
+  # ── Database (Cloud PostgreSQL / Local H2 Fallback) ──
   datasource:
-    url: jdbc:h2:mem:safespace
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:safespace}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
 
   # ── JPA / Hibernate ──
   jpa:

@@ -20,7 +20,8 @@
  */
 
 const SafeSpaceAuth = (() => {
-  const API = 'http://localhost:8080/api/auth';
+  const API_BASE = window.SAFE_SPACE_API_URL || (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:8080/api' : '/api');
+  const API = API_BASE + '/auth';
 
   // ── Session Data ──
   const getToken    = () => localStorage.getItem('ss_token');
@@ -249,54 +250,42 @@ const SafeSpaceAuth = (() => {
 
     const hdrs = { 'Authorization': 'Bearer ' + token };
 
-    // ── Chat badge: waiting + unread from active ──
+    // 1. Chat badge: waiting sessions + unread messages in active sessions
     try {
-      let waitingCount = 0;
-      let unreadCount = 0;
-
-      // 1. Get global stats for waiting count (lightweight, reliable)
-      const statsRes = await fetch('http://localhost:8080/api/chat/stats', { headers: hdrs });
+      const statsRes = await fetch(API_BASE + '/chat/stats', { headers: hdrs });
       if (statsRes.ok) {
         const stats = await statsRes.json();
-        waitingCount = stats.waitingSessions || 0;
+        if (stats.waitingSessions > 0) updateBadge('anon-chat', stats.waitingSessions);
       }
 
-      // 2. Get professional's own queue for unread in active sessions
-      const queueRes = await fetch('http://localhost:8080/api/chat/sessions/professional/' + encodeURIComponent(username), { headers: hdrs });
+      const queueRes = await fetch(API_BASE + '/chat/sessions/professional/' + encodeURIComponent(username), { headers: hdrs });
       if (queueRes.ok) {
-        const queue = await queueRes.json();
-        for (const s of (queue.active || [])) {
-          if (s.unreadCount > 0) unreadCount += s.unreadCount;
-        }
+        const sessions = await queueRes.json();
+        const activeCount = Array.isArray(sessions) ? sessions.filter(s => s.status === 'ACTIVE' || s.status === 'WAITING').length : 0;
+        if (activeCount > 0) updateBadge('anon-chat', activeCount);
       }
+    } catch (e) { /* ignore */ }
 
-      updateBadge('anon-chat', waitingCount + unreadCount);
-    } catch (e) { console.warn('[Badge] Chat poll error:', e.message); }
-
-    // ── Alerts badge ──
+    // 2. Alerts badge
     try {
-      const res = await fetch('http://localhost:8080/api/alerts/stats', { headers: hdrs });
+      const res = await fetch(API_BASE + '/alerts/stats', { headers: hdrs });
+      if (res.ok) {
+        const stats = await res.json();
+        const activeAlerts = (stats.todayTotal || 0) - (stats.resolvedTotal || 0);
+        if (activeAlerts > 0) updateBadge('crisis-alerts', activeAlerts);
+      }
+    } catch (e) { /* ignore */ }
+
+    // 3. Dashboard badge
+    try {
+      const res = await fetch(API_BASE + '/dashboard/overview', { headers: hdrs });
       if (res.ok) {
         const data = await res.json();
-        updateBadge('crisis-alerts', data.active || 0);
+        if (data.highRiskPosts > 0) updateBadge('pro-dashboard', '!');
       }
-    } catch (e) { console.warn('[Badge] Alerts poll error:', e.message); }
-
-    // ── Dashboard badge ──
-    try {
-      const res = await fetch('http://localhost:8080/api/dashboard/overview', { headers: hdrs });
-      if (res.ok) {
-        const data = await res.json();
-        const count = (data.flaggedPosts || 0) + (data.chatSessionsWaiting || 0);
-        updateBadge('pro-dashboard', count);
-      }
-    } catch (e) { console.warn('[Badge] Dashboard poll error:', e.message); }
+    } catch (e) { /* ignore */ }
   }
 
-  /**
-   * Student badge polling:
-   *  - Chat: total unread messages across the student's own sessions
-   */
   async function pollStudentBadges() {
     const pseudonyms = JSON.parse(localStorage.getItem('safespace_pseudonyms') || '[]');
     const token = getToken();
@@ -314,7 +303,7 @@ const SafeSpaceAuth = (() => {
     for (const pseudonym of pseudonyms) {
       try {
         const res = await fetch(
-          'http://localhost:8080/api/chat/sessions/student/' + encodeURIComponent(pseudonym),
+          API_BASE + '/chat/sessions/student/' + encodeURIComponent(pseudonym),
           { headers: hdrs }
         );
         if (!res.ok) continue;
@@ -333,7 +322,7 @@ const SafeSpaceAuth = (() => {
     if (username) {
       try {
         const res = await fetch(
-          'http://localhost:8080/api/chat/sessions/user/' + encodeURIComponent(username),
+          API_BASE + '/chat/sessions/user/' + encodeURIComponent(username),
           { headers: hdrs }
         );
         if (res.ok) {

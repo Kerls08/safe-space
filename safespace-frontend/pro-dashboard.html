@@ -156,7 +156,8 @@
   </div>
 
   <script>
-    const API = 'http://localhost:8080/api/dashboard';
+    const API_BASE = window.SAFE_SPACE_API_URL || (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:8080/api' : '/api');
+    const API = API_BASE + '/dashboard';
 
     const EMOTION_COLORS = {
       'Anxious': '#f59e0b', 'Sad': '#3b82f6', 'Angry': '#ef4444',

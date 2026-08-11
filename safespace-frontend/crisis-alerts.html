@@ -97,7 +97,8 @@
   </div>
 
   <script>
-    const API = 'http://localhost:8080/api/alerts';
+    const API_BASE = window.SAFE_SPACE_API_URL || (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:8080/api' : '/api');
+    const API = API_BASE + '/alerts';
     let currentSevFilter = 'ALL';
     let currentHistoryFilter = 'ALL';
     let pendingAction = null;
