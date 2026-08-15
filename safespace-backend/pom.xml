@@ -78,6 +78,11 @@
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-crypto</artifactId>
 		</dependency>
+		<!-- Java Mail Starter — Email notifications via Brevo SMTP -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
 		<!-- Apache POI — Excel file parsing for bulk user import -->
 		<dependency>
 			<groupId>org.apache.poi</groupId>

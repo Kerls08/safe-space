@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 public class CredentialService {
 
     private final UserRepository userRepository;
+    private final EmailService emailService;
 
     private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder(12);
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -175,6 +176,9 @@ public class CredentialService {
 
         userRepository.save(user);
 
+        // Send Welcome & Credential email via Brevo SMTP (async)
+        emailService.sendWelcomeEmail(user.getEmail(), user.getFullName(), user.getUsername(), rawPassword);
+
         log.info("User registered: institutionalId={}, username={}, role={}",
                 user.getInstitutionalId(), user.getUsername(), user.getRole());
 
@@ -270,6 +274,9 @@ public class CredentialService {
         user.setLockedUntil(null);
         userRepository.save(user);
 
+        // Send Password Reset email via Brevo SMTP (async)
+        emailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(), user.getUsername(), rawPassword);
+
         log.info("Password reset by admin: username={}", user.getUsername());
 
         return RegisterUserResponse.builder()
@@ -280,6 +287,28 @@ public class CredentialService {
                 .role(user.getRole())
                 .message("Password reset. User must change on next login.")
                 .build();
+    }
+
+    @Transactional
+    public Map<String, String> resendWelcomeEmail(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("User not found: " + username));
+
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            throw new IllegalArgumentException("User '" + username + "' has no email address configured.");
+        }
+
+        String rawPassword = generatePassword();
+        user.setPasswordHash(ENCODER.encode(rawPassword));
+        user.setPasswordChanged(false);
+        user.setForcePasswordChange(true);
+        userRepository.save(user);
+
+        emailService.sendWelcomeEmail(user.getEmail(), user.getFullName(), user.getUsername(), rawPassword);
+        log.info("Welcome email resent by admin for username={}", user.getUsername());
+
+        return Map.of("message", "Welcome email with new credentials dispatched to " + user.getEmail(),
+                "email", user.getEmail());
     }
 
     // ── 5b. Self-Service Profile Update ──

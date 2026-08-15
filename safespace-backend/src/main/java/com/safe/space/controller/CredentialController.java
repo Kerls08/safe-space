@@ -181,6 +181,14 @@ public class CredentialController {
         return ResponseEntity.ok(credentialService.resetPassword(username));
     }
 
+    /**
+     * Resend welcome email with temporary credentials via Brevo.
+     */
+    @PostMapping("/users/{username}/resend-welcome")
+    public ResponseEntity<Map<String, String>> resendWelcomeEmail(@PathVariable String username) {
+        return ResponseEntity.ok(credentialService.resendWelcomeEmail(username));
+    }
+
     // ── Analytics ──
 
     /**
