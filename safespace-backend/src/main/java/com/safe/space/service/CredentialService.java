@@ -157,7 +157,7 @@ public class CredentialService {
             username = request.getInstitutionalId() + "-" + RANDOM.nextInt(1000);
         }
 
-        String rawPassword = generatePassword();
+        String rawPassword = generateDefaultPassword(request.getFullName(), request.getInstitutionalId());
         String role = normalizeRole(request.getRole());
 
         User user = User.builder()
@@ -266,7 +266,7 @@ public class CredentialService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new NoSuchElementException("User not found: " + username));
 
-        String rawPassword = generatePassword();
+        String rawPassword = generateDefaultPassword(user.getFullName(), user.getInstitutionalId());
         user.setPasswordHash(ENCODER.encode(rawPassword));
         user.setPasswordChanged(false);
         user.setForcePasswordChange(true);
@@ -298,7 +298,7 @@ public class CredentialService {
             throw new IllegalArgumentException("User '" + username + "' has no email address configured.");
         }
 
-        String rawPassword = generatePassword();
+        String rawPassword = generateDefaultPassword(user.getFullName(), user.getInstitutionalId());
         user.setPasswordHash(ENCODER.encode(rawPassword));
         user.setPasswordChanged(false);
         user.setForcePasswordChange(true);
@@ -441,13 +441,59 @@ public class CredentialService {
         };
     }
 
-    private String generatePassword() {
-        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
-        StringBuilder sb = new StringBuilder(GENERATED_PASSWORD_LENGTH);
-        for (int i = 0; i < GENERATED_PASSWORD_LENGTH; i++) {
-            sb.append(chars.charAt(RANDOM.nextInt(chars.length())));
+    public String generateDefaultPassword(String fullName, String institutionalId) {
+        String cleanLastName = "User";
+        char firstInitial = 'U';
+
+        if (fullName != null && !fullName.isBlank()) {
+            String[] parts = fullName.trim().split("\\s+");
+            String firstPart = parts[0].replaceAll("[^a-zA-Z]", "");
+            if (!firstPart.isEmpty()) {
+                firstInitial = Character.toUpperCase(firstPart.charAt(0));
+            }
+
+            String lastPart = parts[parts.length - 1].replaceAll("[^a-zA-Z0-9]", "");
+            if (!lastPart.isEmpty()) {
+                cleanLastName = Character.toUpperCase(lastPart.charAt(0)) +
+                        (lastPart.length() > 1 ? lastPart.substring(1).toLowerCase() : "");
+            }
         }
-        return sb.toString();
+
+        String digitsOnly = (institutionalId != null) ? institutionalId.replaceAll("[^0-9]", "") : "";
+        String last4Id;
+        if (digitsOnly.length() >= 4) {
+            last4Id = digitsOnly.substring(digitsOnly.length() - 4);
+        } else if (!digitsOnly.isEmpty()) {
+            last4Id = String.format("%4s", digitsOnly).replace(' ', '0');
+        } else if (institutionalId != null && !institutionalId.isBlank()) {
+            String alphaNum = institutionalId.replaceAll("[^a-zA-Z0-9]", "");
+            if (alphaNum.length() >= 4) {
+                last4Id = alphaNum.substring(alphaNum.length() - 4);
+            } else {
+                last4Id = String.format("%4s", alphaNum).replace(' ', '0');
+            }
+        } else {
+            last4Id = "2026";
+        }
+
+        // Base pattern from Name & ID details: e.g. CruzJ@0452
+        StringBuilder base = new StringBuilder();
+        base.append(cleanLastName).append(firstInitial).append("@").append(last4Id);
+
+        while (base.length() < MIN_PASSWORD_LENGTH) {
+            base.append("0");
+        }
+
+        // Generate 4-character high-entropy cryptographic salt (upper, lower, digit, symbol)
+        String saltPool = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%^&*";
+        StringBuilder salt = new StringBuilder();
+        salt.append("#");
+        for (int i = 0; i < 4; i++) {
+            salt.append(saltPool.charAt(RANDOM.nextInt(saltPool.length())));
+        }
+
+        // Result e.g. CruzJ@0452#k9X!
+        return base.toString() + salt.toString();
     }
 
     private UserProfileResponse toProfile(User u) {
