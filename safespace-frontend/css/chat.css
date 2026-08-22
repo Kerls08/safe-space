@@ -260,6 +260,15 @@
   height: 100%;
 }
 
+/* Chat view container — flex column filling chat-main */
+.chat-view {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
 /* Welcome state */
 .chat-welcome {
   display: flex;
@@ -987,6 +996,7 @@
     display: flex;
     position: static;
     height: calc(100vh - 3.5rem);
+    height: calc(100dvh - 3.5rem);
   }
 
   /* Show the back button in chat header on mobile */
@@ -1027,6 +1037,11 @@
 
   .chat-input-container {
     padding: 0.375rem 0.375rem 0.375rem 0.75rem;
+  }
+
+  /* Prevent iOS Safari auto-zoom on input focus (must be >= 16px) */
+  .chat-input-container textarea {
+    font-size: 16px;
   }
 
   /* Hide the privacy note on mobile to save space */
