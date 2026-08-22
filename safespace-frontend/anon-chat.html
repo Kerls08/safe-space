@@ -67,7 +67,7 @@
         <!-- Chat Header -->
         <div class="chat-header" id="chatHeader">
           <div class="chat-header-left">
-            <button class="mobile-sidebar-toggle" onclick="toggleMobileSidebar()" style="display:none;">
+            <button class="mobile-back-btn" onclick="mobileBackToChats()" title="Back to chats">
               <i class="fas fa-arrow-left"></i>
             </button>
             <div class="chat-header-avatar" id="headerAvatar"><i class="fas fa-user-shield"></i></div>
@@ -442,8 +442,8 @@
       const chatView = document.getElementById('chatView');
       chatView.style.display = 'flex';
 
-      // Hide mobile sidebar
-      document.getElementById('chatSidebar').classList.remove('mobile-open');
+      // Mobile: switch to chat view
+      document.getElementById('chatLayout').classList.add('mobile-chat-active');
 
       // Find session
       const session = sessions.find(s => s.sessionId === sessionId);
@@ -717,11 +717,11 @@
       } catch (e) { alert('Error closing session: ' + e.message); }
     }
 
-    // ── Mobile Sidebar ──
-    function toggleMobileSidebar() {
-      document.getElementById('chatSidebar').classList.toggle('mobile-open');
+    // ── Mobile Navigation ──
+    function mobileBackToChats() {
+      document.getElementById('chatLayout').classList.remove('mobile-chat-active');
+      // Optionally deselect current session so sidebar shows as "home"
     }
-    document.getElementById('mobileSidebarToggle')?.addEventListener('click', toggleMobileSidebar);
 
     // ── Helpers ──
     function autoResizeTextarea(el) {

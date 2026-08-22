@@ -1,4 +1,7 @@
 {
   "name": "safe-space",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
 }
