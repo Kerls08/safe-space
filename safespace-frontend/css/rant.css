@@ -7,6 +7,8 @@
   min-height: 100vh;
   background: linear-gradient(145deg, #f0fdf4 0%, #ecfdf5 30%, #f0f9ff 60%, #faf5ff 100%);
   padding-top: 3.5rem;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 /* ── Welcome Banner ── */
@@ -839,12 +841,29 @@
   .rant-welcome h1 { font-size: 1.15rem; }
   .rant-welcome p { font-size: 0.78rem; }
 
-  .rant-tabs { border-radius: 0; padding: 0 0.5rem; }
+  .rant-tabs {
+    border-radius: 0;
+    padding: 0 0.5rem;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
   .rant-tab { padding: 0.7rem 0.5rem; font-size: 0.72rem; gap: 0.2rem; }
 
-  .rant-content { padding: 0 0.75rem; margin: 1rem auto; }
+  .rant-content {
+    padding: 0 0.75rem;
+    margin: 1rem auto;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
 
-  .share-card { padding: 1.15rem; border-radius: 0.85rem; }
+  .share-card {
+    padding: 1.15rem;
+    border-radius: 0.85rem;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
   .share-card h2 { font-size: 1rem; }
   .share-textarea { min-height: 100px; font-size: 0.85rem; padding: 0.75rem; }
 
@@ -871,6 +890,44 @@
   .kit-card { padding: 1rem; }
   .kit-timer { padding: 1.25rem; }
   .timer-circle { width: 100px; height: 100px; font-size: 1.6rem; }
+
+  /* ── Resource cards: fit within mobile viewport ── */
+  .resource-card {
+    padding: 0.6rem 0.75rem;
+    gap: 0.6rem;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .resource-card-body {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .resource-card-desc {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    font-size: 0.68rem;
+    line-height: 1.4;
+  }
+
+  .resource-card-title {
+    font-size: 0.78rem;
+  }
+
+  .resource-card-icon {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.85rem;
+  }
+
+  /* Student resource grid inside share-card */
+  #studentResourceGrid {
+    max-width: 100%;
+    overflow: hidden;
+  }
 }
 
 @media (max-width: 380px) {
@@ -878,6 +935,7 @@
   .emotion-chip { padding: 0.35rem 0.5rem; font-size: 0.68rem; }
   .rant-tab { font-size: 0.65rem; padding: 0.6rem 0.3rem; }
 }
+
 
 /* ── Sensitive Content Warning ── */
 .sensitive-warning {
@@ -1256,10 +1314,20 @@
 @media (max-width: 768px) {
   .resource-linker-grid {
     gap: 0.4rem;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .resource-card {
     padding: 0.6rem 0.75rem;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .resource-card-body {
+    min-width: 0;
+    overflow: hidden;
   }
 
   .resource-card-icon {
@@ -1273,6 +1341,9 @@
   }
 
   .resource-card-desc {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
     font-size: 0.68rem;
   }
 
