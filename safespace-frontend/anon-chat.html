@@ -792,27 +792,6 @@
     // ── Boot ──
     init();
     checkCounselorAvailability();
-
-    // ── Mobile keyboard handling ──
-    // When the virtual keyboard opens on mobile, adjust the chat layout
-    // height so the input stays visible at the bottom of the visible area.
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', () => {
-        const chatMain = document.getElementById('chatMain');
-        if (!chatMain || window.innerWidth > 768) return;
-        const vh = window.visualViewport.height;
-        const navHeight = 56; // 3.5rem navbar
-        chatMain.style.height = (vh - navHeight) + 'px';
-      });
-    }
-
-    // Scroll messages to bottom when input is focused (mobile)
-    document.getElementById('messageInput').addEventListener('focus', () => {
-      setTimeout(() => {
-        const msgContainer = document.getElementById('chatMessages');
-        if (msgContainer) msgContainer.scrollTop = msgContainer.scrollHeight;
-      }, 300);
-    });
   </script>
 </body>
 </html>

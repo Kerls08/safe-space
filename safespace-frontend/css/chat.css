@@ -958,14 +958,22 @@
   /* On mobile: single-column layout, sidebar and main are stacked views */
   .chat-layout {
     grid-template-columns: 1fr;
-    height: calc(100vh - 3.5rem);
-    position: relative;
+    position: fixed;
+    top: 3.5rem;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: auto;
+    margin-top: 0;
+    width: 100%;
+    z-index: 10;
   }
 
   /* ── Sidebar: visible by default on mobile (full-width panel) ── */
   .chat-sidebar {
     display: flex;
-    position: static;
+    position: absolute;
+    inset: 0;
     width: 100%;
     max-width: none;
     height: 100%;
@@ -979,12 +987,12 @@
   /* ── Chat main: hidden by default on mobile ── */
   .chat-main {
     display: none;
-    width: 100%;
     position: absolute;
     inset: 0;
+    width: 100%;
+    height: 100%;
     z-index: 10;
     background: var(--gray-50, #f8fafc);
-    height: 100%;
   }
 
   /* When a chat is active on mobile, show chat and hide sidebar */
@@ -994,9 +1002,9 @@
 
   .chat-layout.mobile-chat-active .chat-main {
     display: flex;
-    position: static;
-    height: calc(100vh - 3.5rem);
-    height: calc(100dvh - 3.5rem);
+    position: absolute;
+    inset: 0;
+    height: 100%;
   }
 
   /* Show the back button in chat header on mobile */
