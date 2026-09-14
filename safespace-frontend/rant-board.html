@@ -154,34 +154,26 @@
       <!-- TAB 4: Calm-Down Kit -->
       <div class="tab-panel" id="panelCalm">
         <div class="kit-grid">
-          <div class="kit-card" data-kit="breathing" onclick="startKit('breathing')">
+          <div class="kit-card" data-kit="breathing" onclick="openKitModal('breathing')">
             <div class="kit-icon breathing"><i class="fas fa-wind"></i></div>
             <h4>Box Breathing</h4>
             <p>Inhale 4s · Hold 4s · Exhale 4s · Hold 4s</p>
           </div>
-          <div class="kit-card" data-kit="grounding" onclick="startKit('grounding')">
+          <div class="kit-card" data-kit="grounding" onclick="openKitModal('grounding')">
             <div class="kit-icon grounding"><i class="fas fa-hand-holding-heart"></i></div>
             <h4>5-4-3-2-1 Grounding</h4>
             <p>Engage all five senses to anchor yourself</p>
           </div>
-          <div class="kit-card" data-kit="muscle" onclick="startKit('muscle')">
+          <div class="kit-card" data-kit="muscle" onclick="openKitModal('muscle')">
             <div class="kit-icon muscle"><i class="fas fa-dumbbell"></i></div>
             <h4>Progressive Relaxation</h4>
             <p>Tense and release muscle groups</p>
           </div>
-          <div class="kit-card" data-kit="journal" onclick="startKit('journal')">
+          <div class="kit-card" data-kit="journal" onclick="openKitModal('journal')">
             <div class="kit-icon journal"><i class="fas fa-pen-fancy"></i></div>
             <h4>Micro Journal</h4>
             <p>Write 3 things you're grateful for right now</p>
           </div>
-        </div>
-        <div class="kit-timer" id="kitTimer">
-          <div class="timer-circle" id="timerCircle">4</div>
-          <div class="timer-instruction" id="timerInstruction">Inhale</div>
-          <div class="timer-sub" id="timerSub">Breathe in slowly through your nose</div>
-          <button class="btn-share" style="margin:1rem auto 0;" onclick="stopKit()">
-            <i class="fas fa-stop"></i> Stop Exercise
-          </button>
         </div>
       </div>
 
@@ -200,6 +192,36 @@
 
     </div><!-- .rant-content -->
   </div><!-- .rant-layout -->
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- CALM-DOWN KIT MODAL -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="kit-modal-overlay" id="kitModalOverlay" onclick="handleKitOverlayClick(event)">
+    <div class="kit-modal" id="kitModal" role="dialog" aria-modal="true" aria-labelledby="kitModalTitle">
+      <div class="kit-modal-header">
+        <div class="kit-modal-header-info">
+          <div class="kit-modal-badge" id="kitModalBadge">
+            <i class="fas fa-spa" id="kitModalIcon"></i>
+          </div>
+          <div>
+            <h3 id="kitModalTitle">Calm-Down Exercise</h3>
+            <p id="kitModalSubtitle">Follow along at your own pace</p>
+          </div>
+        </div>
+        <button class="kit-modal-close" onclick="closeKitModal()" aria-label="Close exercise">
+          <i class="fas fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="kit-modal-body" id="kitModalBody">
+        <!-- Injected dynamically -->
+      </div>
+
+      <div class="kit-modal-footer" id="kitModalFooter">
+        <!-- Injected dynamically -->
+      </div>
+    </div>
+  </div>
 
   <script>
     const API_BASE = window.SAFE_SPACE_API_URL || (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:8080/api' : 'https://safespace-backend-ws0m.onrender.com/api');
@@ -572,76 +594,453 @@
       return el;
     }
 
-    // ── Calm-Down Kit ──
-    const BREATHING_STEPS = [
-      { text: 'Inhale', sub: 'Breathe in slowly through your nose', duration: 4 },
-      { text: 'Hold', sub: 'Keep holding gently', duration: 4 },
-      { text: 'Exhale', sub: 'Breathe out slowly through your mouth', duration: 4 },
-      { text: 'Hold', sub: 'Rest before the next cycle', duration: 4 }
-    ];
-    const GROUNDING_STEPS = [
-      { text: '5 things you SEE', sub: 'Look around and name them silently', duration: 10 },
-      { text: '4 things you TOUCH', sub: 'Feel textures around you', duration: 8 },
-      { text: '3 things you HEAR', sub: 'Listen to sounds near and far', duration: 8 },
-      { text: '2 things you SMELL', sub: 'Notice any scents', duration: 6 },
-      { text: '1 thing you TASTE', sub: 'Focus on taste in your mouth', duration: 6 }
-    ];
-    let kitStepIndex = 0;
-    let kitSeconds = 0;
-    let kitSteps = [];
+    // ══════════════════════════════════════════════
+    //  CALM-DOWN KIT MODAL CONTROLLER
+    // ══════════════════════════════════════════════
+    let activeKit = null;
+    let kitTimerId = null;
+    let isKitPaused = false;
+    let kitStep = 0;
+    let kitCountdown = 0;
+    let breathingCycle = 1;
 
-    function startKit(type) {
+    const BOX_BREATHING_DATA = [
+      { name: 'Inhale', sub: 'Breathe in slowly through your nose...', duration: 4, phaseClass: 'inhale', sphereText: 'Inhale' },
+      { name: 'Hold', sub: 'Hold your breath gently. Rest in stillness...', duration: 4, phaseClass: 'hold', sphereText: 'Hold' },
+      { name: 'Exhale', sub: 'Release slowly and completely through your mouth...', duration: 4, phaseClass: 'exhale', sphereText: 'Exhale' },
+      { name: 'Hold', sub: 'Pause quietly before the next breath begins...', duration: 4, phaseClass: 'hold', sphereText: 'Rest' }
+    ];
+
+    const GROUNDING_DATA = [
+      { count: 5, sense: 'SEE', icon: '👁️', prompt: '5 things you can SEE', desc: 'Look around. Notice colors, shadows, a pen, light shining on a wall, or small details.', items: ['1st thing you see', '2nd thing you see', '3rd thing you see', '4th thing you see', '5th thing you see'] },
+      { count: 4, sense: 'TOUCH', icon: '✋', prompt: '4 things you can TOUCH', desc: 'Notice physical sensations: the fabric of your clothes, feet on the floor, or the cool desk.', items: ['1st texture', '2nd texture', '3rd texture', '4th texture'] },
+      { count: 3, sense: 'HEAR', icon: '👂', prompt: '3 things you can HEAR', desc: 'Listen carefully: distant conversation, the hum of an air conditioner, birds, or your breathing.', items: ['1st sound', '2nd sound', '3rd sound'] },
+      { count: 2, sense: 'SMELL', icon: '👃', prompt: '2 things you can SMELL', desc: 'Take a gentle breath in: notice any soap, fresh air, coffee, paper, or clothing.', items: ['1st scent', '2nd scent'] },
+      { count: 1, sense: 'TASTE', icon: '👅', prompt: '1 thing you can TASTE', desc: 'Notice the lingering taste of a drink, food, mint, or the natural taste inside your mouth.', items: ['1 taste'] }
+    ];
+
+    const PMR_DATA = [
+      { target: 'Hands & Forearms', icon: 'fa-hand', tenseTip: 'Make tight fists with both hands. Squeeze hard and feel the tension build in your forearms.', releaseTip: 'Release your fists completely. Let your fingers uncurl and feel the warmth and relief.' },
+      { target: 'Shoulders & Neck', icon: 'fa-user-tie', tenseTip: 'Shrug your shoulders up toward your ears. Hold tight and feel the strain in your neck.', releaseTip: 'Drop your shoulders all the way down. Let gravity take over and feel all heaviness vanish.' },
+      { target: 'Face & Forehead', icon: 'fa-face-smile', tenseTip: 'Scrunch up your eyes, wrinkle your forehead, and clench your jaw gently. Hold tight.', releaseTip: 'Soften your forehead, unclamp your jaw, and let all facial muscles smooth out.' },
+      { target: 'Chest & Stomach', icon: 'fa-lungs', tenseTip: 'Take a deep breath and tighten your core/abdominal muscles firmly. Hold it in.', releaseTip: 'Exhale completely. Let your belly relax and soften into pure ease.' },
+      { target: 'Feet & Calves', icon: 'fa-shoe-prints', tenseTip: 'Point your toes downwards and tense your calf muscles tight. Feel the tightness.', releaseTip: 'Release your feet and toes. Feel the tension drain away into the ground.' }
+    ];
+
+    /**
+     * Open the Calm-Down Kit Modal for a specific exercise.
+     */
+    function openKitModal(type) {
+      activeKit = type;
+      isKitPaused = false;
+      kitStep = 0;
+      breathingCycle = 1;
+      clearInterval(kitTimerId);
+
       document.querySelectorAll('.kit-card').forEach(c => c.classList.remove('active-kit'));
-      document.querySelector(`[data-kit="${type}"]`).classList.add('active-kit');
+      const activeCard = document.querySelector(`[data-kit="${type}"]`);
+      if (activeCard) activeCard.classList.add('active-kit');
 
-      if (type === 'breathing') kitSteps = BREATHING_STEPS;
-      else if (type === 'grounding') kitSteps = GROUNDING_STEPS;
-      else if (type === 'muscle') {
-        kitSteps = [
-          { text: 'Tense your HANDS', sub: 'Make fists, squeeze tight', duration: 5 },
-          { text: 'Release', sub: 'Let go and feel the relief', duration: 5 },
-          { text: 'Tense your SHOULDERS', sub: 'Shrug them up to your ears', duration: 5 },
-          { text: 'Release', sub: 'Drop them down gently', duration: 5 },
-          { text: 'Tense your FACE', sub: 'Scrunch everything tight', duration: 5 },
-          { text: 'Release', sub: 'Relax every muscle', duration: 5 }
-        ];
+      const overlay = document.getElementById('kitModalOverlay');
+      const badge = document.getElementById('kitModalBadge');
+      const icon = document.getElementById('kitModalIcon');
+      const title = document.getElementById('kitModalTitle');
+      const subtitle = document.getElementById('kitModalSubtitle');
+
+      badge.className = 'kit-modal-badge ' + type;
+
+      if (type === 'breathing') {
+        icon.className = 'fas fa-wind';
+        title.textContent = 'Box Breathing (4-4-4-4)';
+        subtitle.textContent = 'Calm your nervous system and regain mental composure';
+        setupBreathingUI();
+      } else if (type === 'grounding') {
+        icon.className = 'fas fa-hand-holding-heart';
+        title.textContent = '5-4-3-2-1 Sensory Grounding';
+        subtitle.textContent = 'Anchor your awareness in the physical environment right now';
+        setupGroundingUI();
+      } else if (type === 'muscle') {
+        icon.className = 'fas fa-dumbbell';
+        title.textContent = 'Progressive Muscle Relaxation';
+        subtitle.textContent = 'Consciously isolate, tense, and release physical stress';
+        setupPmrUI();
       } else if (type === 'journal') {
-        document.getElementById('kitTimer').classList.add('active');
-        document.getElementById('timerCircle').textContent = '✍️';
-        document.getElementById('timerInstruction').textContent = 'Micro Journal';
-        document.getElementById('timerSub').innerHTML = 'Write 3 things you\'re grateful for:<br><textarea style="width:100%;min-height:100px;margin-top:0.5rem;padding:0.75rem;border:1.5px solid #e5e7eb;border-radius:0.5rem;font-family:Inter,sans-serif;font-size:0.85rem;" placeholder="1. \n2. \n3. "></textarea>';
-        return;
+        icon.className = 'fas fa-pen-fancy';
+        title.textContent = 'Micro Gratitude Journal';
+        subtitle.textContent = 'Gently shift perspective by noting 3 meaningful positives';
+        setupJournalUI();
       }
 
-      kitStepIndex = 0;
-      kitSeconds = kitSteps[0].duration;
-      updateTimerDisplay();
-      document.getElementById('kitTimer').classList.add('active');
-
-      clearInterval(kitInterval);
-      kitInterval = setInterval(() => {
-        kitSeconds--;
-        if (kitSeconds <= 0) {
-          kitStepIndex = (kitStepIndex + 1) % kitSteps.length;
-          kitSeconds = kitSteps[kitStepIndex].duration;
-        }
-        updateTimerDisplay();
-      }, 1000);
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
     }
 
-    function updateTimerDisplay() {
-      const step = kitSteps[kitStepIndex];
-      document.getElementById('timerCircle').textContent = kitSeconds;
-      document.getElementById('timerInstruction').textContent = step.text;
-      document.getElementById('timerSub').textContent = step.sub;
+    // Alias startKit to openKitModal for full backward compatibility
+    function startKit(type) {
+      openKitModal(type);
     }
 
-    function stopKit() {
-      clearInterval(kitInterval);
-      document.getElementById('kitTimer').classList.remove('active');
+    /**
+     * Close the Calm-Down Kit Modal.
+     */
+    function closeKitModal() {
+      clearInterval(kitTimerId);
+      activeKit = null;
+      isKitPaused = false;
+      const overlay = document.getElementById('kitModalOverlay');
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
       document.querySelectorAll('.kit-card').forEach(c => c.classList.remove('active-kit'));
       showToast('Great job taking care of yourself 💚');
     }
+
+    function handleKitOverlayClick(e) {
+      if (e.target.id === 'kitModalOverlay') {
+        closeKitModal();
+      }
+    }
+
+    // ── 1. Box Breathing Controller ──
+    function setupBreathingUI() {
+      const body = document.getElementById('kitModalBody');
+      const footer = document.getElementById('kitModalFooter');
+      const stepData = BOX_BREATHING_DATA[0];
+      kitCountdown = stepData.duration;
+
+      body.innerHTML = `
+        <div class="breathing-sphere-wrap">
+          <div class="breathing-ring-outer"></div>
+          <div class="breathing-sphere ${stepData.phaseClass}" id="breathingSphere">
+            <span class="breathing-count" id="breathingCount">${kitCountdown}</span>
+            <span class="breathing-label" id="breathingSphereLabel">${stepData.sphereText}</span>
+          </div>
+        </div>
+        <div class="kit-phase-instruction" id="breathingPhaseName">${stepData.name}</div>
+        <div class="kit-phase-sub" id="breathingPhaseSub">${stepData.sub}</div>
+        <div style="display:flex;justify-content:center;margin-bottom:0.75rem;">
+          <span style="background:#eff6ff;color:#1d4ed8;padding:0.25rem 0.85rem;border-radius:999px;font-size:0.78rem;font-weight:700;" id="breathingCycleCounter">
+            <i class="fas fa-rotate"></i> Cycle ${breathingCycle}
+          </span>
+        </div>
+        <div class="box-phases-bar">
+          <div class="box-phase-chip active" id="chip-0"><i class="fas fa-arrow-up"></i> Inhale 4s</div>
+          <div class="box-phase-chip" id="chip-1"><i class="fas fa-pause"></i> Hold 4s</div>
+          <div class="box-phase-chip" id="chip-2"><i class="fas fa-arrow-down"></i> Exhale 4s</div>
+          <div class="box-phase-chip" id="chip-3"><i class="fas fa-pause"></i> Hold 4s</div>
+        </div>
+      `;
+
+      footer.innerHTML = `
+        <button class="btn-kit-secondary" onclick="closeKitModal()">
+          <i class="fas fa-check"></i> Finished
+        </button>
+        <button class="btn-kit-primary" id="btnKitPause" onclick="toggleBreathingPause()">
+          <i class="fas fa-pause"></i> Pause
+        </button>
+      `;
+
+      startBreathingTimer();
+    }
+
+    function startBreathingTimer() {
+      clearInterval(kitTimerId);
+      kitTimerId = setInterval(() => {
+        if (isKitPaused) return;
+
+        kitCountdown--;
+        const countEl = document.getElementById('breathingCount');
+        if (countEl) countEl.textContent = kitCountdown;
+
+        if (kitCountdown <= 0) {
+          kitStep = (kitStep + 1) % 4;
+          if (kitStep === 0) {
+            breathingCycle++;
+            const cycleEl = document.getElementById('breathingCycleCounter');
+            if (cycleEl) cycleEl.innerHTML = `<i class="fas fa-rotate"></i> Cycle ${breathingCycle}`;
+          }
+
+          const cur = BOX_BREATHING_DATA[kitStep];
+          kitCountdown = cur.duration;
+
+          const sphere = document.getElementById('breathingSphere');
+          const sphereLabel = document.getElementById('breathingSphereLabel');
+          const phaseName = document.getElementById('breathingPhaseName');
+          const phaseSub = document.getElementById('breathingPhaseSub');
+
+          if (sphere) {
+            sphere.className = 'breathing-sphere ' + cur.phaseClass;
+            sphereLabel.textContent = cur.sphereText;
+            if (countEl) countEl.textContent = kitCountdown;
+          }
+          if (phaseName) phaseName.textContent = cur.name;
+          if (phaseSub) phaseSub.textContent = cur.sub;
+
+          for (let i = 0; i < 4; i++) {
+            const chip = document.getElementById('chip-' + i);
+            if (chip) chip.classList.toggle('active', i === kitStep);
+          }
+        }
+      }, 1000);
+    }
+
+    function toggleBreathingPause() {
+      isKitPaused = !isKitPaused;
+      const btn = document.getElementById('btnKitPause');
+      if (btn) {
+        btn.innerHTML = isKitPaused ? '<i class="fas fa-play"></i> Resume' : '<i class="fas fa-pause"></i> Pause';
+      }
+    }
+
+    // ── 2. 5-4-3-2-1 Grounding Controller ──
+    let groundingItemChecks = {};
+
+    function setupGroundingUI() {
+      groundingItemChecks = {};
+      renderGroundingStepContent();
+    }
+
+    function renderGroundingStepContent() {
+      const body = document.getElementById('kitModalBody');
+      const footer = document.getElementById('kitModalFooter');
+      const cur = GROUNDING_DATA[kitStep];
+      const isLastStep = kitStep === GROUNDING_DATA.length - 1;
+
+      // Dots header
+      let dotsHtml = '<div class="grounding-progress-bar">';
+      GROUNDING_DATA.forEach((d, idx) => {
+        let cls = 'grounding-dot';
+        if (idx === kitStep) cls += ' active';
+        else if (idx < kitStep) cls += ' completed';
+        dotsHtml += `<div class="${cls}" onclick="jumpToGroundingStep(${idx})">${idx < kitStep ? '<i class="fas fa-check"></i>' : d.count}</div>`;
+      });
+      dotsHtml += '</div>';
+
+      // Checklist chips
+      let chipsHtml = '<div class="grounding-chips">';
+      cur.items.forEach((item, itemIdx) => {
+        const key = `${kitStep}-${itemIdx}`;
+        const isChecked = groundingItemChecks[key];
+        chipsHtml += `<div class="grounding-chip ${isChecked ? 'checked' : ''}" onclick="toggleGroundingCheck(${kitStep}, ${itemIdx})">
+          ${isChecked ? '<i class="fas fa-check-circle"></i> ' : ''}${item}
+        </div>`;
+      });
+      chipsHtml += '</div>';
+
+      body.innerHTML = `
+        ${dotsHtml}
+        <div class="grounding-card-active">
+          <div class="grounding-sense-icon">${cur.icon}</div>
+          <div class="kit-phase-instruction" style="color:#92400e;">${cur.prompt}</div>
+          <div class="kit-phase-sub" style="color:#b45309;margin-bottom:0.75rem;">${cur.desc}</div>
+          <div style="font-size:0.78rem;color:#78350f;margin-bottom:0.5rem;font-weight:600;">Tap items as you notice them:</div>
+          ${chipsHtml}
+        </div>
+        <p style="font-size:0.78rem;color:#94a3b8;">Take your time. There's no rush to move on.</p>
+      `;
+
+      footer.innerHTML = `
+        <button class="btn-kit-secondary" onclick="closeKitModal()">
+          <i class="fas fa-times"></i> Close
+        </button>
+        <button class="btn-kit-primary" onclick="${isLastStep ? 'finishGrounding()' : 'advanceGroundingStep()'}">
+          ${isLastStep ? '<i class="fas fa-heart"></i> Finish Grounding' : 'Next Sense <i class="fas fa-arrow-right"></i>'}
+        </button>
+      `;
+    }
+
+    function toggleGroundingCheck(stepIdx, itemIdx) {
+      const key = `${stepIdx}-${itemIdx}`;
+      groundingItemChecks[key] = !groundingItemChecks[key];
+      renderGroundingStepContent();
+    }
+
+    function advanceGroundingStep() {
+      if (kitStep < GROUNDING_DATA.length - 1) {
+        kitStep++;
+        renderGroundingStepContent();
+      }
+    }
+
+    function jumpToGroundingStep(idx) {
+      kitStep = idx;
+      renderGroundingStepContent();
+    }
+
+    function finishGrounding() {
+      closeKitModal();
+      showToast('Wonderful work! You are grounded and present in this moment 💚');
+    }
+
+    // ── 3. Progressive Muscle Relaxation Controller ──
+    let pmrPhase = 'tense'; // 'tense' or 'release'
+    let pmrSeconds = 5;
+
+    function setupPmrUI() {
+      kitStep = 0;
+      pmrPhase = 'tense';
+      pmrSeconds = 5;
+      renderPmrContent();
+      startPmrTimer();
+    }
+
+    function renderPmrContent() {
+      const body = document.getElementById('kitModalBody');
+      const footer = document.getElementById('kitModalFooter');
+      const cur = PMR_DATA[kitStep];
+      const isTense = pmrPhase === 'tense';
+      const isLastStep = kitStep === PMR_DATA.length - 1 && !isTense;
+
+      body.innerHTML = `
+        <div style="font-size:0.8rem;color:#7c3aed;font-weight:700;margin-bottom:0.5rem;">
+          Muscle Group ${kitStep + 1} of ${PMR_DATA.length}
+        </div>
+        <div class="kit-phase-instruction" style="color:#4c1d95;">
+          <i class="fas ${cur.icon}"></i> ${cur.target}
+        </div>
+
+        <div class="pmr-badge-wrap">
+          <span class="pmr-phase-pill ${isTense ? 'tense' : 'release'}">
+            ${isTense ? '🔥 Tense (Hold Firm)' : '🌱 Release & Let Go'}
+          </span>
+        </div>
+
+        <div class="pmr-circle" id="pmrCircle">
+          ${pmrSeconds}
+        </div>
+
+        <div class="kit-phase-sub" style="max-width:420px;margin:0.5rem auto 1rem;font-size:0.92rem;color:#334155;">
+          ${isTense ? cur.tenseTip : cur.releaseTip}
+        </div>
+      `;
+
+      footer.innerHTML = `
+        <button class="btn-kit-secondary" onclick="closeKitModal()">
+          <i class="fas fa-times"></i> Close
+        </button>
+        <button class="btn-kit-primary" onclick="advancePmrMuscle()">
+          ${isLastStep ? '<i class="fas fa-check"></i> Complete' : 'Next Muscle Group <i class="fas fa-arrow-right"></i>'}
+        </button>
+      `;
+    }
+
+    function startPmrTimer() {
+      clearInterval(kitTimerId);
+      kitTimerId = setInterval(() => {
+        if (isKitPaused) return;
+
+        pmrSeconds--;
+        const circle = document.getElementById('pmrCircle');
+        if (circle) circle.textContent = pmrSeconds;
+
+        if (pmrSeconds <= 0) {
+          if (pmrPhase === 'tense') {
+            pmrPhase = 'release';
+            pmrSeconds = 6;
+          } else {
+            if (kitStep < PMR_DATA.length - 1) {
+              kitStep++;
+              pmrPhase = 'tense';
+              pmrSeconds = 5;
+            } else {
+              clearInterval(kitTimerId);
+              closeKitModal();
+              showToast('Complete relaxation cycle finished. Take a deep, gentle breath 🌿');
+              return;
+            }
+          }
+          renderPmrContent();
+        }
+      }, 1000);
+    }
+
+    function advancePmrMuscle() {
+      if (kitStep < PMR_DATA.length - 1) {
+        kitStep++;
+        pmrPhase = 'tense';
+        pmrSeconds = 5;
+        renderPmrContent();
+      } else {
+        clearInterval(kitTimerId);
+        closeKitModal();
+        showToast('Relaxation exercise finished 💚');
+      }
+    }
+
+    // ── 4. Micro Journal Controller ──
+    function setupJournalUI() {
+      clearInterval(kitTimerId);
+      const body = document.getElementById('kitModalBody');
+      const footer = document.getElementById('kitModalFooter');
+
+      let saved = {};
+      try {
+        saved = JSON.parse(localStorage.getItem('safespace_gratitude_latest') || '{}');
+      } catch (e) {
+        saved = {};
+      }
+
+      body.innerHTML = `
+        <div class="journal-prompts-container">
+          <div class="journal-prompt-item">
+            <label for="journalQ1"><i class="fas fa-sun" style="color:#f59e0b;"></i> 1. A small thing that brought you comfort or went okay today:</label>
+            <textarea id="journalQ1" placeholder="e.g., A warm cup of coffee, a friend sent a meme, quiet morning breeze...">${escapeHtml(saved.q1 || '')}</textarea>
+          </div>
+          <div class="journal-prompt-item">
+            <label for="journalQ2"><i class="fas fa-user-group" style="color:#ec4899;"></i> 2. A person in your life you feel thankful for, and why:</label>
+            <textarea id="journalQ2" placeholder="e.g., My classmate who shared notes, my sibling, or someone who listened...">${escapeHtml(saved.q2 || '')}</textarea>
+          </div>
+          <div class="journal-prompt-item">
+            <label for="journalQ3"><i class="fas fa-sparkles" style="color:#8b5cf6;"></i> 3. A simple physical comfort or sensation you appreciate right now:</label>
+            <textarea id="journalQ3" placeholder="e.g., Soft blanket, listening to favorite music, feeling safe in this room...">${escapeHtml(saved.q3 || '')}</textarea>
+          </div>
+        </div>
+        <p style="font-size:0.75rem;color:#94a3b8;margin-top:0.75rem;text-align:center;">
+          <i class="fas fa-lock"></i> Your reflections are stored privately on your device.
+        </p>
+      `;
+
+      footer.innerHTML = `
+        <button class="btn-kit-secondary" onclick="closeKitModal()">
+          Cancel
+        </button>
+        <button class="btn-kit-primary" style="background:#db2777;" onclick="saveMicroJournal()">
+          <i class="fas fa-heart"></i> Save Reflection
+        </button>
+      `;
+    }
+
+    function saveMicroJournal() {
+      const q1 = document.getElementById('journalQ1') ? document.getElementById('journalQ1').value.trim() : '';
+      const q2 = document.getElementById('journalQ2') ? document.getElementById('journalQ2').value.trim() : '';
+      const q3 = document.getElementById('journalQ3') ? document.getElementById('journalQ3').value.trim() : '';
+
+      if (!q1 && !q2 && !q3) {
+        showToast('Write at least one reflection before saving ✍️');
+        return;
+      }
+
+      try {
+        localStorage.setItem('safespace_gratitude_latest', JSON.stringify({
+          q1, q2, q3,
+          savedAt: new Date().toISOString()
+        }));
+      } catch (e) {
+        console.warn('Could not save to localStorage', e);
+      }
+
+      closeKitModal();
+      showToast('Reflection saved! Proud of you for taking this moment for yourself 💚');
+    }
+
+    // Keyboard support: Escape key closes modal
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const overlay = document.getElementById('kitModalOverlay');
+        if (overlay && overlay.classList.contains('active')) {
+          closeKitModal();
+        }
+      }
+    });
 
     // ── Helpers ──
     function escapeHtml(text) {
