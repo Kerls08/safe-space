@@ -60,6 +60,7 @@ safespace:
     from-name: ${MAIL_FROM_NAME:SafeSpace System}
     app-url: ${APP_URL:http://localhost:5173}
     enabled: ${MAIL_ENABLED:true}
+    api-key: ${BREVO_API_KEY:${SPRING_MAIL_PASSWORD:}}
 
 # ── Server ──
 server:

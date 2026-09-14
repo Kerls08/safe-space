@@ -1,33 +1,36 @@
 package com.safe.space.service;
 
-import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Brevo SMTP Email Dispatch Service.
+ * Brevo REST API Email Dispatch Service.
  *
- * Handles asynchronous email delivery for:
+ * Handles asynchronous transactional email delivery for:
  *   1. Account Welcome & Credential Provisioning (Default Password)
  *   2. Admin-initiated Password Reset Notifications
  *
- * Configured via application.yaml (pointing to Brevo smtp-relay.brevo.com:587).
- * Fails safely if credentials are unconfigured or mail dispatch fails.
+ * Connects via Brevo HTTP API v3 (POST https://api.brevo.com/v3/smtp/email)
+ * over standard HTTPS (Port 443), preventing cloud SMTP port blocking.
  */
 @Service
 @Slf4j
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    private static final String BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
-    @Value("${safespace.mail.from-address:noreply@safespace.edu.ph}")
+    private final HttpClient httpClient;
+
+    @Value("${safespace.mail.from-address:acoymo.kerlsan08@gmail.com}")
     private String fromAddress;
 
     @Value("${safespace.mail.from-name:SafeSpace System}")
@@ -39,11 +42,13 @@ public class EmailService {
     @Value("${safespace.mail.enabled:true}")
     private boolean mailEnabled;
 
-    @Value("${spring.mail.username:}")
-    private String mailUsername;
+    @Value("${safespace.mail.api-key:${BREVO_API_KEY:}}")
+    private String apiKey;
 
-    public EmailService(@Autowired(required = false) JavaMailSender mailSender) {
-        this.mailSender = mailSender;
+    public EmailService() {
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
     }
 
     /**
@@ -56,8 +61,7 @@ public class EmailService {
             try {
                 String subject = "Welcome to SafeSpace — Your Account Credentials";
                 String htmlBody = buildWelcomeHtml(fullName, username, tempPassword);
-                sendHtmlMail(toEmail, subject, htmlBody);
-                log.info("Welcome email sent successfully to {} ({})", username, toEmail);
+                sendBrevoMail(toEmail, fullName, subject, htmlBody);
             } catch (Exception e) {
                 log.warn("Failed to send welcome email to {} ({}): {}", username, toEmail, e.getMessage());
             }
@@ -74,8 +78,7 @@ public class EmailService {
             try {
                 String subject = "SafeSpace — Password Reset Notification";
                 String htmlBody = buildPasswordResetHtml(fullName, username, newTempPassword);
-                sendHtmlMail(toEmail, subject, htmlBody);
-                log.info("Password reset email sent successfully to {} ({})", username, toEmail);
+                sendBrevoMail(toEmail, fullName, subject, htmlBody);
             } catch (Exception e) {
                 log.warn("Failed to send password reset email to {} ({}): {}", username, toEmail, e.getMessage());
             }
@@ -93,23 +96,57 @@ public class EmailService {
             log.debug("Email sending skipped: recipient email is null/empty.");
             return false;
         }
-        if (mailSender == null || mailUsername == null || mailUsername.trim().isEmpty()) {
-            log.warn("Email service skipped for {}: SMTP username not configured (SPRING_MAIL_USERNAME missing).", toEmail);
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            log.warn("Email service skipped for {}: Brevo API key not configured (BREVO_API_KEY missing).", toEmail);
             return false;
         }
         return true;
     }
 
-    private void sendHtmlMail(String toEmail, String subject, String htmlContent) throws Exception {
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
+    private void sendBrevoMail(String toEmail, String recipientName, String subject, String htmlContent) throws Exception {
+        String displayName = (recipientName != null && !recipientName.isBlank()) ? recipientName.trim() : toEmail;
 
-        helper.setFrom(fromAddress, fromName);
-        helper.setTo(toEmail);
-        helper.setSubject(subject);
-        helper.setText(htmlContent, true);
+        String jsonBody = """
+            {
+              "sender": {
+                "name": "%s",
+                "email": "%s"
+              },
+              "to": [
+                {
+                  "email": "%s",
+                  "name": "%s"
+                }
+              ],
+              "subject": "%s",
+              "htmlContent": "%s"
+            }
+            """.formatted(
+                escapeJson(fromName),
+                escapeJson(fromAddress),
+                escapeJson(toEmail.trim()),
+                escapeJson(displayName),
+                escapeJson(subject),
+                escapeJson(htmlContent)
+        );
 
-        mailSender.send(message);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BREVO_API_URL))
+                .header("accept", "application/json")
+                .header("content-type", "application/json")
+                .header("api-key", apiKey.trim())
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody, StandardCharsets.UTF_8))
+                .timeout(Duration.ofSeconds(15))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() >= 200 && response.statusCode() < 300) {
+            log.info("Email dispatched successfully to {} via Brevo REST API (HTTP {}): {}", toEmail, response.statusCode(), response.body());
+        } else {
+            log.error("Failed to dispatch email to {} via Brevo REST API. HTTP status: {}, response body: {}",
+                    toEmail, response.statusCode(), response.body());
+        }
     }
 
     // ── HTML Template Generators ──
@@ -249,5 +286,30 @@ public class EmailService {
                    .replace(">", "&gt;")
                    .replace("\"", "&quot;")
                    .replace("'", "&#39;");
+    }
+
+    private String escapeJson(String s) {
+        if (s == null) return "";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '"' -> sb.append("\\\"");
+                case '\\' -> sb.append("\\\\");
+                case '\b' -> sb.append("\\b");
+                case '\f' -> sb.append("\\f");
+                case '\n' -> sb.append("\\n");
+                case '\r' -> sb.append("\\r");
+                case '\t' -> sb.append("\\t");
+                default -> {
+                    if (c <= 0x1F) {
+                        sb.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        sb.append(c);
+                    }
+                }
+            }
+        }
+        return sb.toString();
     }
 }

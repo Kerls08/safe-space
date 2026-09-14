@@ -26,4 +26,7 @@ public class SafeSpaceMailProperties {
 
     /** Whether mail sending is enabled. */
     private boolean enabled = true;
+
+    /** Brevo REST API v3 key (starts with xkeysib-). */
+    private String apiKey;
 }
