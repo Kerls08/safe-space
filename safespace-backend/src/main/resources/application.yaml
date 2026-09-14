@@ -58,7 +58,7 @@ safespace:
   mail:
     from-address: ${MAIL_FROM_ADDRESS:acoymo.kerlsan08@gmail.com}
     from-name: ${MAIL_FROM_NAME:SafeSpace System}
-    app-url: ${APP_URL:http://localhost:5173}
+    app-url: ${APP_URL:${FRONTEND_URL:http://localhost:5173}}
     enabled: ${MAIL_ENABLED:true}
     api-key: ${BREVO_API_KEY:${SPRING_MAIL_PASSWORD:}}
 
