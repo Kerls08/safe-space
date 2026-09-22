@@ -558,8 +558,8 @@
   .alert-title { font-size: 0.78rem; white-space: normal; }
   .alert-msg { font-size: 0.75rem; }
   .alert-tag { font-size: 0.58rem; padding: 0.12rem 0.4rem; }
-  .alert-actions { flex-direction: row; justify-content: flex-start; gap: 0.4rem; }
-  .btn-alert { padding: 0.4rem 0.65rem; font-size: 0.65rem; }
+  .alert-actions { flex-direction: row; justify-content: flex-start; gap: 0.45rem; flex-wrap: wrap; margin-top: 0.35rem; }
+  .btn-alert { padding: 0.45rem 0.75rem; font-size: 0.72rem; }
 
   .modal-box { width: 95%; padding: 1.15rem; }
 }

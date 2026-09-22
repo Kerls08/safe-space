@@ -889,12 +889,15 @@
   .cred-role-filter { width: 100%; }
   .cred-role-filter button { flex: 1; text-align: center; padding: 0.55rem 0.5rem; font-size: 0.7rem; }
 
-  .cred-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .cred-table { min-width: 500px; }
-  .cred-table th:nth-child(4),
-  .cred-table td:nth-child(4),
-  .cred-table th:nth-child(5),
-  .cred-table td:nth-child(5) { display: none; }
+  .cred-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 0.75rem;
+    border: 1px solid #E0D7C6;
+  }
+  .cred-table { min-width: 540px; }
+  .cred-table th:nth-child(3),
+  .cred-table td:nth-child(3) { display: none; }
   .cred-table th { padding: 0.65rem 0.75rem; font-size: 0.65rem; }
   .cred-table td { padding: 0.6rem 0.75rem; font-size: 0.78rem; }
 

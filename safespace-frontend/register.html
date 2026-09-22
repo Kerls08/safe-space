@@ -563,13 +563,17 @@
       transform: translateY(-1px);
     }
 
-    @media (max-width: 480px) {
-      .register-card { padding: 1.5rem; }
+    @media (max-width: 640px) {
+      .register-page { padding: 1rem 0.75rem; }
+      .register-card { padding: 1.5rem 1.15rem; }
       .register-row { grid-template-columns: 1fr; }
-      .terms-modal-card { max-height: 90vh; }
+      .role-selector { gap: 0.35rem; }
+      .role-option { padding: 0.6rem 0.5rem; font-size: 0.8rem; }
+      .terms-modal-card { max-height: 92vh; width: calc(100% - 1.5rem); }
       .terms-modal-header { padding: 1rem; }
       .terms-modal-body { padding: 1rem; }
-      .terms-modal-footer { padding: 0.75rem 1rem; }
+      .terms-modal-footer { padding: 0.75rem 1rem; flex-direction: column; gap: 0.5rem; }
+      .terms-btn-primary, .terms-btn-secondary { width: 100%; justify-content: center; text-align: center; }
     }
   </style>
 </head>
