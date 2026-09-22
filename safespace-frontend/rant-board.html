@@ -20,32 +20,37 @@
     <!-- ── Welcome Banner ── -->
     <header class="rant-welcome" id="welcomeBanner">
       <div class="rant-welcome-inner">
-        <div class="rant-welcome-icon">
-          <i class="fas fa-shield-heart"></i>
+        <div class="rant-welcome-left">
+          <div class="rant-welcome-icon">
+            <i class="fas fa-shield-heart"></i>
+          </div>
+          <div>
+            <h1>Welcome back, <span class="welcome-greeting" id="welcomeName"></span></h1>
+            <p>This is your anonymous, judgment-free space. Share what you feel — your identity is always protected.</p>
+          </div>
         </div>
-        <div>
-          <h1>Welcome back, <span class="welcome-greeting" id="welcomeName"></span></h1>
-          <p>This is your anonymous, judgment-free space. Share what you feel — your identity is always protected.</p>
+        <div class="welcome-badge-pill">
+          <i class="fas fa-shield-halved"></i> 100% Voluntary & Decoupled Anonymity
         </div>
       </div>
     </header>
 
     <!-- ── Tab Navigation ── -->
     <div class="rant-tabs" id="rantTabs">
-      <button class="rant-tab active" data-tab="share" id="tabShare">
+      <button class="rant-tab active" data-tab="share" id="tabShare" onclick="switchTab('share')">
         <i class="fas fa-pen-to-square"></i> Share
       </button>
-      <button class="rant-tab" data-tab="feed" id="tabFeed">
+      <button class="rant-tab" data-tab="feed" id="tabFeed" onclick="switchTab('feed')">
         <i class="fas fa-users"></i> Peer Mirror
       </button>
-      <button class="rant-tab" data-tab="mine" id="tabMine">
+      <button class="rant-tab" data-tab="mine" id="tabMine" onclick="switchTab('mine')">
         <i class="fas fa-bookmark"></i> My Posts
         <span class="tab-badge" id="myPostsBadge" style="display:none;">0</span>
       </button>
-      <button class="rant-tab" data-tab="calm" id="tabCalm">
+      <button class="rant-tab" data-tab="calm" id="tabCalm" onclick="switchTab('calm')">
         <i class="fas fa-spa"></i> Calm-Down Kit
       </button>
-      <button class="rant-tab" data-tab="resources" id="tabResources">
+      <button class="rant-tab" data-tab="resources" id="tabResources" onclick="switchTab('resources')">
         <i class="fas fa-hand-holding-heart"></i> Resources
       </button>
     </div>
@@ -55,41 +60,94 @@
 
       <!-- TAB 1: Share -->
       <div class="tab-panel active" id="panelShare">
-        <div class="share-card">
-          <h2><i class="fas fa-feather"></i> Share your thoughts</h2>
-          <p class="share-subtitle">Your identity won't be shown to anyone. Be honest — this is your safe space.</p>
+        <div class="compose-studio">
+
+          <!-- ── Section 1: Header ── -->
+          <div class="compose-header">
+            <div class="compose-header-icon">
+              <i class="fas fa-feather"></i>
+            </div>
+            <div>
+              <h2>Express Yourself</h2>
+              <p>Your identity stays completely detached. Be honest — this is your safe space.</p>
+            </div>
+          </div>
 
           <form id="postForm" autocomplete="off">
-            <!-- Emotion Picker -->
-            <div style="margin-top:1rem;">
-              <label style="font-size:0.8rem;font-weight:700;color:#374151;">How are you feeling?</label>
-              <div class="emotion-picker" id="emotionPicker">
-                <button type="button" class="emotion-chip" data-emotion="Sad">😢 Sad</button>
-                <button type="button" class="emotion-chip" data-emotion="Angry">😤 Angry</button>
-                <button type="button" class="emotion-chip selected" data-emotion="Anxious">😰 Anxious</button>
-                <button type="button" class="emotion-chip" data-emotion="Lonely">🥺 Lonely</button>
-                <button type="button" class="emotion-chip" data-emotion="Frustrated">😩 Frustrated</button>
-                <button type="button" class="emotion-chip" data-emotion="Neutral">😐 Neutral</button>
-                <button type="button" class="emotion-chip" data-emotion="Relieved">😌 Relieved</button>
-                <button type="button" class="emotion-chip" data-emotion="Happy">😊 Happy</button>
+
+            <!-- ── Section 2: Emotion Selection ── -->
+            <div class="compose-segment">
+              <div class="segment-label">
+                <span class="segment-number">1</span>
+                <span>How are you feeling right now?</span>
+              </div>
+              <div class="emotion-grid" id="emotionPicker">
+                <button type="button" class="mood-card" data-emotion="Sad">
+                  <span class="mood-emoji">😢</span>
+                  <span class="mood-label">Sad</span>
+                </button>
+                <button type="button" class="mood-card" data-emotion="Angry">
+                  <span class="mood-emoji">😤</span>
+                  <span class="mood-label">Angry</span>
+                </button>
+                <button type="button" class="mood-card selected" data-emotion="Anxious">
+                  <span class="mood-emoji">😰</span>
+                  <span class="mood-label">Anxious</span>
+                </button>
+                <button type="button" class="mood-card" data-emotion="Lonely">
+                  <span class="mood-emoji">🥺</span>
+                  <span class="mood-label">Lonely</span>
+                </button>
+                <button type="button" class="mood-card" data-emotion="Frustrated">
+                  <span class="mood-emoji">😩</span>
+                  <span class="mood-label">Frustrated</span>
+                </button>
+                <button type="button" class="mood-card" data-emotion="Neutral">
+                  <span class="mood-emoji">😐</span>
+                  <span class="mood-label">Neutral</span>
+                </button>
+                <button type="button" class="mood-card" data-emotion="Relieved">
+                  <span class="mood-emoji">😌</span>
+                  <span class="mood-label">Relieved</span>
+                </button>
+                <button type="button" class="mood-card" data-emotion="Happy">
+                  <span class="mood-emoji">😊</span>
+                  <span class="mood-label">Happy</span>
+                </button>
               </div>
             </div>
 
-            <!-- Energy Score -->
-            <div class="energy-control">
-              <label>Energy Level <span style="font-weight:400;color:#9ca3af;">(1 = calm, 10 = intense)</span></label>
-              <div class="energy-slider-wrap">
-                <span style="font-size:0.7rem;color:#22c55e;">Calm</span>
-                <input type="range" id="energySlider" min="1" max="10" value="5">
-                <span style="font-size:0.7rem;color:#ef4444;">Intense</span>
-                <div class="energy-number energy-mid" id="energyNumber">5</div>
+            <!-- ── Section 3: Energy Gauge ── -->
+            <div class="compose-segment">
+              <div class="segment-label">
+                <span class="segment-number">2</span>
+                <span>How intense does it feel?</span>
+              </div>
+              <div class="energy-gauge">
+                <div class="energy-gauge-track">
+                  <span class="energy-endpoint"><i class="fas fa-leaf"></i> Calm</span>
+                  <input type="range" id="energySlider" min="1" max="10" value="5">
+                  <span class="energy-endpoint intense"><i class="fas fa-fire"></i> Intense</span>
+                </div>
+                <div class="energy-level-badge energy-mid" id="energyNumber">5</div>
               </div>
             </div>
 
-            <!-- Textarea -->
-            <textarea class="share-textarea" id="postContent"
-                      placeholder="Write how you feel… be honest. This is completely anonymous."
-                      maxlength="5000" required></textarea>
+            <!-- ── Section 4: Expression ── -->
+            <div class="compose-segment">
+              <div class="segment-label">
+                <span class="segment-number">3</span>
+                <span>What's on your mind?</span>
+              </div>
+              <div class="expression-field">
+                <textarea class="expression-textarea" id="postContent"
+                          placeholder="Write how you feel… be honest. This is completely anonymous."
+                          maxlength="5000" required></textarea>
+                <div class="expression-footer">
+                  <span class="char-count" id="charCount">0 / 5000</span>
+                </div>
+              </div>
+            </div>
 
             <!-- Real-time Profanity Warning -->
             <div class="sensitive-warning" id="sensitiveWarning" style="display:none;">
@@ -105,13 +163,17 @@
               </div>
             </div>
 
-            <!-- Submit -->
-            <div class="share-submit">
+            <!-- ── Action Bar ── -->
+            <div class="compose-action-bar">
+              <div class="action-bar-info">
+                <i class="fas fa-shield-halved"></i>
+                <span>Your identity is fully protected</span>
+              </div>
               <button type="submit" class="btn-share" id="submitBtn">
                 <i class="fas fa-paper-plane"></i> Post Anonymously
               </button>
-              <span class="char-count" id="charCount">0 / 5000</span>
             </div>
+
           </form>
 
           <!-- Auto Reply (shown after post) -->
@@ -124,6 +186,22 @@
 
       <!-- TAB 2: Peer Mirror Feed -->
       <div class="tab-panel" id="panelFeed">
+        <!-- Professional Feed Header (displayed only for professionals) -->
+        <div id="proFeedHeader" style="display:none; margin-bottom:1.25rem; padding:0.9rem 1.25rem; background:#FFFFFF; border:1px solid #E0D7C6; border-radius:0.85rem; box-shadow:0 2px 10px rgba(22,31,54,0.03); align-items:center; justify-content:space-between;">
+          <div style="display:flex; align-items:center; gap:0.75rem;">
+            <div style="width:2.25rem; height:2.25rem; border-radius:0.6rem; background:#EFF6FF; display:flex; align-items:center; justify-content:center; color:#2563EB; font-size:1rem;">
+              <i class="fas fa-users-viewfinder"></i>
+            </div>
+            <div>
+              <div style="font-weight:700; font-size:0.95rem; color:#161F36;">Student Sentiment Stream</div>
+              <div style="font-size:0.78rem; color:#6b7280;">Real-time anonymous expressions &amp; emotional check-ins across campus</div>
+            </div>
+          </div>
+          <span style="font-size:0.72rem; font-weight:700; color:#1D4ED8; background:#EFF6FF; padding:0.35rem 0.75rem; border-radius:999px; border:1px solid #BFDBFE; display:inline-flex; align-items:center; gap:0.35rem;">
+            <i class="fas fa-eye" style="color:#2563EB;"></i> Observational Stream
+          </span>
+        </div>
+
         <div class="feed-controls">
           <div class="feed-emotion-pills" id="feedPills">
             <button class="feed-pill active" data-emotion="ALL">All</button>
@@ -179,9 +257,9 @@
 
       <!-- TAB 5: Resources (Student-facing resource browser) -->
       <div class="tab-panel" id="panelResources">
-        <div class="share-card">
+        <div class="resources-browser-card">
           <h2><i class="fas fa-hand-holding-heart"></i> Wellness Resources</h2>
-          <p class="share-subtitle">Support resources available to you — hotlines, campus services, and professional support.</p>
+          <p class="resources-subtitle">Support resources available to you — hotlines, campus services, and professional support.</p>
           <div id="studentResourceGrid" style="display:grid; gap:0.75rem; margin-top:1rem;"></div>
           <div id="studentResourceEmpty" style="display:none; text-align:center; padding:2rem; color:#9ca3af;">
             <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;"></i>
@@ -224,9 +302,10 @@
   </div>
 
   <script>
-    const API_BASE = window.SAFE_SPACE_API_URL || (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:8080/api' : 'https://safespace-backend-ws0m.onrender.com/api');
+    const API_BASE = window.SAFE_SPACE_API_URL || (window.location.protocol === 'file:' || window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:8080/api' : 'https://safespace-backend-ws0m.onrender.com/api');
     const API = API_BASE + '/posts';
     const RESOURCE_API = API_BASE + '/resources';
+    let isProfessional = (typeof SafeSpaceAuth !== 'undefined' && SafeSpaceAuth.getRole) ? SafeSpaceAuth.getRole() === 'PROFESSIONAL' : false;
     let selectedEmotion = 'Anxious';
     let feedPage = 0;
     let feedEmotion = 'ALL';
@@ -298,15 +377,58 @@
       const name = SafeSpaceAuth.getFullName() || SafeSpaceAuth.getUsername() || 'Friend';
       document.getElementById('welcomeName').textContent = name.split(' ')[0];
 
+      // ── Role-Based Ethical Boundaries ──
+      const userRole = SafeSpaceAuth.getRole();
+      isProfessional = userRole === 'PROFESSIONAL';
+
+      if (isProfessional) {
+        // Professionals are clinical observers, not clients.
+        // Completely remove the tab navigation section for the professional view.
+        const rantTabs = document.getElementById('rantTabs');
+        if (rantTabs) rantTabs.style.display = 'none';
+
+        // Deactivate client panels
+        const panelShare = document.getElementById('panelShare');
+        const panelMine = document.getElementById('panelMine');
+        const panelCalm = document.getElementById('panelCalm');
+        const panelResources = document.getElementById('panelResources');
+
+        if (panelShare) panelShare.classList.remove('active');
+        if (panelMine) panelMine.classList.remove('active');
+        if (panelCalm) panelCalm.classList.remove('active');
+        if (panelResources) panelResources.classList.remove('active');
+
+        // Activate Peer Mirror (observation feed)
+        const panelFeed = document.getElementById('panelFeed');
+        if (panelFeed) panelFeed.classList.add('active');
+
+        // Display clinical observation stream header
+        const proFeedHeader = document.getElementById('proFeedHeader');
+        if (proFeedHeader) proFeedHeader.style.display = 'flex';
+
+        // Update welcome banner for professional context
+        const welcomeBanner = document.getElementById('welcomeBanner');
+        if (welcomeBanner) {
+          const h1 = welcomeBanner.querySelector('h1');
+          const p = welcomeBanner.querySelector('p');
+          if (h1) h1.innerHTML = 'Clinical Observation — <span class="welcome-greeting">' + name.split(' ')[0] + '</span>';
+          if (p) p.textContent = 'Monitor student expressions and emotional well-being. Identities remain anonymized for your review.';
+        }
+
+        // Update anonymity badge for professional context
+        const badge = document.querySelector('.welcome-badge-pill');
+        if (badge) badge.innerHTML = '<i class="fas fa-eye"></i> Read-Only Clinical Observation Mode';
+      }
+
       // Tabs
       document.querySelectorAll('.rant-tab').forEach(tab => {
         tab.addEventListener('click', () => switchTab(tab.dataset.tab));
       });
 
-      // Emotion picker
-      document.querySelectorAll('.emotion-chip').forEach(chip => {
+      // Emotion picker (only needed for students, but safe to attach regardless)
+      document.querySelectorAll('.mood-card').forEach(chip => {
         chip.addEventListener('click', () => {
-          document.querySelectorAll('.emotion-chip').forEach(c => c.classList.remove('selected'));
+          document.querySelectorAll('.mood-card').forEach(c => c.classList.remove('selected'));
           chip.classList.add('selected');
           selectedEmotion = chip.dataset.emotion;
         });
@@ -315,48 +437,55 @@
       // Energy slider
       const slider = document.getElementById('energySlider');
       const num = document.getElementById('energyNumber');
-      let resourceBannerShown = false;
-      slider.addEventListener('input', () => {
-        const v = parseInt(slider.value);
-        num.textContent = v;
-        num.className = 'energy-number ' + (v <= 4 ? 'energy-low' : v <= 7 ? 'energy-mid' : 'energy-high');
+      if (slider && num) {
+        let resourceBannerShown = false;
+        slider.addEventListener('input', () => {
+          const v = parseInt(slider.value);
+          num.textContent = v;
+          num.className = 'energy-level-badge ' + (v <= 4 ? 'energy-low' : v <= 7 ? 'energy-mid' : 'energy-high');
 
-        // Pre-submission: show crisis resource banner when energy >= 9
-        if (v >= 9 && !resourceBannerShown) {
-          resourceBannerShown = true;
-          showCrisisResourceBanner();
-        } else if (v < 9) {
-          resourceBannerShown = false;
-          hideCrisisResourceBanner();
-        }
-      });
+          // Pre-submission: show crisis resource banner when energy >= 9
+          if (v >= 9 && !resourceBannerShown) {
+            resourceBannerShown = true;
+            showCrisisResourceBanner();
+          } else if (v < 9) {
+            resourceBannerShown = false;
+            hideCrisisResourceBanner();
+          }
+        });
+      }
 
       // Char count + real-time sensitive word detection
       const ta = document.getElementById('postContent');
       const cc = document.getElementById('charCount');
-      let sensitiveCheckTimer = null;
-      ta.addEventListener('input', () => {
-        const len = ta.value.length;
-        cc.textContent = len + ' / 5000';
-        cc.className = 'char-count' + (len > 4500 ? ' danger' : len > 3500 ? ' warning' : '');
+      if (ta && cc) {
+        let sensitiveCheckTimer = null;
+        ta.addEventListener('input', () => {
+          const len = ta.value.length;
+          cc.textContent = len + ' / 5000';
+          cc.className = 'char-count' + (len > 4500 ? ' danger' : len > 3500 ? ' warning' : '');
 
-        // Clear any pending debounce
-        clearTimeout(sensitiveCheckTimer);
+          // Clear any pending debounce
+          clearTimeout(sensitiveCheckTimer);
 
-        // IMMEDIATE check: if content is clean or empty, hide warning instantly
-        const currentText = ta.value.trim();
-        if (!currentText || !checkSensitiveContent(currentText)) {
-          updateSensitiveWarning('');
-        } else {
-          // Content is sensitive — debounce the "show" to avoid flicker while typing
-          sensitiveCheckTimer = setTimeout(() => {
-            updateSensitiveWarning(ta.value);
-          }, 300);
-        }
-      });
+          // IMMEDIATE check: if content is clean or empty, hide warning instantly
+          const currentText = ta.value.trim();
+          if (!currentText || !checkSensitiveContent(currentText)) {
+            updateSensitiveWarning('');
+          } else {
+            // Content is sensitive — debounce the "show" to avoid flicker while typing
+            sensitiveCheckTimer = setTimeout(() => {
+              updateSensitiveWarning(ta.value);
+            }, 300);
+          }
+        });
+      }
 
-      // Post form
-      document.getElementById('postForm').addEventListener('submit', handlePost);
+      // Post form (students only, but safe to attach)
+      const postForm = document.getElementById('postForm');
+      if (postForm) {
+        postForm.addEventListener('submit', handlePost);
+      }
 
       // Feed pills
       document.querySelectorAll('.feed-pill').forEach(pill => {
@@ -377,16 +506,23 @@
 
       // Load initial data
       loadFeed(false);
-      loadMyPosts();
-      loadStudentResources();
+      if (!isProfessional) {
+        loadMyPosts();
+        loadStudentResources();
+      }
     });
 
     // ── Tab Switching ──
     function switchTab(tabId) {
+      if (isProfessional) {
+        tabId = 'feed';
+      }
       document.querySelectorAll('.rant-tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
-      document.getElementById('panel' + tabId.charAt(0).toUpperCase() + tabId.slice(1)).classList.add('active');
+      const targetTab = document.querySelector(`[data-tab="${tabId}"]`);
+      if (targetTab) targetTab.classList.add('active');
+      const targetPanel = document.getElementById('panel' + tabId.charAt(0).toUpperCase() + tabId.slice(1));
+      if (targetPanel) targetPanel.classList.add('active');
 
       if (tabId === 'feed') loadFeed(false);
       if (tabId === 'mine') loadMyPosts();
@@ -396,6 +532,10 @@
     // ── Post Submission ──
     async function handlePost(e) {
       e.preventDefault();
+      if (isProfessional) {
+        alert('Professionals are in clinical observation mode and cannot submit rants.');
+        return;
+      }
       const content = document.getElementById('postContent').value.trim();
       if (!content) return;
 
@@ -431,7 +571,7 @@
               <p>${escapeHtml(errorMsg)}</p>
               <p style="margin-top:0.5rem;font-size:0.75rem;">
                 <strong>Need to talk to someone?</strong>
-                Use the <a href="anon-chat.html" style="color:#047857;font-weight:600;">Anonymous Chat</a> to connect with a counselor privately,
+                Use the <a href="anon-chat.html" style="color:#161F36;font-weight:700;text-decoration:none;border-bottom:1.5px solid #BACBD8;">Anonymous Chat</a> to connect with a counselor privately,
                 or call your campus counselor.
               </p>
             </div>
@@ -452,7 +592,7 @@
               <h4><i class="fas fa-hand-holding-heart"></i> Your thoughts have been heard</h4>
               <p>We hear you, and we care about how you're feeling. Your post has been received — 
               a counselor has been notified and may reach out to you through the 
-              <a href="anon-chat.html" style="color:#047857;font-weight:600;">Anonymous Chat</a>.</p>
+              <a href="anon-chat.html" style="color:#161F36;font-weight:700;text-decoration:none;border-bottom:1.5px solid #BACBD8;">Anonymous Chat</a>.</p>
               <p style="margin-top:0.5rem;font-size:0.75rem;color:#6b7280;">
                 To protect other students who may be vulnerable, your post will not appear on the Peer Mirror. 
                 But your voice matters and help is on the way.
@@ -1292,7 +1432,8 @@
       try {
         const res = await SafeSpaceAuth.authFetch(RESOURCE_API);
         if (!res.ok) throw new Error('Failed to load');
-        const resources = await res.json();
+        const data = await res.json();
+        const resources = Array.isArray(data) ? data : (data.content || []);
 
         empty.style.display = 'none';
 

@@ -30,6 +30,7 @@ public class RbacPermissions {
             "/api/auth/login",
             "/api/auth/logout",
             "/api/auth/validate-token",
+            "/api/auth/self-register",
             // Static resources are handled by Spring's ResourceHandler,
             // not by our interceptor (we only intercept /api/**)
             "/h2-console"

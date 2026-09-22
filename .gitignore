@@ -37,3 +37,8 @@ build/
 *.env
 !.env.example
 
+### H2 Local Database ###
+data/
+*.mv.db
+*.trace.db
+

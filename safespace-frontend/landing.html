@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SafeSpace — Anonymous Campus Mental Health Sanctuary</title>
+  <meta name="description"
+    content="SafeSpace is a privacy-first mental health sanctuary for university students and faculty. Speak freely, heal anonymously, and connect with certified campus counselors.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/landing.css">
+</head>
+
+<body>
+
+  <!-- ── 1. Navigation Bar (Seamless & Blended, No Harsh Border) ── -->
+  <nav class="landing-nav" id="landingNav">
+    <div class="landing-nav-inner">
+      <a href="landing.html" class="landing-brand">
+        <div class="brand-logo-icon">
+          <i class="fas fa-shield-heart"></i>
+        </div>
+        <span class="brand-text">Safe<span>Space</span></span>
+      </a>
+
+      <div class="landing-nav-center" id="navCenter">
+        <div class="landing-nav-links">
+          <a href="#hero" class="active">Home</a>
+          <a href="#how-it-works">How It Works</a>
+          <a href="#grounding">Grounding Oasis</a>
+          <a href="#features">Ecosystem</a>
+          <a href="#privacy">Privacy Charter</a>
+        </div>
+        <div class="landing-nav-actions">
+          <a href="login.html" class="landing-login-link">Log In</a>
+          <a href="register.html" class="landing-register-btn" id="navRegisterBtn">
+            <i class="fas fa-user-plus"></i> Register
+          </a>
+        </div>
+      </div>
+
+      <button class="landing-nav-toggle" id="navToggle" aria-label="Toggle navigation menu"
+        onclick="document.getElementById('navCenter').classList.toggle('open')">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ── 2. Hero Section (Spacious & Peaceful Sanctuary Entrance) ── -->
+  <section class="hero" id="hero">
+    <div class="hero-inner-centered">
+      <div class="hero-content animate-fade-up">
+        <div class="hero-badge">
+          <i class="fas fa-shield-halved"></i>
+          Voluntary & Confidential Campus Sanctuary
+        </div>
+        <h1>
+          A Calm Harbor for Your Thoughts.<br>
+          Heal <span class="highlight">Anonymously.</span>
+        </h1>
+        <p>
+          Express what you carry without fear of exposure or academic judgment. SafeSpace provides students and faculty
+          a safe environment to release emotional stress, practice grounding exercises, and
+          connect with verified campus counselors in complete confidence.
+        </p>
+        <div class="hero-actions">
+          <a href="register.html" class="hero-btn-primary" id="heroRegisterBtn">
+            <i class="fas fa-user-shield"></i> Join SafeSpace
+          </a>
+          <a href="#how-it-works" class="hero-btn-ghost">
+            <i class="fas fa-route"></i> See How It Works
+          </a>
+        </div>
+
+        <!-- Trust micro-chips (Pill badges with soft blends, zero dividing lines) -->
+        <div class="hero-trust-bar">
+          <div class="hero-trust-item">
+            <i class="fas fa-check-circle"></i> Voluntary Self-Registration
+          </div>
+          <div class="hero-trust-item">
+            <i class="fas fa-shield"></i> Zero Identity Logging
+          </div>
+          <div class="hero-trust-item">
+            <i class="fas fa-user-doctor"></i> Licensed Counselors
+          </div>
+          <div class="hero-trust-item">
+            <i class="fas fa-lock"></i> RA 10173 Compliant
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 3. Dedicated Spotlight: A Glimpse Inside SafeSpace ── -->
+  <section class="haven-spotlight-section" id="sanctuary-preview">
+    <div class="haven-spotlight-inner">
+      <div class="haven-spotlight-header animate-fade-up">
+        <div class="section-label">A Safe Haven in Action</div>
+        <h2 class="section-title">A Glimpse Inside SafeSpace</h2>
+        <p class="section-desc">
+          Experience how students unburden their thoughts anonymously and receive warm,
+          confidential guidance from verified campus counselors.
+        </p>
+      </div>
+
+      <!-- Centerpiece Interactive Sanctuary Console -->
+      <div class="spotlight-console-wrap animate-fade-up animate-delay-1">
+        <div class="preview-header">
+          <div class="preview-dots">
+            <div class="preview-dot d1"></div>
+            <div class="preview-dot d2"></div>
+            <div class="preview-dot d3"></div>
+          </div>
+          <div class="preview-live-indicator">
+            <div class="preview-pulse-dot"></div>
+            Safe Haven Active • 142 Sharing Safely
+          </div>
+        </div>
+
+        <!-- Sample Live Rant Card -->
+        <div class="preview-post">
+          <div class="preview-post-header">
+            <div class="preview-avatar"><i class="fas fa-mask"></i></div>
+            <div>
+              <div class="preview-username">QuietHarbor_27</div>
+              <div class="preview-time">3 minutes ago</div>
+            </div>
+          </div>
+          <div class="preview-text">
+            "Between thesis revisions and family expectations, I felt completely drained today.
+            Writing it down here made me realize I don't have to carry it all alone."
+          </div>
+          <div class="preview-mood-row">
+            <div class="preview-mood">
+              <i class="fas fa-shield-cat"></i> Pseudonym Protected
+            </div>
+            <span style="font-size:0.68rem;color:#6C7A92;font-weight:600;">Energy Score: 4/10</span>
+          </div>
+
+          <!-- Counselor Response Box -->
+          <div class="preview-response">
+            <i class="fas fa-user-doctor"></i>
+            <strong>Campus Counselor:</strong> Taking one gentle step at a time is strength, not weakness.
+            Remember our confidential chat is open if you need a listening ear today. 💙
+          </div>
+        </div>
+
+        <!-- Interactive Quick Mindful Check-in -->
+        <div class="preview-interactive-checkin">
+          <div class="preview-interactive-title">
+            <i class="fas fa-heart-pulse"></i> How is your mind feeling right now?
+          </div>
+          <div class="preview-mood-btns">
+            <button type="button" class="preview-mood-btn" onclick="handleMoodClick(this, 'overwhelmed')">Overwhelmed 🌧️</button>
+            <button type="button" class="preview-mood-btn" onclick="handleMoodClick(this, 'anxious')">Anxious ⚡</button>
+            <button type="button" class="preview-mood-btn" onclick="handleMoodClick(this, 'exhausted')">Exhausted 🌙</button>
+            <button type="button" class="preview-mood-btn" onclick="handleMoodClick(this, 'hopeful')">Hopeful 🌤️</button>
+          </div>
+          <div class="preview-mood-feedback" id="moodFeedback"></div>
+        </div>
+      </div>
+
+      <div class="spotlight-footer-cta animate-fade-up animate-delay-2">
+        <span>Curious how it feels to speak freely?</span>
+        <a href="register.html" class="spotlight-link">
+          Create your anonymous profile <i class="fas fa-arrow-right"></i>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 3. Core Sanctuary Pillars Ribbon ── -->
+  <section class="pillars-ribbon">
+    <div class="pillars-inner">
+      <div class="pillar-card animate-fade-up">
+        <div class="pillar-icon"><i class="fas fa-hand-holding-heart"></i></div>
+        <div class="pillar-text">
+          <h4>100% Voluntary</h4>
+          <p>You choose to participate. No automated lists or mandatory harvesting.</p>
+        </div>
+      </div>
+      <div class="pillar-card animate-fade-up animate-delay-1">
+        <div class="pillar-icon"><i class="fas fa-user-secret"></i></div>
+        <div class="pillar-text">
+          <h4>Cryptographic Shield</h4>
+          <p>Dynamic pseudonyms detach your real identity from your shared thoughts.</p>
+        </div>
+      </div>
+      <div class="pillar-card animate-fade-up animate-delay-2">
+        <div class="pillar-icon"><i class="fas fa-user-doctor"></i></div>
+        <div class="pillar-text">
+          <h4>Certified Campus Care</h4>
+          <p>Connect with licensed university psychometricians and counselors.</p>
+        </div>
+      </div>
+      <div class="pillar-card animate-fade-up animate-delay-3">
+        <div class="pillar-icon"><i class="fas fa-shield-heart"></i></div>
+        <div class="pillar-text">
+          <h4>24/7 Safety Net</h4>
+          <p>Intelligent crisis protocol surfaces immediate help when distress peaks.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 4. How It Works Section (Placed Before Features) ── -->
+  <section class="steps-section" id="how-it-works">
+    <div class="section-label">A Clear & Private Path</div>
+    <h2 class="section-title">How SafeSpace Protects Your Journey</h2>
+    <p class="section-desc">
+      Engineered for complete student dignity, zero barriers, and unconditional privacy from day one.
+    </p>
+
+    <div class="steps-grid">
+      <!-- Step 1 -->
+      <div class="step-card animate-fade-up">
+        <div class="step-badge">Step 01</div>
+        <div class="step-icon-wrap"><i class="fas fa-user-pen"></i></div>
+        <h3>Voluntary Self-Registration</h3>
+        <p>
+          You control your account. Register yourself with your institutional ID and your own private password.
+          No automated pre-enrollment or harvesting.
+        </p>
+        <div class="step-tags">
+          <span class="step-tag">100% Student Choice</span>
+          <span class="step-tag">RA 10173 Protected</span>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step-card animate-fade-up animate-delay-1">
+        <div class="step-badge">Step 02</div>
+        <div class="step-icon-wrap"><i class="fas fa-fingerprint"></i></div>
+        <h3>Cryptographic Pseudonym Shield</h3>
+        <p>
+          When you enter the sanctuary, your real name and ID are detached. Community interactions display an auto-generated pseudonym that cannot be mapped back.
+        </p>
+        <div class="step-tags">
+          <span class="step-tag">Zero Exposure</span>
+          <span class="step-tag">Unlinked Pseudonym</span>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step-card animate-fade-up animate-delay-2">
+        <div class="step-badge">Step 03</div>
+        <div class="step-icon-wrap"><i class="fas fa-comments"></i></div>
+        <h3>Express, Ground & Connect</h3>
+        <p>
+          Share honest reflections on the Rant Board, explore the Calm-Down Studio, or initiate a live, confidential chat session with an active campus counselor.
+        </p>
+        <div class="step-tags">
+          <span class="step-tag">Peer Empathy</span>
+          <span class="step-tag">Counselor Support</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="steps-cta-wrap animate-fade-up animate-delay-3">
+      <a href="register.html" class="hero-btn-primary">
+        <i class="fas fa-user-plus"></i> Begin Your Anonymous Journey
+      </a>
+    </div>
+  </section>
+
+  <!-- ── 5. Grounding & Mindful Oasis (Signature Interactive Section) ── -->
+  <section class="grounding-section" id="grounding">
+    <div class="grounding-inner">
+      <div class="grounding-header">
+        <div class="section-label">Instant Grounding Studio</div>
+        <h2 class="section-title">Pause, Breathe & Center Yourself</h2>
+        <p class="section-desc">
+          Evidence-based sensory grounding techniques accessible immediately right here in your browser.
+        </p>
+      </div>
+
+      <div class="grounding-grid">
+        <!-- Interactive Tool 1: 4-7-8 Breathing Pacer -->
+        <div class="grounding-tool-card animate-fade-up">
+          <div class="grounding-tool-header">
+            <div class="grounding-tool-badge"><i class="fas fa-wind"></i> Guided Breathing</div>
+            <h4>4-7-8 Serene Pacer</h4>
+          </div>
+          <p class="grounding-tool-desc">
+            Slow down your heart rate and ease nervous system arousal. Follow the rhythmic visual circle.
+          </p>
+
+          <div class="breathing-oasis-visual">
+            <div class="mindful-bubble" id="mindfulBubble">
+              <i class="fas fa-spa"></i>
+            </div>
+            <div class="breathing-meta">
+              <div class="mindful-state-text" id="mindfulText">Gentle Breathing</div>
+              <div class="mindful-state-sub" id="mindfulSub">Inhale peace • Exhale pressure</div>
+            </div>
+          </div>
+
+          <div class="breathing-tips">
+            <span><i class="fas fa-check"></i> Inhale 4s</span>
+            <span><i class="fas fa-check"></i> Hold 7s</span>
+            <span><i class="fas fa-check"></i> Exhale 8s</span>
+          </div>
+        </div>
+
+        <!-- Interactive Tool 2: 5-4-3-2-1 Sensory Grounding -->
+        <div class="grounding-tool-card animate-fade-up animate-delay-1">
+          <div class="grounding-tool-header">
+            <div class="grounding-tool-badge"><i class="fas fa-hand"></i> Sensory Grounding</div>
+            <h4>5-4-3-2-1 Reset Technique</h4>
+          </div>
+          <p class="grounding-tool-desc">
+            When thoughts become overwhelming, click each anchor to gently reconnect with the present moment.
+          </p>
+
+          <div class="sensory-steps-list">
+            <div class="sensory-step-item" onclick="toggleSensoryStep(this)">
+              <span class="sensory-num">5</span>
+              <div class="sensory-content">
+                <strong>See</strong>
+                <span>Notice 5 objects around you (a book, a window, a shadow)</span>
+              </div>
+              <i class="fas fa-circle-check sensory-check"></i>
+            </div>
+            <div class="sensory-step-item" onclick="toggleSensoryStep(this)">
+              <span class="sensory-num">4</span>
+              <div class="sensory-content">
+                <strong>Touch</strong>
+                <span>Feel 4 physical textures (your desk, fabric, cool air)</span>
+              </div>
+              <i class="fas fa-circle-check sensory-check"></i>
+            </div>
+            <div class="sensory-step-item" onclick="toggleSensoryStep(this)">
+              <span class="sensory-num">3</span>
+              <div class="sensory-content">
+                <strong>Hear</strong>
+                <span>Listen for 3 distinct sounds (distant voices, clock tick)</span>
+              </div>
+              <i class="fas fa-circle-check sensory-check"></i>
+            </div>
+            <div class="sensory-step-item" onclick="toggleSensoryStep(this)">
+              <span class="sensory-num">2</span>
+              <div class="sensory-content">
+                <strong>Smell</strong>
+                <span>Identify 2 subtle scents around your room</span>
+              </div>
+              <i class="fas fa-circle-check sensory-check"></i>
+            </div>
+            <div class="sensory-step-item" onclick="toggleSensoryStep(this)">
+              <span class="sensory-num">1</span>
+              <div class="sensory-content">
+                <strong>Affirm</strong>
+                <span>Acknowledge 1 thing you are grateful for right now</span>
+              </div>
+              <i class="fas fa-circle-check sensory-check"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 6. Comprehensive Wellness Ecosystem (Features) ── -->
+  <section class="features-section" id="features">
+    <div class="section-label">Comprehensive Wellness Ecosystem</div>
+    <h2 class="section-title">Thoughtfully Crafted For Emotional Safety</h2>
+    <p class="section-desc">
+      Every tool in SafeSpace is engineered around unconditional anonymity, proactive crisis support,
+      and holistic student well-being.
+    </p>
+
+    <div class="features-grid">
+      <!-- Feature 1 -->
+      <div class="feature-card animate-fade-up">
+        <div class="feature-icon calm-ocean"><i class="fas fa-comment-dots"></i></div>
+        <h3>Anonymous Rant Board</h3>
+        <p>
+          Unburden your thoughts and frustrations in a supportive community space. Posts are bound to
+          dynamic pseudonyms that preserve your identity while fostering genuine peer empathy.
+        </p>
+        <div class="feature-tags">
+          <span class="feature-tag">Dynamic Pseudonyms</span>
+          <span class="feature-tag">Zero Identity Link</span>
+        </div>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="feature-card animate-fade-up animate-delay-1">
+        <div class="feature-icon calm-steel"><i class="fas fa-comments"></i></div>
+        <h3>Confidential 1-on-1 Chat</h3>
+        <p>
+          Connect in real-time with verified campus psychometricians and counselors. Sessions remain
+          completely confidential, giving you direct guidance when you need it most.
+        </p>
+        <div class="feature-tags">
+          <span class="feature-tag">Real-Time Messaging</span>
+          <span class="feature-tag">Counselor Verified</span>
+        </div>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="feature-card animate-fade-up animate-delay-2">
+        <div class="feature-icon calm-amber"><i class="fas fa-shield-heart"></i></div>
+        <h3>Proactive AI Safety Net</h3>
+        <p>
+          Intelligent sentiment analysis flags high-distress signals in real time and automatically
+          routes compassionate resources and counselor alerts without compromising user identity.
+        </p>
+        <div class="feature-tags">
+          <span class="feature-tag">24/7 Early Detection</span>
+          <span class="feature-tag">Automated Safety Net</span>
+        </div>
+      </div>
+
+      <!-- Feature 4 -->
+      <div class="feature-card animate-fade-up animate-delay-1">
+        <div class="feature-icon calm-sky"><i class="fas fa-spa"></i></div>
+        <h3>Calm-Down & Grounding Studio</h3>
+        <p>
+          Access evidence-based sensory grounding techniques, guided 4-7-8 breathing pacers, and
+          mindful de-escalation tools to restore inner equilibrium during stressful moments.
+        </p>
+        <div class="feature-tags">
+          <span class="feature-tag">Breathing Pacer</span>
+          <span class="feature-tag">5-4-3-2-1 Grounding</span>
+        </div>
+      </div>
+
+      <!-- Feature 5 -->
+      <div class="feature-card animate-fade-up animate-delay-2">
+        <div class="feature-icon calm-slate"><i class="fas fa-chart-line"></i></div>
+        <h3>Institutional Wellness Insights</h3>
+        <p>
+          Campus mental health teams receive aggregate emotional climate trends, peak stress cycles,
+          and anonymized metrics to tailor preventative programs and workshops.
+        </p>
+        <div class="feature-tags">
+          <span class="feature-tag">Anonymous Analytics</span>
+          <span class="feature-tag">Institutional Trends</span>
+        </div>
+      </div>
+
+      <!-- Feature 6 -->
+      <div class="feature-card animate-fade-up animate-delay-3">
+        <div class="feature-icon calm-mist"><i class="fas fa-book-bookmark"></i></div>
+        <h3>Curated Resource Directory</h3>
+        <p>
+          Immediate access to national emergency hotlines, campus clinic services, self-help
+          literature, and certified mental health professionals curated specifically for your university.
+        </p>
+        <div class="feature-tags">
+          <span class="feature-tag">24/7 Hotlines</span>
+          <span class="feature-tag">Self-Help Vault</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 7. Privacy & Security Charter Section ── -->
+  <section class="privacy-section" id="privacy">
+    <div class="privacy-card animate-fade-up">
+      <div class="privacy-icon">
+        <i class="fas fa-shield-halved"></i>
+      </div>
+      <h2>Your Right to Privacy Is Absolute</h2>
+      <p>
+        SafeSpace was engineered in strict compliance with the Philippine Data Privacy Act of 2012 (RA 10173).
+        Every student has the fundamental right to seek mental wellness support without fear of academic
+        repercussions, peer exposure, or mandatory surveillance.
+      </p>
+      <div class="privacy-badges">
+        <div class="privacy-badge">
+          <i class="fas fa-user-lock"></i> Voluntary Self-Registration
+        </div>
+        <div class="privacy-badge">
+          <i class="fas fa-mask"></i> Decoupled Pseudonyms
+        </div>
+        <div class="privacy-badge">
+          <i class="fas fa-key"></i> Token-Based Cryptography
+        </div>
+        <div class="privacy-badge">
+          <i class="fas fa-database"></i> Zero Data Harvesting
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 8. Empathetic Pre-Footer Sanctuary CTA ── -->
+  <section class="prefooter-cta">
+    <div class="prefooter-inner animate-fade-up">
+      <div class="cta-icon-badge"><i class="fas fa-heart-circle-check"></i></div>
+      <h2>You don't have to carry it all alone.</h2>
+      <p>
+        Join students and campus counselors finding clarity, emotional release, and guidance in a completely confidential space.
+      </p>
+      <div class="cta-actions">
+        <a href="register.html" class="hero-btn-primary">
+          <i class="fas fa-user-shield"></i> Join SafeSpace Free
+        </a>
+        <a href="login.html" class="hero-btn-ghost">
+          <i class="fas fa-arrow-right-to-bracket"></i> Sign In to Your Space
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 9. Footer & Crisis Hotlines ── -->
+  <footer class="landing-footer">
+    <div class="footer-crisis-bar">
+      <i class="fas fa-phone-volume"></i>
+      <span><strong>In Immediate Crisis?</strong> National Mental Health Crisis Hotline: <strong>1553</strong> (Toll-Free) or <strong>0966-351-4518</strong></span>
+    </div>
+    <p style="margin-top:1.25rem;">SafeSpace • Dedicated to Student Well-Being, Psychological Safety & Dignity</p>
+    <p style="margin-top:0.4rem;font-size:0.75rem;color:#BACBD8;">
+      Built with the Compass Psychological Services Design System for University Mental Health Programs
+    </p>
+  </footer>
+
+  <script>
+    // ── Navbar scroll elevation ──
+    window.addEventListener('scroll', () => {
+      document.getElementById('landingNav')
+        .classList.toggle('scrolled', window.scrollY > 15);
+    });
+
+    // ── Smooth scroll for anchor links with navbar offset ──
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const href = this.getAttribute('href');
+        if (href === '#' || !href.startsWith('#')) return;
+        const target = document.querySelector(href);
+        if (target) {
+          e.preventDefault();
+          const navHeight = 70;
+          const targetTop = target.getBoundingClientRect().top + window.pageYOffset - navHeight;
+          window.scrollTo({ top: targetTop, behavior: 'smooth' });
+
+          // Immediate visual highlight
+          document.querySelectorAll('.landing-nav-links a[href^="#"]').forEach(l => l.classList.remove('active'));
+          const activeNav = document.querySelector(`.landing-nav-links a[href="${href}"]`);
+          if (activeNav) activeNav.classList.add('active');
+
+          const navCenter = document.getElementById('navCenter');
+          if (navCenter) navCenter.classList.remove('open');
+        }
+      });
+    });
+
+    // ── Scroll Spy — highlight active nav link based on visible section ──
+    const navLinks = document.querySelectorAll('.landing-nav-links a[href^="#"]');
+    const sections = [];
+
+    navLinks.forEach(link => {
+      const href = link.getAttribute('href');
+      const section = document.querySelector(href);
+      if (section) sections.push({ el: section, link: link, id: href });
+    });
+
+    function updateActiveNav() {
+      const scrollY = window.scrollY + 140;
+      let currentSection = sections[0];
+
+      if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 60) {
+        currentSection = sections[sections.length - 1];
+      } else {
+        for (const section of sections) {
+          if (section.el.offsetTop <= scrollY) {
+            currentSection = section;
+          }
+        }
+      }
+
+      navLinks.forEach(link => link.classList.remove('active'));
+      if (currentSection && currentSection.link) {
+        currentSection.link.classList.add('active');
+      }
+    }
+
+    window.addEventListener('scroll', updateActiveNav, { passive: true });
+    window.addEventListener('resize', updateActiveNav, { passive: true });
+    updateActiveNav();
+
+    // ── Interactive Check-in Micro Feedback ──
+    const moodResponses = {
+      overwhelmed: "It is completely okay to feel full. Take one deep breath — you do not need to figure out everything right now. SafeSpace is here for you.",
+      anxious: "Notice the ground beneath your feet. Inhale slowly for 4 seconds, exhale for 6. Your feelings are real, but they will pass safely.",
+      exhausted: "Rest is not earned, it is needed. Give yourself permission to pause and recharge without guilt today.",
+      hopeful: "Hold onto that warmth. Your resilience is powerful, and sharing your journey can brighten another student's day."
+    };
+
+    function handleMoodClick(btn, mood) {
+      document.querySelectorAll('.preview-mood-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      const feedback = document.getElementById('moodFeedback');
+      feedback.textContent = moodResponses[mood] || "We are here for you.";
+      feedback.style.display = 'block';
+    }
+
+    // ── Breathing Pacer Text Sync ──
+    const pacerStates = [
+      { text: "Inhale Slowly...", sub: "Fill your lungs with calm" },
+      { text: "Hold Gently...", sub: "Rest in stillness" },
+      { text: "Exhale Softly...", sub: "Release all tension" },
+      { text: "Pause & Center...", sub: "You are safe and present" }
+    ];
+    let pacerIdx = 0;
+    setInterval(() => {
+      pacerIdx = (pacerIdx + 1) % pacerStates.length;
+      const tEl = document.getElementById('mindfulText');
+      const sEl = document.getElementById('mindfulSub');
+      if (tEl && sEl) {
+        tEl.textContent = pacerStates[pacerIdx].text;
+        sEl.textContent = pacerStates[pacerIdx].sub;
+      }
+    }, 2000);
+
+    // ── Interactive Sensory Grounding Step Check ──
+    function toggleSensoryStep(el) {
+      el.classList.toggle('completed');
+    }
+
+    // ── Intersection Observer for scroll animations ──
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.animationPlayState = 'running';
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.animate-fade-up').forEach(el => {
+      el.style.animationPlayState = 'paused';
+      observer.observe(el);
+    });
+
+    // ── Redirect if already authenticated ──
+    if (localStorage.getItem('ss_token')) {
+      const role = localStorage.getItem('ss_role');
+      if (role === 'PROFESSIONAL') {
+        window.location.href = 'pro-dashboard.html';
+      } else if (role) {
+        window.location.href = 'rant-board.html';
+      }
+    }
+  </script>
+</body>
+
+</html>

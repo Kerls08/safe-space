@@ -39,7 +39,8 @@ public class WebConfig implements WebMvcConfigurer {
                                 .excludePathPatterns(
                                                 "/api/auth/login", // Public — login
                                                 "/api/auth/logout", // Public — logout
-                                                "/api/auth/validate-token" // Public — token validation
+                                                "/api/auth/validate-token", // Public — token validation
+                                                "/api/auth/self-register" // Public — self-registration
                                 );
         }
 }

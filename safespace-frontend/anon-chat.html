@@ -39,26 +39,100 @@
 
     <!-- Main Chat Area -->
     <main class="chat-main" id="chatMain">
-      <!-- Welcome State -->
+      <!-- Welcome State: Sanctuary Lounge -->
       <div class="chat-welcome" id="chatWelcome">
+        <div class="welcome-badge-pill"><i class="fas fa-shield-alt"></i> Confidential & Encrypted Dialogue</div>
         <div class="welcome-icon">
-          <i class="fas fa-shield-heart"></i>
+          <i class="fas fa-hand-holding-heart"></i>
         </div>
-        <h2>Anonymous & Safe</h2>
-        <p>Start a private conversation with a mental health professional. Your real identity is never stored or shared.</p>
+        <h2>Safe, Anonymous Sanctuary</h2>
+        <p>Connect with a campus mental health professional in real time. Your student credentials, name, and email are completely detached from this session.</p>
+
+        <div class="welcome-quick-topics">
+          <span class="quick-topics-label">Choose a starting topic or begin an open dialogue:</span>
+          <div class="quick-topic-chips">
+            <button type="button" class="quick-topic-chip" onclick="quickStartTopic('Feeling overwhelmed with academic deadlines and coursework')">
+              <i class="fas fa-graduation-cap"></i> Academic Overwhelm
+            </button>
+            <button type="button" class="quick-topic-chip" onclick="quickStartTopic('Struggling with persistent anxiety and racing thoughts')">
+              <i class="fas fa-wind"></i> Anxiety & Stress
+            </button>
+            <button type="button" class="quick-topic-chip" onclick="quickStartTopic('Feeling isolated and needing a supportive listener')">
+              <i class="fas fa-heart"></i> Need to Talk
+            </button>
+          </div>
+        </div>
+
+        <button class="welcome-cta-btn" id="welcomeStartBtn" onclick="openModal()">
+          <i class="fas fa-comment-dots"></i> Begin Anonymous Session
+        </button>
+
         <div class="welcome-features">
           <div class="welcome-feature">
-            <i class="fas fa-user-secret"></i>
-            <span>Pseudonym Only</span>
+            <i class="fas fa-user-shield"></i>
+            <div class="feature-text">
+              <strong>Pseudonym Only</strong>
+              <span>No names or student IDs shared</span>
+            </div>
           </div>
           <div class="welcome-feature">
             <i class="fas fa-lock"></i>
-            <span>Private & Secure</span>
+            <div class="feature-text">
+              <strong>Decoupled Records</strong>
+              <span>Separated from your academic files</span>
+            </div>
           </div>
           <div class="welcome-feature">
-            <i class="fas fa-heart-pulse"></i>
-            <span>Professional Help</span>
+            <i class="fas fa-certificate"></i>
+            <div class="feature-text">
+              <strong>Licensed Counselors</strong>
+              <span>Compassionate, certified guidance</span>
+            </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Professional Welcome State: Triage & Responder Console -->
+      <div class="chat-welcome pro-welcome" id="proWelcome" style="display:none;">
+        <div class="welcome-badge-pill"><i class="fas fa-user-md"></i> Clinical Counselor Gateway</div>
+        <div class="welcome-icon pro-icon">
+          <i class="fas fa-headset"></i>
+        </div>
+        <h2>Counseling &amp; Triage Desk</h2>
+        <p>Welcome, <span id="proWelcomeName" style="font-weight:700; color:#161F36;">Counselor</span>. You are connected in active responder mode. Select a student conversation from the waiting queue to provide real-time confidential support.</p>
+
+        <!-- Live Responder Status Bar -->
+        <div class="pro-status-banner">
+          <span class="pro-pulse-indicator"></span>
+          <span><strong>Active Presence:</strong> Your counselor heartbeat is active. Students seeking support will route directly to your queue.</span>
+        </div>
+
+        <div class="welcome-features pro-guidelines">
+          <div class="welcome-feature">
+            <i class="fas fa-inbox"></i>
+            <div class="feature-text">
+              <strong>Triage &amp; Accept</strong>
+              <span>Review student emotions and energy tags before accepting</span>
+            </div>
+          </div>
+          <div class="welcome-feature">
+            <i class="fas fa-user-shield"></i>
+            <div class="feature-text">
+              <strong>Anonymous Boundaries</strong>
+              <span>Student identities remain pseudonymized for objective care</span>
+            </div>
+          </div>
+          <div class="welcome-feature">
+            <i class="fas fa-triangle-exclamation"></i>
+            <div class="feature-text">
+              <strong>Crisis Protocols</strong>
+              <span>High-risk indicators trigger automatic alerts in Crisis Alerts</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pro-queue-hint">
+          <i class="fas fa-arrow-left"></i> Select a conversation from the sidebar to review and respond
         </div>
       </div>
 
@@ -89,9 +163,9 @@
         </div>
 
         <!-- Accept Session Banner (professional only, shown for WAITING sessions) -->
-        <div id="acceptSessionBanner" style="display:none; padding:0.75rem 1.5rem; background:linear-gradient(135deg,#f0fdf4,#dcfce7); border-bottom:2px solid #86efac; text-align:center;">
-          <span style="font-size:0.85rem; color:#166534; font-weight:500; margin-right:0.75rem;">This session is waiting to be accepted.</span>
-          <button id="acceptSessionBtn" onclick="acceptCurrentSession()" style="background:linear-gradient(135deg,#16a34a,#15803d); color:#fff; border:none; padding:0.6rem 1.5rem; border-radius:0.5rem; font-size:0.9rem; font-weight:700; cursor:pointer; font-family:Inter,sans-serif; box-shadow:0 2px 8px rgba(22,163,74,0.3); letter-spacing:0.01em;">
+        <div id="acceptSessionBanner" style="display:none; padding:0.85rem 1.5rem; background:#FAF7F2; border-bottom:1.5px solid #E0D7C6; text-align:center;">
+          <span style="font-size:0.85rem; color:#161F36; font-weight:600; margin-right:1rem;">This session is waiting to be accepted.</span>
+          <button id="acceptSessionBtn" onclick="acceptCurrentSession()" style="background:#161F36; color:#FAF7F2; border:none; padding:0.6rem 1.5rem; border-radius:0.6rem; font-size:0.88rem; font-weight:700; cursor:pointer; font-family:Inter,sans-serif; box-shadow:0 2px 8px rgba(22,31,54,0.15); transition:all 0.2s ease;">
             <i class="fas fa-check"></i> Accept Session
           </button>
         </div>
@@ -187,7 +261,7 @@
     //  PROFESSIONAL accepts & responds interactively.
     // ============================================
 
-    const API_BASE = window.SAFE_SPACE_API_URL || (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:8080/api' : 'https://safespace-backend-ws0m.onrender.com/api');
+    const API_BASE = window.SAFE_SPACE_API_URL || (window.location.protocol === 'file:' || window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:8080/api' : 'https://safespace-backend-ws0m.onrender.com/api');
     const API = API_BASE + '/chat';
 
     // ── Role Detection ──
@@ -229,13 +303,36 @@
       if (isProfessional) {
         document.getElementById('newChatBtn').style.display = 'none';
         document.querySelector('#sidebarEmpty p').innerHTML = 'No sessions in queue.<br>Waiting for students...';
+
+        // Show professional welcome console, hide student sanctuary lounge
+        const chatWelcome = document.getElementById('chatWelcome');
+        const proWelcome = document.getElementById('proWelcome');
+        if (chatWelcome) chatWelcome.style.display = 'none';
+        if (proWelcome) {
+          proWelcome.style.display = 'flex';
+          const nameSpan = document.getElementById('proWelcomeName');
+          if (nameSpan) nameSpan.textContent = fullName || 'Counselor';
+        }
+
         startHeartbeat();
         await loadProfessionalSessions();
       } else {
         document.getElementById('newChatBtn').style.display = 'block';
+        const chatWelcome = document.getElementById('chatWelcome');
+        const proWelcome = document.getElementById('proWelcome');
+        if (chatWelcome) chatWelcome.style.display = 'flex';
+        if (proWelcome) proWelcome.style.display = 'none';
+
         await loadStudentSessions();
       }
       renderSessionList();
+
+      // Handle ?session= query parameter (e.g. from Crisis Alerts outreach)
+      const urlParams = new URLSearchParams(window.location.search);
+      const targetSessionId = urlParams.get('session');
+      if (targetSessionId) {
+        openSession(targetSessionId);
+      }
     }
 
     async function loadStudentSessions() {
@@ -320,7 +417,7 @@
         card.className = `session-card${s.sessionId === currentSessionId ? ' active' : ''}${hasUnread ? ' has-unread' : ''}`;
         card.onclick = () => openSession(s.sessionId);
 
-        const avatarClass = s.crisisFlag ? 'crisis' : (s.status === 'WAITING' ? 'waiting' : '');
+        const avatarClass = s.crisisFlag ? 'crisis' : (s.status === 'WAITING' ? 'waiting' : (s.status === 'ACTIVE' ? 'active' : ''));
         const statusClass = s.status.toLowerCase();
         const initials = s.studentPseudonym.split('-').slice(1, 2).join('').substring(0, 2).toUpperCase() || 'AN';
         const time = formatTime(s.createdAt);
@@ -357,8 +454,15 @@
 
     // ── Create Session ──
     function openModal() {
+      if (isProfessional) return;
       document.getElementById('newChatModal').style.display = 'flex';
       document.getElementById('modalPseudonym').focus();
+    }
+
+    function quickStartTopic(topic) {
+      if (isProfessional) return;
+      document.getElementById('modalTopic').value = topic;
+      openModal();
     }
 
     function closeModal() {
@@ -368,6 +472,10 @@
     document.getElementById('newChatBtn').addEventListener('click', openModal);
 
     async function createSession() {
+      if (isProfessional) {
+        alert('Professionals cannot create student sessions.');
+        return;
+      }
       const btn = document.getElementById('modalCreateBtn');
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
@@ -437,8 +545,12 @@
       currentSessionId = sessionId;
       lastMessageFingerprint = ''; // Reset so messages render immediately
 
-      // Update UI
-      document.getElementById('chatWelcome').style.display = 'none';
+      // Update UI: hide all welcome states
+      const chatWelcome = document.getElementById('chatWelcome');
+      if (chatWelcome) chatWelcome.style.display = 'none';
+      const proWelcome = document.getElementById('proWelcome');
+      if (proWelcome) proWelcome.style.display = 'none';
+
       const chatView = document.getElementById('chatView');
       chatView.style.display = 'flex';
 
@@ -540,6 +652,22 @@
         }
         if (session.status === 'ACTIVE' && session.professionalName) {
           addInfoMessage(container, `${session.professionalName} joined the conversation`);
+        }
+
+        // Clinical Intake Summary (Professional responder view)
+        if (isProfessional && (session.topic || session.emotionTag || session.energyScore)) {
+          const intakeDiv = document.createElement('div');
+          intakeDiv.className = 'session-intake-card';
+          intakeDiv.innerHTML = `
+            <div class="intake-header"><i class="fas fa-clipboard-user"></i> Student Intake Summary</div>
+            ${session.topic ? `<div class="intake-row"><strong>Reported Concern:</strong> <span>${escapeHtml(session.topic)}</span></div>` : ''}
+            <div class="intake-tags">
+              ${session.emotionTag ? `<span class="intake-tag"><i class="fas fa-heart"></i> Mood: ${escapeHtml(session.emotionTag)}</span>` : ''}
+              ${session.energyScore ? `<span class="intake-tag"><i class="fas fa-bolt"></i> Energy: ${session.energyScore}/10</span>` : ''}
+              ${session.crisisFlag ? `<span class="intake-tag crisis"><i class="fas fa-exclamation-triangle"></i> Crisis Alert Triggered</span>` : ''}
+            </div>
+          `;
+          container.appendChild(intakeDiv);
         }
       }
 

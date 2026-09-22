@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SafeSpace — Create Your Account</title>
+  <meta name="description" content="Register for SafeSpace. Create your account voluntarily and start accessing anonymous mental health support.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <style>
+    /* ── Registration Page — Compass Psychological Palette ── */
+    .register-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(145deg, #FAF7F2 0%, #F2EDE2 45%, #FFFFFF 75%, #ECE5D6 100%);
+      padding: 2.5rem 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .register-page::before {
+      content: '';
+      position: absolute;
+      top: -160px; right: -160px;
+      width: 520px; height: 520px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(186, 203, 216, 0.38) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .register-page::after {
+      content: '';
+      position: absolute;
+      bottom: -140px; left: -140px;
+      width: 480px; height: 480px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(22, 31, 54, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .register-card {
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(224, 215, 198, 0.9);
+      border-radius: 1.5rem;
+      box-shadow: 0 25px 60px rgba(22, 31, 54, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.9);
+      width: 100%;
+      max-width: 520px;
+      padding: 2.5rem;
+      position: relative;
+      z-index: 1;
+    }
+    .register-brand {
+      text-align: center;
+      margin-bottom: 1.75rem;
+    }
+    .register-brand .brand-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 1rem;
+      background: linear-gradient(135deg, #161F36 0%, #223152 100%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      color: #BACBD8;
+      margin-bottom: 0.75rem;
+      box-shadow: 0 8px 22px rgba(22, 31, 54, 0.28);
+    }
+    .register-brand h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #161F36;
+      letter-spacing: -0.02em;
+    }
+    .register-brand h1 span { color: #3D4D6E; }
+    .register-brand p {
+      font-size: 0.85rem;
+      color: #6C7A92;
+      margin-top: 0.35rem;
+    }
+
+    .register-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      transition: all 0.25s ease;
+    }
+    .register-row.single-col {
+      grid-template-columns: 1fr;
+    }
+
+    .form-select {
+      width: 100%;
+      padding: 0.75rem 2.25rem 0.75rem 2.75rem;
+      font-size: 0.875rem;
+      font-family: inherit;
+      color: #161F36;
+      background: #FFFFFF;
+      border: 1.5px solid #E0D7C6;
+      border-radius: 0.75rem;
+      outline: none;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+    }
+    .form-select:focus {
+      border-color: #BACBD8;
+      box-shadow: 0 0 0 3px rgba(186, 203, 216, 0.35);
+      background: #fff;
+    }
+    .form-select:invalid,
+    .form-select option[value=""] {
+      color: #8C98A9;
+    }
+    .form-select option {
+      color: #161F36;
+      background: #FFFFFF;
+      padding: 0.5rem;
+    }
+    .select-arrow {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6C7A92;
+      font-size: 0.75rem;
+      pointer-events: none;
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+    .input-wrapper:focus-within .select-arrow {
+      color: #161F36;
+    }
+
+    .role-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+    .role-option {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      padding: 0.65rem 0.75rem;
+      border: 2px solid #E0D7C6;
+      border-radius: 0.6rem;
+      background: #fff;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #161F36;
+      transition: all 0.25s ease;
+    }
+    .role-option:hover {
+      border-color: #BACBD8;
+      color: #161F36;
+      background: #F2EDE2;
+    }
+    .role-option.active {
+      border-color: #161F36;
+      background: #F2EDE2;
+      color: #161F36;
+      box-shadow: 0 2px 8px rgba(22, 31, 54, 0.12);
+    }
+    .role-option i {
+      font-size: 0.85rem;
+      color: #161F36;
+    }
+
+    .pw-strength {
+      display: flex;
+      gap: 4px;
+      margin-top: 0.4rem;
+    }
+    .pw-strength-bar {
+      height: 4px;
+      flex: 1;
+      border-radius: 2px;
+      background: #E0D7C6;
+      transition: background 0.3s ease;
+    }
+    .pw-strength-bar.weak { background: #ef4444; }
+    .pw-strength-bar.medium { background: #f59e0b; }
+    .pw-strength-bar.strong { background: #161F36; }
+    .pw-strength-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      margin-top: 0.25rem;
+      text-align: right;
+      color: #6C7A92;
+    }
+
+    .register-error {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 0.6rem;
+      color: #dc2626;
+      font-size: 0.82rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+    }
+    .register-error.visible { display: flex; }
+    .register-error i { flex-shrink: 0; }
+
+    .register-success {
+      display: none;
+      text-align: center;
+      padding: 2rem 1rem;
+    }
+    .register-success.visible { display: block; }
+    .register-success .success-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #F2EDE2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: #161F36;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 14px rgba(22, 31, 54, 0.15);
+      border: 1px solid #E0D7C6;
+    }
+    .register-success h2 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #161F36;
+      margin-bottom: 0.5rem;
+    }
+    .register-success p {
+      font-size: 0.88rem;
+      color: #6C7A92;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+    .register-success .cred-info {
+      padding: 1.1rem;
+      background: #FAF7F2;
+      border-radius: 0.75rem;
+      border: 1.5px solid #E0D7C6;
+      margin-bottom: 1.5rem;
+      text-align: left;
+    }
+    .register-success .cred-info .cred-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.35rem 0;
+      font-size: 0.82rem;
+    }
+    .register-success .cred-info .cred-row .label {
+      color: #6C7A92;
+      font-weight: 500;
+    }
+    .register-success .cred-info .cred-row .value {
+      font-weight: 700;
+      color: #161F36;
+    }
+
+    .register-footer {
+      text-align: center;
+      margin-top: 1.25rem;
+      font-size: 0.82rem;
+      color: #6C7A92;
+    }
+    .register-footer a {
+      color: #161F36;
+      text-decoration: none;
+      font-weight: 700;
+      transition: color 0.2s ease;
+    }
+    .register-footer a:hover {
+      color: #3D4D6E;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.82rem;
+      color: #161F36;
+      text-decoration: none;
+      margin-bottom: 1.25rem;
+      font-weight: 600;
+      transition: color 0.2s ease;
+    }
+    .back-link:hover { color: #3D4D6E; }
+
+    /* ── Terms & Conditions Checkbox ── */
+    .terms-row {
+      margin: 1rem 0 0.5rem 0;
+    }
+    .terms-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .terms-checkbox {
+      width: 1.15rem;
+      height: 1.15rem;
+      min-width: 1.15rem;
+      margin-top: 0.15rem;
+      accent-color: #161F36;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .terms-text {
+      font-size: 0.815rem;
+      color: #4A5568;
+      line-height: 1.45;
+    }
+    .terms-link {
+      color: #161F36;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: color 0.2s ease, opacity 0.2s ease;
+    }
+    .terms-link:hover {
+      color: #3D4D6E;
+      opacity: 0.85;
+    }
+
+    /* ── Terms & Conditions Modal ── */
+    .terms-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(22, 31, 54, 0.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 1.25rem;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .terms-modal-overlay.open {
+      display: flex;
+      opacity: 1;
+    }
+    .terms-modal-card {
+      background: #FFFFFF;
+      border: 1px solid rgba(224, 215, 198, 0.9);
+      border-radius: 1.25rem;
+      box-shadow: 0 25px 60px rgba(22, 31, 54, 0.25);
+      width: 100%;
+      max-width: 580px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: translateY(15px) scale(0.98);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .terms-modal-overlay.open .terms-modal-card {
+      transform: translateY(0) scale(1);
+    }
+    .terms-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #ECE5D6;
+      background: #FAF7F2;
+    }
+    .terms-modal-header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+    .terms-modal-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #161F36 0%, #223152 100%);
+      color: #BACBD8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      flex-shrink: 0;
+    }
+    .terms-modal-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #161F36;
+      margin: 0;
+      line-height: 1.2;
+    }
+    .terms-modal-subtitle {
+      font-size: 0.75rem;
+      color: #6C7A92;
+      margin: 0.2rem 0 0 0;
+      font-weight: 500;
+    }
+    .terms-modal-close {
+      background: transparent;
+      border: none;
+      font-size: 1.15rem;
+      color: #6C7A92;
+      cursor: pointer;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .terms-modal-close:hover {
+      background: #E0D7C6;
+      color: #161F36;
+    }
+    .terms-modal-tabs {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.65rem 1.5rem;
+      background: #F4EFE6;
+      border-bottom: 1px solid #ECE5D6;
+    }
+    .terms-tab-btn {
+      flex: 1;
+      padding: 0.55rem 0.75rem;
+      border: 1.5px solid transparent;
+      background: transparent;
+      border-radius: 0.5rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #6C7A92;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      transition: all 0.2s;
+    }
+    .terms-tab-btn:hover {
+      color: #161F36;
+      background: rgba(255, 255, 255, 0.5);
+    }
+    .terms-tab-btn.active {
+      background: #FFFFFF;
+      color: #161F36;
+      border-color: #E0D7C6;
+      box-shadow: 0 2px 6px rgba(22, 31, 54, 0.06);
+    }
+    .terms-modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      flex: 1;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: #334155;
+    }
+    .terms-tab-content {
+      display: none;
+    }
+    .terms-tab-content.active {
+      display: block;
+      animation: fadeIn 0.25s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .terms-section {
+      margin-bottom: 1.35rem;
+    }
+    .terms-section h3 {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #161F36;
+      margin: 0 0 0.4rem 0;
+    }
+    .terms-section p {
+      margin: 0 0 0.5rem 0;
+      color: #475569;
+    }
+    .terms-section ul {
+      margin: 0.35rem 0 0.5rem 1.25rem;
+      padding: 0;
+      color: #475569;
+    }
+    .terms-section li {
+      margin-bottom: 0.3rem;
+    }
+    .terms-alert-box {
+      background: #FEF3C7;
+      border: 1px solid #F59E0B;
+      border-radius: 0.65rem;
+      padding: 0.75rem 1rem;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      font-size: 0.8rem;
+      color: #92400E;
+      margin-top: 0.75rem;
+      line-height: 1.45;
+    }
+    .terms-alert-box i {
+      font-size: 1rem;
+      margin-top: 0.15rem;
+      color: #D97706;
+      flex-shrink: 0;
+    }
+    .terms-modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid #ECE5D6;
+      background: #FAF7F2;
+    }
+    .terms-btn-secondary {
+      padding: 0.65rem 1.25rem;
+      background: #FFFFFF;
+      border: 1.5px solid #E0D7C6;
+      border-radius: 0.6rem;
+      color: #161F36;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .terms-btn-secondary:hover {
+      background: #F2EDE2;
+      border-color: #BACBD8;
+    }
+    .terms-btn-primary {
+      padding: 0.65rem 1.35rem;
+      background: #161F36;
+      border: 1.5px solid #161F36;
+      border-radius: 0.6rem;
+      color: #FFFFFF;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(22, 31, 54, 0.15);
+    }
+    .terms-btn-primary:hover {
+      background: #223152;
+      border-color: #223152;
+      transform: translateY(-1px);
+    }
+
+    @media (max-width: 480px) {
+      .register-card { padding: 1.5rem; }
+      .register-row { grid-template-columns: 1fr; }
+      .terms-modal-card { max-height: 90vh; }
+      .terms-modal-header { padding: 1rem; }
+      .terms-modal-body { padding: 1rem; }
+      .terms-modal-footer { padding: 0.75rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="register-page">
+    <div class="register-card">
+
+      <a href="landing.html" class="back-link">
+        <i class="fas fa-arrow-left"></i> Back to Home
+      </a>
+
+      <div class="register-brand">
+        <div class="brand-icon"><i class="fas fa-shield-heart"></i></div>
+        <h1>Create Your <span>Account</span></h1>
+        <p>Join SafeSpace voluntarily — your privacy is protected</p>
+      </div>
+
+      <!-- Error Banner -->
+      <div class="register-error" id="registerError">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="registerErrorText"></span>
+      </div>
+
+      <!-- Registration Form -->
+      <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)" style="display:block;">
+        <!-- Role Selector -->
+        <div class="form-group">
+          <label class="form-label">I am a</label>
+          <div class="role-selector">
+            <div class="role-option active" id="roleStudent" onclick="selectRole('STUDENT')">
+              <i class="fas fa-graduation-cap"></i> Student
+            </div>
+            <div class="role-option" id="roleProfessional" onclick="selectRole('PROFESSIONAL')">
+              <i class="fas fa-user-doctor"></i> Professional
+            </div>
+          </div>
+          <input type="hidden" id="regRole" value="STUDENT">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <div class="input-wrapper">
+            <i class="fas fa-user input-icon-left"></i>
+            <input class="form-input input-icon" type="text" id="regFullName"
+              placeholder="e.g. Juan Dela Cruz" required autocomplete="name">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Institutional ID</label>
+          <div class="input-wrapper">
+            <i class="fas fa-id-badge input-icon-left"></i>
+            <input class="form-input input-icon" type="text" id="regInstId"
+              placeholder="e.g. 2021-00001" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <div class="input-wrapper">
+            <i class="fas fa-envelope input-icon-left"></i>
+            <input class="form-input input-icon" type="email" id="regEmail"
+              placeholder="e.g. juan@school.edu" autocomplete="email">
+          </div>
+        </div>
+
+        <div class="register-row" id="deptRow">
+          <!-- Student Department -->
+          <div class="form-group" id="studentDeptGroup">
+            <label class="form-label" for="regDepartment">Department</label>
+            <div class="input-wrapper">
+              <i class="fas fa-building input-icon-left"></i>
+              <select class="form-input form-select" id="regDepartment">
+                <option value="" disabled selected>Select Department</option>
+                <option value="BSIT">BSIT</option>
+                <option value="BSA">BSA</option>
+                <option value="BAT">BAT</option>
+                <option value="BTLED">BTLED</option>
+              </select>
+              <i class="fas fa-chevron-down select-arrow"></i>
+            </div>
+          </div>
+
+          <!-- Professional Role -->
+          <div class="form-group" id="professionalRoleGroup" style="display:none;">
+            <label class="form-label" for="regProfessionalRole">Professional Role</label>
+            <div class="input-wrapper">
+              <i class="fas fa-user-doctor input-icon-left"></i>
+              <select class="form-input form-select" id="regProfessionalRole">
+                <option value="" disabled selected>Select Professional Role</option>
+                <option value="Psychometrician">Psychometrician</option>
+                <option value="Psychologist">Psychologist</option>
+                <option value="Guidance Counselor">Guidance Counselor</option>
+              </select>
+              <i class="fas fa-chevron-down select-arrow"></i>
+            </div>
+          </div>
+
+          <!-- Student Year Level -->
+          <div class="form-group" id="yearLevelGroup">
+            <label class="form-label" for="regYearLevel">Year Level</label>
+            <div class="input-wrapper">
+              <i class="fas fa-layer-group input-icon-left"></i>
+              <select class="form-input form-select" id="regYearLevel">
+                <option value="" disabled selected>Select Year Level</option>
+                <option value="1ST YEAR">1ST YEAR</option>
+                <option value="2ND YEAR">2ND YEAR</option>
+                <option value="3RD YEAR">3RD YEAR</option>
+                <option value="4TH YEAR">4TH YEAR</option>
+              </select>
+              <i class="fas fa-chevron-down select-arrow"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password (min. 8 characters)</label>
+          <div class="input-wrapper">
+            <i class="fas fa-lock input-icon-left"></i>
+            <input class="form-input input-icon" type="password" id="regPassword"
+              placeholder="Create a strong password" required minlength="8"
+              autocomplete="new-password" oninput="updatePasswordStrength()">
+            <button type="button" class="input-toggle-pw" onclick="togglePw('regPassword', this)">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          <div class="pw-strength" id="pwStrength">
+            <div class="pw-strength-bar" id="pwBar1"></div>
+            <div class="pw-strength-bar" id="pwBar2"></div>
+            <div class="pw-strength-bar" id="pwBar3"></div>
+            <div class="pw-strength-bar" id="pwBar4"></div>
+          </div>
+          <div class="pw-strength-label" id="pwStrengthLabel"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <div class="input-wrapper">
+            <i class="fas fa-check-double input-icon-left"></i>
+            <input class="form-input input-icon" type="password" id="regConfirmPassword"
+              placeholder="Re-enter your password" required minlength="8"
+              autocomplete="new-password">
+            <button type="button" class="input-toggle-pw" onclick="togglePw('regConfirmPassword', this)">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="terms-row">
+          <label class="terms-label" for="regTerms">
+            <input type="checkbox" id="regTerms" class="terms-checkbox" required>
+            <span class="terms-text">
+              I agree to the <a href="javascript:void(0)" class="terms-link" onclick="openTermsModal('terms')">Terms and Conditions</a> and <a href="javascript:void(0)" class="terms-link" onclick="openTermsModal('privacy')">Privacy Policy</a>
+            </span>
+          </label>
+        </div>
+
+        <button type="submit" class="login-btn" id="registerBtn" style="margin-top:0.5rem;">
+          <i class="fas fa-user-plus"></i> Create Account
+        </button>
+      </form>
+
+      <!-- Success State -->
+      <div class="register-success" id="registerSuccess">
+        <div class="success-icon"><i class="fas fa-check"></i></div>
+        <h2>Registration Successful!</h2>
+        <p>Your account has been created. You can now log in with your credentials.</p>
+        <div class="cred-info" id="credInfo"></div>
+        <a href="login.html" class="login-btn" style="display:inline-flex;text-decoration:none;justify-content:center;">
+          <i class="fas fa-right-to-bracket"></i> Go to Login
+        </a>
+      </div>
+
+      <div class="register-footer" id="registerFooter">
+        Already have an account? <a href="login.html">Sign In</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.SAFE_SPACE_API_URL || (
+      window.location.protocol === 'file:' ||
+      window.location.origin.includes('localhost') ||
+      window.location.origin.includes('127.0.0.1')
+        ? 'http://localhost:8080/api'
+        : 'https://safespace-backend-ws0m.onrender.com/api'
+    );
+
+    let selectedRole = 'STUDENT';
+
+    function selectRole(role) {
+      selectedRole = role;
+      document.getElementById('regRole').value = role;
+      document.getElementById('roleStudent').classList.toggle('active', role === 'STUDENT');
+      document.getElementById('roleProfessional').classList.toggle('active', role === 'PROFESSIONAL');
+
+      const studentDept = document.getElementById('studentDeptGroup');
+      const profRole = document.getElementById('professionalRoleGroup');
+      const yearGroup = document.getElementById('yearLevelGroup');
+      const deptRow = document.getElementById('deptRow');
+      const yearSelect = document.getElementById('regYearLevel');
+
+      if (role === 'PROFESSIONAL') {
+        if (studentDept) studentDept.style.display = 'none';
+        if (profRole) profRole.style.display = '';
+        if (yearGroup) yearGroup.style.display = 'none';
+        if (deptRow) deptRow.classList.add('single-col');
+        if (yearSelect) yearSelect.value = '';
+      } else {
+        if (studentDept) studentDept.style.display = '';
+        if (profRole) profRole.style.display = 'none';
+        if (yearGroup) yearGroup.style.display = '';
+        if (deptRow) deptRow.classList.remove('single-col');
+      }
+    }
+
+    function togglePw(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+      } else {
+        input.type = 'password';
+        btn.innerHTML = '<i class="fas fa-eye"></i>';
+      }
+    }
+
+    function updatePasswordStrength() {
+      const pw = document.getElementById('regPassword').value;
+      const bars = [
+        document.getElementById('pwBar1'),
+        document.getElementById('pwBar2'),
+        document.getElementById('pwBar3'),
+        document.getElementById('pwBar4')
+      ];
+      const label = document.getElementById('pwStrengthLabel');
+
+      let score = 0;
+      if (pw.length >= 8) score++;
+      if (/[A-Z]/.test(pw)) score++;
+      if (/[0-9]/.test(pw)) score++;
+      if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+      bars.forEach((bar, i) => {
+        bar.className = 'pw-strength-bar';
+        if (i < score) {
+          if (score <= 1) bar.classList.add('weak');
+          else if (score <= 2) bar.classList.add('medium');
+          else bar.classList.add('strong');
+        }
+      });
+
+      if (pw.length === 0) {
+        label.textContent = '';
+        label.style.color = '';
+      } else if (score <= 1) {
+        label.textContent = 'Weak';
+        label.style.color = '#ef4444';
+      } else if (score <= 2) {
+        label.textContent = 'Medium';
+        label.style.color = '#f59e0b';
+      } else {
+        label.textContent = 'Strong';
+        label.style.color = '#161F36';
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+
+      const btn = document.getElementById('registerBtn');
+      const errDiv = document.getElementById('registerError');
+      const errText = document.getElementById('registerErrorText');
+
+      const password = document.getElementById('regPassword').value;
+      const confirmPassword = document.getElementById('regConfirmPassword').value;
+
+      if (password !== confirmPassword) {
+        errText.textContent = 'Passwords do not match.';
+        errDiv.classList.add('visible');
+        return;
+      }
+
+      const terms = document.getElementById('regTerms');
+      if (terms && !terms.checked) {
+        errText.textContent = 'Please accept the Terms and Conditions to create your account.';
+        errDiv.classList.add('visible');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+      errDiv.classList.remove('visible');
+
+      try {
+        const deptValue = selectedRole === 'STUDENT'
+          ? (document.getElementById('regDepartment').value || undefined)
+          : (document.getElementById('regProfessionalRole').value || undefined);
+
+        const body = {
+          institutionalId: document.getElementById('regInstId').value.trim(),
+          fullName: document.getElementById('regFullName').value.trim(),
+          email: document.getElementById('regEmail').value.trim() || undefined,
+          department: deptValue,
+          yearLevel: selectedRole === 'STUDENT' ? (document.getElementById('regYearLevel').value || undefined) : undefined,
+          role: selectedRole,
+          password: password,
+          confirmPassword: confirmPassword
+        };
+
+        const res = await fetch(`${API_BASE}/auth/self-register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Registration failed.');
+        }
+
+        // Show success state
+        document.getElementById('registerForm').style.display = 'none';
+        document.getElementById('registerFooter').style.display = 'none';
+
+        document.getElementById('credInfo').innerHTML = `
+          <div class="cred-row">
+            <span class="label">Username</span>
+            <span class="value">${escapeHtml(data.username)}</span>
+          </div>
+          <div class="cred-row">
+            <span class="label">Full Name</span>
+            <span class="value">${escapeHtml(data.fullName)}</span>
+          </div>
+          <div class="cred-row">
+            <span class="label">Role</span>
+            <span class="value">${escapeHtml(data.role)}</span>
+          </div>
+          ${data.department ? `
+          <div class="cred-row">
+            <span class="label">${selectedRole === 'STUDENT' ? 'Department' : 'Professional Role'}</span>
+            <span class="value">${escapeHtml(data.department)}</span>
+          </div>` : ''}
+          ${data.yearLevel ? `
+          <div class="cred-row">
+            <span class="label">Year Level</span>
+            <span class="value">${escapeHtml(data.yearLevel)}</span>
+          </div>` : ''}
+        `;
+
+        document.getElementById('registerSuccess').classList.add('visible');
+
+      } catch (err) {
+        let msg = err.message || 'Registration failed.';
+        if (msg === 'Failed to fetch' || msg.includes('NetworkError')) {
+          msg = 'Unable to connect to backend server. Please ensure the backend is running on ' + API_BASE;
+        }
+        errText.textContent = msg;
+        errDiv.classList.add('visible');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+      }
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ── Terms and Conditions Modal Handlers ──
+    function openTermsModal(tab = 'terms') {
+      switchTermsTab(tab);
+      const modal = document.getElementById('termsModal');
+      if (modal) modal.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeTermsModal() {
+      const modal = document.getElementById('termsModal');
+      if (modal) modal.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function handleTermsOverlayClick(e) {
+      if (e.target.id === 'termsModal') {
+        closeTermsModal();
+      }
+    }
+
+    function acceptTermsAndClose() {
+      const termsCheckbox = document.getElementById('regTerms');
+      if (termsCheckbox) termsCheckbox.checked = true;
+      closeTermsModal();
+    }
+
+    function switchTermsTab(tab) {
+      const isTerms = tab === 'terms';
+      const tabTermsBtn = document.getElementById('tabTermsBtn');
+      const tabPrivacyBtn = document.getElementById('tabPrivacyBtn');
+      const tabContentTerms = document.getElementById('tabContentTerms');
+      const tabContentPrivacy = document.getElementById('tabContentPrivacy');
+      const termsModalTitle = document.getElementById('termsModalTitle');
+
+      if (tabTermsBtn) tabTermsBtn.classList.toggle('active', isTerms);
+      if (tabPrivacyBtn) tabPrivacyBtn.classList.toggle('active', !isTerms);
+      if (tabContentTerms) tabContentTerms.classList.toggle('active', isTerms);
+      if (tabContentPrivacy) tabContentPrivacy.classList.toggle('active', !isTerms);
+      if (termsModalTitle) termsModalTitle.textContent = isTerms ? 'Terms of Use' : 'Privacy & Confidentiality';
+
+      const body = document.getElementById('termsBody');
+      if (body) body.scrollTop = 0;
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeTermsModal();
+    });
+
+    // Auto-focus
+    document.getElementById('regFullName').focus();
+
+    // If already logged in, redirect
+    if (localStorage.getItem('ss_token')) {
+      const role = localStorage.getItem('ss_role');
+      if (role === 'PROFESSIONAL') window.location.href = 'pro-dashboard.html';
+      else if (role) window.location.href = 'rant-board.html';
+    }
+  </script>
+
+  <!-- ── Terms and Conditions Modal ── -->
+  <div class="terms-modal-overlay" id="termsModal" onclick="handleTermsOverlayClick(event)">
+    <div class="terms-modal-card" role="dialog" aria-modal="true" aria-labelledby="termsModalTitle">
+      <div class="terms-modal-header">
+        <div class="terms-modal-header-left">
+          <div class="terms-modal-icon">
+            <i class="fas fa-shield-halved"></i>
+          </div>
+          <div>
+            <h2 id="termsModalTitle" class="terms-modal-title">Terms of Use</h2>
+            <p class="terms-modal-subtitle">SafeSpace University Sanctuary Agreement • Effective 2026</p>
+          </div>
+        </div>
+        <button type="button" class="terms-modal-close" onclick="closeTermsModal()" aria-label="Close modal">
+          <i class="fas fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="terms-modal-tabs">
+        <button type="button" class="terms-tab-btn active" id="tabTermsBtn" onclick="switchTermsTab('terms')">
+          <i class="fas fa-file-contract"></i> Terms of Use
+        </button>
+        <button type="button" class="terms-tab-btn" id="tabPrivacyBtn" onclick="switchTermsTab('privacy')">
+          <i class="fas fa-user-shield"></i> Privacy & Confidentiality
+        </button>
+      </div>
+
+      <div class="terms-modal-body" id="termsBody">
+        <!-- Tab 1: Terms of Use -->
+        <div class="terms-tab-content active" id="tabContentTerms">
+          <div class="terms-section">
+            <h3>1. Purpose & Voluntary Engagement</h3>
+            <p>SafeSpace is an institution-affiliated psychological wellness sanctuary developed to provide students and campus mental health professionals with safe, confidential emotional support, psychoeducational tools, peer venting boards, and guided counseling. All registration and participation in SafeSpace is completely voluntary.</p>
+          </div>
+
+          <div class="terms-section">
+            <h3>2. User Accounts & Verification</h3>
+            <p>Users must provide accurate institutional identification for credential verification. Accounts are personal and non-transferable. You are solely responsible for maintaining the confidentiality of your chosen password.</p>
+          </div>
+
+          <div class="terms-section">
+            <h3>3. Community Standards & Safe Conduct</h3>
+            <p>SafeSpace is an empathetic, healing space. By using the platform, you agree to treat every peer and professional with dignity. The following behaviors are strictly prohibited:</p>
+            <ul>
+              <li>Cyberbullying, harassment, intimidation, or targeted hate speech against any student, faculty, or staff member.</li>
+              <li>Publishing non-consensual personal information, doxxing, or defamatory statements.</li>
+              <li>Intentional misuse or spamming of anonymous rant boards or counseling queue systems.</li>
+            </ul>
+            <p>Violations will result in immediate content removal and permanent revocation of platform privileges.</p>
+          </div>
+
+          <div class="terms-section">
+            <h3>4. Boundaries of Guidance Counseling & Emergency Situations</h3>
+            <p>Guidance counselors and psychometricians provide psychological first aid, emotional guidance, and supportive triage. SafeSpace is <strong>not an emergency healthcare facility or 24/7 psychiatric emergency ward</strong>.</p>
+            <div class="terms-alert-box">
+              <i class="fas fa-triangle-exclamation"></i>
+              <div>
+                <strong>Life-Threatening Emergency Notice:</strong> If you or someone you know is experiencing severe immediate distress or life-threatening harm, please contact national emergency services immediately:
+                <br><strong>National Crisis Hotline: 1553 (Toll-Free) or 0966-351-4518</strong>.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Privacy & Confidentiality Policy -->
+        <div class="terms-tab-content" id="tabContentPrivacy">
+          <div class="terms-section">
+            <h3>1. Philippine Data Privacy Act Compliance</h3>
+            <p>SafeSpace strictly adheres to the <strong>Data Privacy Act of 2012 (Republic Act No. 10173)</strong>. Your personal data is collected solely for institutional verification, session routing, and platform integrity, and is never sold, harvested, or shared with unauthorized third parties.</p>
+          </div>
+
+          <div class="terms-section">
+            <h3>2. Shielded Identity & Decoupled Anonymity</h3>
+            <p>When participating in public or community features (such as the Rant Board), your real name, institutional ID, and personal identifiers are completely decoupled and replaced with randomized anonymous handles. Your peers cannot see your real identity.</p>
+          </div>
+
+          <div class="terms-section">
+            <h3>3. Limits of Confidentiality & Duty of Care</h3>
+            <p>Counseling confidentiality is sacred. However, in compliance with Philippine mental health laws and professional ethical standards, confidentiality is subject to mandatory ethical limits:</p>
+            <ul>
+              <li>When a client poses a clear, immediate, and imminent danger of suicide or severe self-harm.</li>
+              <li>When there is an active, imminent threat to the life or physical safety of another individual.</li>
+              <li>When disclosure is legally mandated by child protection laws or judicial court orders.</li>
+            </ul>
+            <p>In such rare life-safety emergencies, authorized professionals may initiate designated campus safety protocols to protect human life.</p>
+          </div>
+
+          <div class="terms-section">
+            <h3>4. Data Encryption & Security Standards</h3>
+            <p>Passwords are salted and cryptographically hashed before storage. Data transmission is secured using industry-standard TLS encryption, and access permissions are governed by strict Role-Based Access Controls (RBAC).</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="terms-modal-footer">
+        <button type="button" class="terms-btn-secondary" onclick="closeTermsModal()">
+          Close
+        </button>
+        <button type="button" class="terms-btn-primary" onclick="acceptTermsAndClose()">
+          <i class="fas fa-check"></i> I Understand & Agree
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

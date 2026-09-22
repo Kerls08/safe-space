@@ -48,6 +48,20 @@ public class AuthDTOs {
         private String role; // STUDENT, PROFESSIONAL
     }
 
+    // ── Public Self-Registration ──
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor
+    public static class SelfRegisterRequest {
+        private String institutionalId;
+        private String fullName;
+        private String email;
+        private String department;
+        private String yearLevel;
+        private String role; // STUDENT, PROFESSIONAL
+        private String password;
+        private String confirmPassword;
+    }
+
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class RegisterUserResponse {
         private String institutionalId;

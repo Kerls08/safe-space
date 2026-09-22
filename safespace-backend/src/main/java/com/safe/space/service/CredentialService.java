@@ -192,6 +192,62 @@ public class CredentialService {
                 .build();
     }
 
+    // ── 3b. Public Self-Registration ──
+
+    @Transactional
+    public RegisterUserResponse selfRegister(SelfRegisterRequest request) {
+        // Validate required fields
+        if (request.getInstitutionalId() == null || request.getInstitutionalId().isBlank())
+            throw new IllegalArgumentException("Institutional ID is required.");
+        if (request.getFullName() == null || request.getFullName().isBlank())
+            throw new IllegalArgumentException("Full name is required.");
+        if (request.getRole() == null || request.getRole().isBlank())
+            throw new IllegalArgumentException("Role is required.");
+        if (request.getPassword() == null || request.getPassword().length() < MIN_PASSWORD_LENGTH)
+            throw new IllegalArgumentException("Password must be at least " + MIN_PASSWORD_LENGTH + " characters.");
+        if (!request.getPassword().equals(request.getConfirmPassword()))
+            throw new IllegalArgumentException("Passwords do not match.");
+
+        // Check for duplicates
+        if (userRepository.existsByInstitutionalId(request.getInstitutionalId())) {
+            throw new IllegalArgumentException("An account with this Institutional ID already exists.");
+        }
+
+        String username = request.getInstitutionalId();
+        if (userRepository.existsByUsername(username)) {
+            username = request.getInstitutionalId() + "-" + RANDOM.nextInt(1000);
+        }
+
+        String role = normalizeRole(request.getRole());
+
+        User user = User.builder()
+                .institutionalId(request.getInstitutionalId())
+                .username(username)
+                .passwordHash(ENCODER.encode(request.getPassword()))
+                .fullName(request.getFullName())
+                .email(request.getEmail())
+                .department(request.getDepartment())
+                .yearLevel(request.getYearLevel())
+                .role(role)
+                .active(true)
+                .passwordChanged(true)        // user chose their own password
+                .forcePasswordChange(false)   // no forced change needed
+                .build();
+
+        userRepository.save(user);
+
+        log.info("Self-registration: institutionalId={}, username={}, role={}",
+                user.getInstitutionalId(), user.getUsername(), user.getRole());
+
+        return RegisterUserResponse.builder()
+                .institutionalId(user.getInstitutionalId())
+                .username(user.getUsername())
+                .fullName(user.getFullName())
+                .role(user.getRole())
+                .message("Registration successful! You can now log in.")
+                .build();
+    }
+
     // ── 4. Admin: Batch Import ──
 
     @Transactional

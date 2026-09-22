@@ -23,8 +23,8 @@
         <div class="res-header-left">
           <div class="res-header-icon"><i class="fas fa-hand-holding-heart"></i></div>
           <div>
-            <h1>Resource Linker</h1>
-            <p>Manage wellness resources served to students based on emotional state</p>
+            <h1>Campus Support &amp; Crisis Resources</h1>
+            <p>Curated trauma-informed hotlines, campus offices, and mental wellness pathways</p>
           </div>
         </div>
         <div class="res-stats" id="resStats">
@@ -179,7 +179,7 @@
   </div>
 
   <script>
-    const API_BASE = window.SAFE_SPACE_API_URL || (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:8080/api' : 'https://safespace-backend-ws0m.onrender.com/api');
+    const API_BASE = window.SAFE_SPACE_API_URL || (window.location.protocol === 'file:' || window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:8080/api' : 'https://safespace-backend-ws0m.onrender.com/api');
     const API = API_BASE + '/resources';
     let allResources = [];
     let currentCatFilter = 'ALL';
@@ -318,6 +318,10 @@
       const linkDisplay = (r.link || '').length > 45 ? r.link.substring(0, 45) + '...' : r.link;
       const iconClass = r.icon || 'fas fa-link';
 
+      const isTel = (r.link || '').startsWith('tel:');
+      const isSms = (r.link || '').startsWith('sms:');
+      const linkIcon = isTel ? 'fa-phone-volume' : isSms ? 'fa-comment-dots' : 'fa-arrow-up-right-from-square';
+
       return `
         <div class="res-card ${r.active ? '' : 'inactive'}" data-id="${r.id}">
           <div class="res-card-top">
@@ -335,11 +339,11 @@
           </div>
 
           <a class="res-card-link" href="${esc(r.link)}" target="_blank" rel="noopener">
-            <i class="fas fa-arrow-up-right-from-square"></i> ${esc(linkDisplay)}
+            <i class="fas ${linkIcon}"></i> ${esc(linkDisplay)}
           </a>
 
           <div class="res-tags">
-            <span class="res-tag cat">${catLabels[r.category] || r.category}</span>
+            <span class="res-tag cat ${r.category}">${catLabels[r.category] || r.category}</span>
             <span class="res-tag energy">⚡ ${energyRange}</span>
             <span class="res-tag priority">↑ P${r.priority}</span>
             ${emotionTags}
@@ -347,12 +351,12 @@
 
           ${showActions ? `
           <div class="res-card-actions">
-            <button class="btn-res" onclick="openEditModal(${r.id})"><i class="fas fa-pen"></i> Edit</button>
+            <button class="btn-res btn-edit" onclick="openEditModal(${r.id})"><i class="fas fa-pen"></i> Edit</button>
             ${r.active
-              ? `<button class="btn-res danger" onclick="toggleActive(${r.id}, false)"><i class="fas fa-eye-slash"></i> Deactivate</button>`
-              : `<button class="btn-res" onclick="toggleActive(${r.id}, true)"><i class="fas fa-eye"></i> Reactivate</button>`
+              ? `<button class="btn-res btn-deactivate" onclick="toggleActive(${r.id}, false)"><i class="fas fa-eye-slash"></i> Deactivate</button>`
+              : `<button class="btn-res btn-activate" onclick="toggleActive(${r.id}, true)"><i class="fas fa-eye"></i> Reactivate</button>`
             }
-            <button class="btn-res danger" onclick="deleteResource(${r.id})"><i class="fas fa-trash"></i></button>
+            <button class="btn-res btn-delete" onclick="deleteResource(${r.id})" title="Delete"><i class="fas fa-trash"></i></button>
           </div>` : ''}
         </div>
       `;

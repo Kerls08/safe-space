@@ -95,6 +95,16 @@ public class CredentialController {
     }
 
     /**
+     * Public self-registration for students and professionals.
+     * No authentication required — users create their own accounts.
+     */
+    @PostMapping("/self-register")
+    public ResponseEntity<RegisterUserResponse> selfRegister(@RequestBody SelfRegisterRequest request) {
+        RegisterUserResponse response = credentialService.selfRegister(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
      * Batch import users from the institutional student directory.
      * Accepts a list of user records and creates accounts with generated passwords.
      */

@@ -4,7 +4,7 @@ spring:
 
   # ── Database (Cloud PostgreSQL / Local H2 Fallback) ──
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:safespace}
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:file:./data/safespace;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE}
     username: ${SPRING_DATASOURCE_USERNAME:sa}
     password: ${SPRING_DATASOURCE_PASSWORD:}
     hikari:

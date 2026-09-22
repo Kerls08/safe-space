@@ -136,7 +136,7 @@
   </div>
 
   <script>
-    const API_BASE = window.SAFE_SPACE_API_URL || (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:8080/api' : 'https://safespace-backend-ws0m.onrender.com/api');
+    const API_BASE = window.SAFE_SPACE_API_URL || (window.location.protocol === 'file:' || window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:8080/api' : 'https://safespace-backend-ws0m.onrender.com/api');
     const API = API_BASE + '/auth';
     let originalData = {};
 
@@ -181,12 +181,14 @@
         document.getElementById('fieldUsername').value = data.username || '';
 
         // Security card — data now comes from /me directly
-        document.getElementById('secPasswordStatus').textContent = data.passwordChanged ? '✓ Changed' : '⏳ Pending Change';
+        document.getElementById('secPasswordStatus').innerHTML = data.passwordChanged
+          ? '<i class="fas fa-circle-check" style="color:#10b981;"></i> Changed'
+          : '<i class="fas fa-clock" style="color:#d97706;"></i> Pending Change';
         document.getElementById('secPasswordStatus').className = 'security-value ' + (data.passwordChanged ? 'changed' : 'pending');
 
         document.getElementById('secAccountStatus').innerHTML = data.active
-          ? '<span style="color:#16a34a;">● Active</span>'
-          : '<span style="color:#dc2626;">● Inactive</span>';
+          ? '<span class="security-badge active"><i class="fas fa-circle"></i> Active</span>'
+          : '<span class="security-badge inactive"><i class="fas fa-circle"></i> Inactive</span>';
 
         document.getElementById('secLastLogin').textContent = data.lastLoginAt
           ? formatDateTime(data.lastLoginAt) : 'Never';
@@ -312,7 +314,7 @@
         showToast('Password changed successfully ✓');
 
         // Update security card
-        document.getElementById('secPasswordStatus').textContent = '✓ Changed';
+        document.getElementById('secPasswordStatus').innerHTML = '<i class="fas fa-circle-check" style="color:#10b981;"></i> Changed';
         document.getElementById('secPasswordStatus').className = 'security-value changed';
 
       } catch (err) {

@@ -20,7 +20,7 @@
  */
 
 const SafeSpaceAuth = (() => {
-  const API_BASE = window.SAFE_SPACE_API_URL || (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:8080/api' : 'https://safespace-backend-ws0m.onrender.com/api');
+  const API_BASE = window.SAFE_SPACE_API_URL || (window.location.protocol === 'file:' || window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:8080/api' : 'https://safespace-backend-ws0m.onrender.com/api');
   const API = API_BASE + '/auth';
 
   // ── Session Data ──
@@ -53,7 +53,7 @@ const SafeSpaceAuth = (() => {
 
     if (res.status === 401) {
       clearSession();
-      window.location.href = 'login.html';
+      window.location.href = 'landing.html';
       throw new Error('Session expired. Redirecting to login.');
     }
 
@@ -90,7 +90,7 @@ const SafeSpaceAuth = (() => {
       } catch (e) { /* ignore */ }
     }
     clearSession();
-    window.location.href = 'login.html';
+    window.location.href = 'landing.html';
   }
 
   /**
@@ -109,8 +109,8 @@ const SafeSpaceAuth = (() => {
           Your role <strong style="color:#dc2626;">${getRole() || 'UNKNOWN'}</strong> does not have permission to access this page.
         </p>
         <div style="display:flex;gap:0.75rem;justify-content:center;">
-          <button onclick="history.back()" style="padding:0.65rem 1.2rem;border-radius:0.75rem;border:1.5px solid #e5e7eb;background:#fff;color:#374151;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;">Go Back</button>
-          <button onclick="SafeSpaceAuth.logout()" style="padding:0.65rem 1.2rem;border-radius:0.75rem;border:none;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;">Switch Account</button>
+          <button onclick="history.back()" style="padding:0.65rem 1.2rem;border-radius:0.75rem;border:1.5px solid #E0D7C6;background:#fff;color:#161F36;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;">Go Back</button>
+          <button onclick="SafeSpaceAuth.logout()" style="padding:0.65rem 1.2rem;border-radius:0.75rem;border:none;background:#161F36;color:#fff;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;box-shadow:0 3px 10px rgba(22,31,54,0.3);">Switch Account</button>
         </div>
       </div>
     `;
@@ -122,17 +122,14 @@ const SafeSpaceAuth = (() => {
   const NAV_CONFIG = {
     STUDENT: [
       { name: 'Rant Board', href: 'rant-board.html', icon: 'fas fa-comment-dots', id: 'rant-board' },
-      { name: 'Chat', href: 'anon-chat.html', icon: 'fas fa-comments', id: 'anon-chat' },
-      { name: 'Profile', href: 'profile.html', icon: 'fas fa-user-circle', id: 'profile' }
+      { name: 'Chat', href: 'anon-chat.html', icon: 'fas fa-comments', id: 'anon-chat' }
     ],
     PROFESSIONAL: [
       { name: 'Rant Board', href: 'rant-board.html', icon: 'fas fa-comment-dots', id: 'rant-board' },
       { name: 'Chat', href: 'anon-chat.html', icon: 'fas fa-comments', id: 'anon-chat' },
       { name: 'Dashboard', href: 'pro-dashboard.html', icon: 'fas fa-chart-line', id: 'pro-dashboard' },
       { name: 'Crisis Alerts', href: 'crisis-alerts.html', icon: 'fas fa-bell', id: 'crisis-alerts' },
-      { name: 'Resources', href: 'resource-manager.html', icon: 'fas fa-hand-holding-heart', id: 'resource-manager' },
-      { name: 'Credentials', href: 'credential-manager.html', icon: 'fas fa-users-gear', id: 'credential-manager' },
-      { name: 'Profile', href: 'profile.html', icon: 'fas fa-user-circle', id: 'profile' }
+      { name: 'Resources', href: 'resource-manager.html', icon: 'fas fa-hand-holding-heart', id: 'resource-manager' }
     ]
   };
 
@@ -150,8 +147,8 @@ const SafeSpaceAuth = (() => {
     const links = NAV_CONFIG[role] || NAV_CONFIG['STUDENT'];
 
     const roleBadgeColors = {
-      STUDENT: { bg: '#dbeafe', color: '#1d4ed8' },
-      PROFESSIONAL: { bg: '#ede9fe', color: '#7c3aed' }
+      STUDENT: { bg: '#E8EFF4', color: '#161F36', border: '#BACBD8' },
+      PROFESSIONAL: { bg: '#F2EDE2', color: '#161F36', border: '#E0D7C6' }
     };
     const badge = roleBadgeColors[role] || roleBadgeColors.STUDENT;
 
@@ -159,22 +156,39 @@ const SafeSpaceAuth = (() => {
       <div class="navbar-inner">
         <a href="rant-board.html" class="navbar-brand">
           <i class="fas fa-shield-heart"></i>
-          Safe<span>Space</span>
+          <span class="brand-text">Safe<span>Space</span></span>
         </a>
         <div class="navbar-menu" id="navMenu">
           ${links.map(l =>
             `<a href="${l.href}" class="navbar-link${l.id === activePage ? ' active' : ''}" data-nav-id="${l.id}" style="display:inline-flex;align-items:center;gap:0.3rem;">
-              ${l.name}<span class="nav-badge" id="badge-${l.id}" style="display:none;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:#dc2626;color:#fff;font-size:0.55rem;font-weight:800;line-height:16px;text-align:center;box-shadow:0 1px 4px rgba(220,38,38,0.3);flex-shrink:0;"></span>
+              ${l.name}<span class="nav-badge" id="badge-${l.id}" style="display:none;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:#D9534F;color:#fff;font-size:0.55rem;font-weight:800;line-height:16px;text-align:center;box-shadow:0 1px 4px rgba(217,83,79,0.3);flex-shrink:0;"></span>
             </a>`
           ).join('')}
-          <div class="navbar-actions" style="display:flex;align-items:center;gap:0.75rem;">
-            <div style="display:flex;align-items:center;gap:0.5rem;">
-              <span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;background:${badge.bg};color:${badge.color};">${role}</span>
-              <span style="font-size:0.8rem;font-weight:600;color:var(--dark,#111827);">${escapeHtml(fullName || '')}</span>
-            </div>
-            <button id="authLogoutBtn" onclick="SafeSpaceAuth.logout()" style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.4rem 0.8rem;border-radius:0.5rem;border:1.5px solid #e5e7eb;background:#fff;color:#475569;font-size:0.75rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;transition:all 0.2s ease;">
-              <i class="fas fa-right-from-bracket"></i> Logout
+          <div class="navbar-user-dropdown" id="userDropdown">
+            <button class="navbar-user-trigger" id="userDropdownTrigger" type="button" aria-haspopup="true" aria-expanded="false">
+              <div class="navbar-user-avatar" id="userAvatar">${getInitials(fullName)}</div>
+              <span class="navbar-user-name">${escapeHtml(fullName || '')}</span>
+              <i class="fas fa-chevron-down navbar-user-chevron"></i>
             </button>
+            <div class="navbar-dropdown-panel" id="userDropdownPanel">
+              <div class="dropdown-user-header">
+                <div class="dropdown-avatar">${getInitials(fullName)}</div>
+                <div class="dropdown-user-info">
+                  <span class="dropdown-user-fullname">${escapeHtml(fullName || '')}</span>
+                  <span class="dropdown-role-badge" style="background:${badge.bg};color:${badge.color};border:1px solid ${badge.border};">${role}</span>
+                </div>
+              </div>
+              <div class="dropdown-menu-items">
+                <a href="profile.html" class="dropdown-menu-item">
+                  <i class="fas fa-user-circle"></i> My Profile
+                </a>
+                ${role === 'PROFESSIONAL' ? `<a href="credential-manager.html" class="dropdown-menu-item"><i class="fas fa-id-badge"></i> Credentials</a>` : ''}
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-menu-item logout-item" onclick="SafeSpaceAuth.logout()">
+                  <i class="fas fa-arrow-right-from-bracket"></i> Sign Out
+                </button>
+              </div>
+            </div>
           </div>
         </div>
         <button id="navToggle" class="navbar-toggle" aria-label="Open navigation" onclick="document.getElementById('navMenu').classList.toggle('open')">
@@ -182,6 +196,37 @@ const SafeSpaceAuth = (() => {
         </button>
       </div>
     `;
+
+    // ── Dropdown Toggle Logic ──
+    const trigger = document.getElementById('userDropdownTrigger');
+    const panel = document.getElementById('userDropdownPanel');
+    if (trigger && panel) {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = panel.classList.contains('open');
+        panel.classList.toggle('open');
+        trigger.classList.toggle('open');
+        trigger.setAttribute('aria-expanded', !isOpen);
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#userDropdown')) {
+          panel.classList.remove('open');
+          trigger.classList.remove('open');
+          trigger.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      // Close dropdown on Escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          panel.classList.remove('open');
+          trigger.classList.remove('open');
+          trigger.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
 
     // Start notification badge polling
     pollNavBadges();
@@ -342,6 +387,18 @@ const SafeSpaceAuth = (() => {
   }
 
   /**
+   * Helper: extract initials from full name (e.g. "Kerlsan Acoymo" → "KA").
+   */
+  function getInitials(name) {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return parts[0].substring(0, 2).toUpperCase();
+  }
+
+  /**
    * Helper: escape HTML.
    */
   function escapeHtml(text) {
@@ -368,7 +425,7 @@ const SafeSpaceAuth = (() => {
 
     if (!token || !role) {
       clearSession();
-      window.location.href = 'login.html';
+      window.location.href = 'landing.html';
       return;
     }
 
@@ -399,7 +456,7 @@ const SafeSpaceAuth = (() => {
       const data = await res.json();
       if (!data.valid) {
         clearSession();
-        window.location.href = 'login.html';
+        window.location.href = 'landing.html';
       }
     } catch (e) {
       // Server unreachable — don't kick the user out for network issues
