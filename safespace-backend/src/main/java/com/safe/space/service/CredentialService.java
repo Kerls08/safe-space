@@ -218,7 +218,9 @@ public class CredentialService {
             username = request.getInstitutionalId() + "-" + RANDOM.nextInt(1000);
         }
 
-        String role = normalizeRole(request.getRole());
+        // Security: Public self-registration is strictly restricted to STUDENT role only.
+        // Professional accounts are provisioned exclusively by the System Administrator.
+        String role = "STUDENT";
 
         User user = User.builder()
                 .institutionalId(request.getInstitutionalId())
@@ -440,13 +442,14 @@ public class CredentialService {
         long total = userRepository.count();
         long active = userRepository.countByActiveTrue();
 
-        long students = 0, professionals = 0;
+        long students = 0, professionals = 0, admins = 0;
         for (Object[] row : userRepository.countByRole()) {
             String role = (String) row[0];
             long count = ((Number) row[1]).longValue();
             switch (role) {
                 case "STUDENT" -> students = count;
                 case "PROFESSIONAL" -> professionals = count;
+                case "ADMIN" -> admins = count;
             }
         }
 
@@ -461,7 +464,7 @@ public class CredentialService {
                 .activeUsers(active)
                 .students(students)
                 .professionals(professionals)
-                .admins(0)
+                .admins(admins)
                 .passwordChangedCount(pwChanged)
                 .lockedAccounts(locked)
                 .build();
@@ -492,8 +495,9 @@ public class CredentialService {
         if (role == null) return "STUDENT";
         return switch (role.toUpperCase().trim()) {
             case "STUDENT", "S" -> "STUDENT";
-            case "PROFESSIONAL", "PRO", "P", "COUNSELOR", "PSYCHOMETRICIAN" -> "PROFESSIONAL";
-            default -> throw new IllegalArgumentException("Invalid role: " + role + ". Must be STUDENT or PROFESSIONAL.");
+            case "PROFESSIONAL", "PRO", "P", "COUNSELOR", "PSYCHOMETRICIAN", "PSYCHOLOGIST", "GUIDANCE COUNSELOR" -> "PROFESSIONAL";
+            case "ADMIN", "A", "SYSADMIN", "ADMINISTRATOR" -> "ADMIN";
+            default -> throw new IllegalArgumentException("Invalid role: " + role + ". Must be STUDENT, PROFESSIONAL, or ADMIN.");
         };
     }
 

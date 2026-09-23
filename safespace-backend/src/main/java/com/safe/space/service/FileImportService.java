@@ -42,6 +42,9 @@ public class FileImportService {
         COLUMN_ALIASES.put("student id", "institutionalId");
         COLUMN_ALIASES.put("id", "institutionalId");
         COLUMN_ALIASES.put("employee id", "institutionalId");
+        COLUMN_ALIASES.put("faculty id", "institutionalId");
+        COLUMN_ALIASES.put("staff id", "institutionalId");
+        COLUMN_ALIASES.put("prof id", "institutionalId");
         COLUMN_ALIASES.put("id number", "institutionalId");
         COLUMN_ALIASES.put("id no", "institutionalId");
         COLUMN_ALIASES.put("id no.", "institutionalId");
@@ -51,15 +54,23 @@ public class FileImportService {
         COLUMN_ALIASES.put("name", "fullName");
         COLUMN_ALIASES.put("student name", "fullName");
         COLUMN_ALIASES.put("employee name", "fullName");
+        COLUMN_ALIASES.put("staff name", "fullName");
+        COLUMN_ALIASES.put("professional name", "fullName");
         // email
         COLUMN_ALIASES.put("email", "email");
         COLUMN_ALIASES.put("email address", "email");
         COLUMN_ALIASES.put("e-mail", "email");
-        // department
+        // department / clinical designation
         COLUMN_ALIASES.put("department", "department");
         COLUMN_ALIASES.put("dept", "department");
         COLUMN_ALIASES.put("program", "department");
         COLUMN_ALIASES.put("course", "department");
+        COLUMN_ALIASES.put("designation", "department");
+        COLUMN_ALIASES.put("clinical designation", "department");
+        COLUMN_ALIASES.put("title", "department");
+        COLUMN_ALIASES.put("position", "department");
+        COLUMN_ALIASES.put("clinical title", "department");
+        COLUMN_ALIASES.put("specialization", "department");
         // yearLevel
         COLUMN_ALIASES.put("year level", "yearLevel");
         COLUMN_ALIASES.put("yearlevel", "yearLevel");
@@ -197,7 +208,7 @@ public class FileImportService {
         user.setEmail(values.getOrDefault("email", null));
         user.setDepartment(values.getOrDefault("department", null));
         user.setYearLevel(values.getOrDefault("yearLevel", null));
-        user.setRole(values.getOrDefault("role", "STUDENT")); // default to STUDENT
+        user.setRole(values.getOrDefault("role", "PROFESSIONAL")); // default to PROFESSIONAL for admin imports
 
         return user;
     }
@@ -298,7 +309,7 @@ public class FileImportService {
         user.setEmail(fields.getOrDefault("email", null));
         user.setDepartment(fields.getOrDefault("department", null));
         user.setYearLevel(fields.getOrDefault("yearLevel", null));
-        user.setRole(fields.getOrDefault("role", "STUDENT"));
+        user.setRole(fields.getOrDefault("role", "PROFESSIONAL"));
 
         return user;
     }
@@ -330,11 +341,11 @@ public class FileImportService {
     // ── Template Generation ──
 
     /**
-     * Generate a downloadable Excel template with headers and sample data.
+     * Generate a downloadable Excel template with headers and sample data tailored for professionals.
      */
     public byte[] generateExcelTemplate() {
         try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("Users");
+            Sheet sheet = workbook.createSheet("Professionals");
 
             // Header style
             CellStyle headerStyle = workbook.createCellStyle();
@@ -348,21 +359,21 @@ public class FileImportService {
             // Headers
             String[] headers = {
                     "Institutional ID", "Full Name", "Email",
-                    "Department", "Year Level", "Role"
+                    "Department", "Role"
             };
             Row headerRow = sheet.createRow(0);
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(headers[i]);
                 cell.setCellStyle(headerStyle);
-                sheet.setColumnWidth(i, 5000);
+                sheet.setColumnWidth(i, 6000);
             }
 
-            // Sample rows
+            // Sample rows for mental health professionals
             String[][] samples = {
-                    {"2021-00001", "Maria Santos", "maria@school.edu", "Computer Science", "3rd Year", "STUDENT"},
-                    {"2021-00002", "Juan Dela Cruz", "juan@school.edu", "Nursing", "2nd Year", "STUDENT"},
-                    {"EMP-001", "Dr. Ana Reyes", "ana.reyes@school.edu", "Guidance Office", "", "PROFESSIONAL"}
+                    {"PROF-001", "Dr. Clara Reyes, RPsy", "clara.reyes@ustp.edu.ph", "Psychologist", "PROFESSIONAL"},
+                    {"PROF-002", "Ms. Sarah Santos, RPM", "sarah.santos@ustp.edu.ph", "Psychometrician", "PROFESSIONAL"},
+                    {"PROF-003", "Mr. John Tan", "john.tan@ustp.edu.ph", "Guidance Counselor", "PROFESSIONAL"}
             };
             for (int r = 0; r < samples.length; r++) {
                 Row row = sheet.createRow(r + 1);
@@ -382,14 +393,14 @@ public class FileImportService {
     }
 
     /**
-     * Generate a CSV template string.
+     * Generate a CSV template string for professionals.
      */
     public String generateCsvTemplate() {
         return """
-                Institutional ID,Full Name,Email,Department,Year Level,Role
-                2021-00001,Maria Santos,maria@school.edu,Computer Science,3rd Year,STUDENT
-                2021-00002,Juan Dela Cruz,juan@school.edu,Nursing,2nd Year,STUDENT
-                EMP-001,Dr. Ana Reyes,ana.reyes@school.edu,Guidance Office,,PROFESSIONAL
+                Institutional ID,Full Name,Email,Department,Role
+                PROF-001,Dr. Clara Reyes,clara.reyes@ustp.edu.ph,Psychologist,PROFESSIONAL
+                PROF-002,Ms. Sarah Santos,sarah.santos@ustp.edu.ph,Psychometrician,PROFESSIONAL
+                PROF-003,Mr. John Tan,john.tan@ustp.edu.ph,Guidance Counselor,PROFESSIONAL
                 """;
     }
 }

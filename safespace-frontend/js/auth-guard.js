@@ -130,6 +130,10 @@ const SafeSpaceAuth = (() => {
       { name: 'Dashboard', href: 'pro-dashboard.html', icon: 'fas fa-chart-line', id: 'pro-dashboard' },
       { name: 'Crisis Alerts', href: 'crisis-alerts.html', icon: 'fas fa-bell', id: 'crisis-alerts' },
       { name: 'Resources', href: 'resource-manager.html', icon: 'fas fa-hand-holding-heart', id: 'resource-manager' }
+    ],
+    ADMIN: [
+      { name: 'Credential Manager', href: 'credential-manager.html', icon: 'fas fa-users-gear', id: 'credential-manager' },
+      { name: 'Dashboard', href: 'pro-dashboard.html', icon: 'fas fa-chart-line', id: 'pro-dashboard' }
     ]
   };
 
@@ -148,13 +152,14 @@ const SafeSpaceAuth = (() => {
 
     const roleBadgeColors = {
       STUDENT: { bg: '#E8EFF4', color: '#161F36', border: '#BACBD8' },
-      PROFESSIONAL: { bg: '#F2EDE2', color: '#161F36', border: '#E0D7C6' }
+      PROFESSIONAL: { bg: '#F2EDE2', color: '#161F36', border: '#E0D7C6' },
+      ADMIN: { bg: '#EDE9FE', color: '#5B21B6', border: '#DDD6FE' }
     };
     const badge = roleBadgeColors[role] || roleBadgeColors.STUDENT;
 
     nav.innerHTML = `
       <div class="navbar-inner">
-        <a href="rant-board.html" class="navbar-brand">
+        <a href="${role === 'ADMIN' ? 'credential-manager.html' : 'rant-board.html'}" class="navbar-brand">
           <i class="fas fa-shield-heart"></i>
           <span class="brand-text">Safe<span>Space</span></span>
         </a>
@@ -182,7 +187,7 @@ const SafeSpaceAuth = (() => {
                 <a href="profile.html" class="dropdown-menu-item">
                   <i class="fas fa-user-circle"></i> My Profile
                 </a>
-                ${role === 'PROFESSIONAL' ? `<a href="credential-manager.html" class="dropdown-menu-item"><i class="fas fa-id-badge"></i> Credentials</a>` : ''}
+                ${role === 'ADMIN' ? `<a href="credential-manager.html" class="dropdown-menu-item"><i class="fas fa-id-badge"></i> Credential Manager</a>` : ''}
                 <div class="dropdown-divider"></div>
                 <button class="dropdown-menu-item logout-item" onclick="SafeSpaceAuth.logout()">
                   <i class="fas fa-arrow-right-from-bracket"></i> Sign Out

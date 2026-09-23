@@ -546,6 +546,7 @@
 
 .role-badge.student { background: #E8EFF4; color: #161F36; border: 1px solid #BACBD8; }
 .role-badge.professional { background: #FAF7F2; color: #161F36; border: 1px solid #E0D7C6; }
+.role-badge.admin { background: #EDE9FE; color: #5B21B6; border: 1px solid #DDD6FE; }
 
 .status-badge {
   display: inline-flex;

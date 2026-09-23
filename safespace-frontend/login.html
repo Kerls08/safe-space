@@ -240,6 +240,9 @@
 
     function redirectAfterLogin(role) {
       switch (role) {
+        case 'ADMIN':
+          window.location.href = 'credential-manager.html';
+          break;
         case 'PROFESSIONAL':
           window.location.href = 'pro-dashboard.html';
           break;

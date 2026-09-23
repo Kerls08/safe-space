@@ -10,11 +10,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 /**
- * Seeds the default psychometrician (admin) account on startup.
+ * Seeds the default System Administrator (admin) account on startup.
  *
- * The psychometrician handles both counseling duties AND system
- * administration (credential management, user imports, etc.)
- * since the university has no dedicated MIS staff.
+ * The System Administrator is the sole technical custodian of accounts,
+ * credential management, and user provisioning.
+ * Clinical counseling is handled separately by registered professionals.
  *
  * Default credentials (for development):
  *   Username: admin
@@ -30,25 +30,36 @@ public class DefaultAdminSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (userRepository.existsByUsername("admin")) {
-            log.info("Default admin account already exists — skipping seed.");
-            return;
-        }
+        userRepository.findByUsername("admin").ifPresentOrElse(
+            admin -> {
+                if (!"ADMIN".equals(admin.getRole())) {
+                    admin.setRole("ADMIN");
+                    admin.setFullName("System Administrator");
+                    admin.setDepartment("Campus IT / System Administration");
+                    userRepository.save(admin);
+                    log.info("Migrated existing 'admin' user account to role=ADMIN");
+                } else {
+                    log.info("Default admin account already configured with role=ADMIN.");
+                }
+            },
+            () -> {
+                User admin = User.builder()
+                        .institutionalId("ADMIN-001")
+                        .username("admin")
+                        .passwordHash(ENCODER.encode("SafeSpace2026!"))
+                        .fullName("System Administrator")
+                        .email("admin@safespace.edu")
+                        .department("Campus IT / System Administration")
+                        .role("ADMIN")
+                        .active(true)
+                        .passwordChanged(true)
+                        .forcePasswordChange(false)
+                        .build();
 
-        User admin = User.builder()
-                .institutionalId("PROF-001")
-                .username("admin")
-                .passwordHash(ENCODER.encode("SafeSpace2026!"))
-                .fullName("Psychometrician")
-                .email("admin@safespace.edu")
-                .department("Guidance & Counseling")
-                .role("PROFESSIONAL")
-                .active(true)
-                .passwordChanged(true)
-                .forcePasswordChange(false)
-                .build();
-
-        userRepository.save(admin);
-        log.info("Default psychometrician (admin) account created: username=admin, role=PROFESSIONAL");
+                userRepository.save(admin);
+                log.info("Default System Administrator account created: username=admin, role=ADMIN");
+            }
+        );
     }
 }
+

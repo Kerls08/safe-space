@@ -301,6 +301,11 @@ public class CredentialController {
                             "features", RbacPermissions.getFeaturesForRole("PROFESSIONAL"),
                             "pages", RbacPermissions.getAccessiblePages("PROFESSIONAL"),
                             "apiPrefixes", RbacPermissions.ROLE_PERMISSIONS.get("PROFESSIONAL")
+                    ),
+                    "ADMIN", Map.of(
+                            "features", RbacPermissions.getFeaturesForRole("ADMIN"),
+                            "pages", RbacPermissions.getAccessiblePages("ADMIN"),
+                            "apiPrefixes", RbacPermissions.ROLE_PERMISSIONS.get("ADMIN")
                     )
             ));
         }
