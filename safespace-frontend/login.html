@@ -105,10 +105,32 @@
           <div class="input-wrapper">
             <i class="fas fa-shield-halved input-icon-left"></i>
             <input class="form-input input-icon" type="password" id="pwNew"
-              placeholder="Create a strong password" required minlength="8">
+              placeholder="Create a strong password" required minlength="8"
+              oninput="updatePwChangeStrength()">
             <button type="button" class="input-toggle-pw" onclick="togglePasswordVisibility('pwNew', this)">
               <i class="fas fa-eye"></i>
             </button>
+          </div>
+          <div class="pw-strength" id="pwStrength">
+            <div class="pw-strength-bar" id="pwBar1"></div>
+            <div class="pw-strength-bar" id="pwBar2"></div>
+            <div class="pw-strength-bar" id="pwBar3"></div>
+            <div class="pw-strength-bar" id="pwBar4"></div>
+          </div>
+          <div class="pw-strength-label" id="pwStrengthLabel"></div>
+          <div class="pw-rules" id="pwRules">
+            <div class="pw-rule-item" id="ruleLen">
+              <i class="fas fa-circle-dot"></i> At least 8 characters
+            </div>
+            <div class="pw-rule-item" id="ruleUpper">
+              <i class="fas fa-circle-dot"></i> Uppercase letter (A-Z)
+            </div>
+            <div class="pw-rule-item" id="ruleNum">
+              <i class="fas fa-circle-dot"></i> At least one number (0-9)
+            </div>
+            <div class="pw-rule-item" id="ruleSpecial">
+              <i class="fas fa-circle-dot"></i> Special symbol (!@#$%...)
+            </div>
           </div>
         </div>
 
@@ -118,6 +140,9 @@
             <i class="fas fa-check-double input-icon-left"></i>
             <input class="form-input input-icon" type="password" id="pwConfirm"
               placeholder="Re-enter new password" required minlength="8">
+            <button type="button" class="input-toggle-pw" onclick="togglePasswordVisibility('pwConfirm', this)">
+              <i class="fas fa-eye"></i>
+            </button>
           </div>
         </div>
 
@@ -181,7 +206,11 @@
         redirectAfterLogin(data.role);
 
       } catch (err) {
-        errText.textContent = err.message;
+        if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+          errText.textContent = 'Unable to connect to the SafeSpace server. Please check that the backend is running.';
+        } else {
+          errText.textContent = err.message;
+        }
         errDiv.classList.add('visible');
       } finally {
         btn.disabled = false;
@@ -197,6 +226,31 @@
 
       const newPw = document.getElementById('pwNew').value;
       const confirmPw = document.getElementById('pwConfirm').value;
+
+      const hasLen = newPw.length >= 8;
+      const hasUpper = /[A-Z]/.test(newPw);
+      const hasNum = /[0-9]/.test(newPw);
+      const hasSpecial = /[^A-Za-z0-9]/.test(newPw);
+
+      const missing = [];
+      if (!hasLen) missing.push('at least 8 characters');
+      if (!hasUpper) missing.push('uppercase letter (A-Z)');
+      if (!hasNum) missing.push('at least one number (0-9)');
+      if (!hasSpecial) missing.push('special symbol (!@#$%...)');
+
+      const rulesBox = document.getElementById('pwRules');
+
+      if (missing.length > 0) {
+        errText.textContent = 'Password rejected: does not comply with requirements. Missing: ' + missing.join(', ') + '.';
+        errDiv.classList.add('visible');
+        if (rulesBox) {
+          rulesBox.classList.remove('has-error');
+          void rulesBox.offsetWidth;
+          rulesBox.classList.add('has-error');
+        }
+        highlightMissingRules({ ruleLen: hasLen, ruleUpper: hasUpper, ruleNum: hasNum, ruleSpecial: hasSpecial });
+        return;
+      }
 
       if (newPw !== confirmPw) {
         errText.textContent = 'Passwords do not match.';
@@ -259,6 +313,90 @@
       } else {
         input.type = 'password';
         btn.innerHTML = '<i class="fas fa-eye"></i>';
+      }
+    }
+
+    function updatePwChangeStrength() {
+      const pw = document.getElementById('pwNew').value;
+      const bars = [
+        document.getElementById('pwBar1'),
+        document.getElementById('pwBar2'),
+        document.getElementById('pwBar3'),
+        document.getElementById('pwBar4')
+      ];
+      const label = document.getElementById('pwStrengthLabel');
+
+      const rulesBox = document.getElementById('pwRules');
+      if (rulesBox) rulesBox.classList.remove('has-error');
+
+      const hasLen = pw.length >= 8;
+      const hasUpper = /[A-Z]/.test(pw);
+      const hasNum = /[0-9]/.test(pw);
+      const hasSpecial = /[^A-Za-z0-9]/.test(pw);
+
+      // Update rules checklist
+      updateRuleState('ruleLen', hasLen);
+      updateRuleState('ruleUpper', hasUpper);
+      updateRuleState('ruleNum', hasNum);
+      updateRuleState('ruleSpecial', hasSpecial);
+
+      let score = 0;
+      if (hasLen) score++;
+      if (hasUpper) score++;
+      if (hasNum) score++;
+      if (hasSpecial) score++;
+
+      bars.forEach((bar, i) => {
+        bar.className = 'pw-strength-bar';
+        if (i < score) {
+          if (score <= 1) bar.classList.add('weak');
+          else if (score <= 2) bar.classList.add('medium');
+          else bar.classList.add('strong');
+        }
+      });
+
+      if (pw.length === 0) {
+        label.textContent = '';
+        label.style.color = '';
+      } else if (score <= 1) {
+        label.textContent = 'Weak';
+        label.style.color = '#ef4444';
+      } else if (score <= 2) {
+        label.textContent = 'Medium';
+        label.style.color = '#f59e0b';
+      } else if (score === 3) {
+        label.textContent = 'Good';
+        label.style.color = '#10b981';
+      } else {
+        label.textContent = 'Strong';
+        label.style.color = '#10b981';
+      }
+    }
+
+    function updateRuleState(ruleId, isValid) {
+      const el = document.getElementById(ruleId);
+      if (!el) return;
+      el.classList.remove('invalid');
+      if (isValid) {
+        el.classList.add('valid');
+        const icon = el.querySelector('i');
+        if (icon) icon.className = 'fas fa-circle-check';
+      } else {
+        el.classList.remove('valid');
+        const icon = el.querySelector('i');
+        if (icon) icon.className = 'fas fa-circle-dot';
+      }
+    }
+
+    function highlightMissingRules(ruleMap) {
+      for (const [ruleId, isValid] of Object.entries(ruleMap)) {
+        const el = document.getElementById(ruleId);
+        if (!el) continue;
+        if (!isValid) {
+          el.classList.add('invalid');
+          const icon = el.querySelector('i');
+          if (icon) icon.className = 'fas fa-circle-xmark';
+        }
       }
     }
 

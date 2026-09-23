@@ -199,6 +199,15 @@ public class CredentialController {
         return ResponseEntity.ok(credentialService.resendWelcomeEmail(username));
     }
 
+    /**
+     * Delete user account (admin action).
+     */
+    @DeleteMapping("/users/{username}")
+    public ResponseEntity<Map<String, String>> deleteUser(@PathVariable String username) {
+        credentialService.deleteUser(username);
+        return ResponseEntity.ok(Map.of("message", "User " + username + " deleted successfully."));
+    }
+
     // ── Analytics ──
 
     /**

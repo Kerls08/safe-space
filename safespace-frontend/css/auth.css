@@ -919,3 +919,92 @@
   .auth-form .form-input { font-size: 0.82rem; padding: 0.65rem 0.85rem 0.65rem 2.5rem; }
   .cred-stats { grid-template-columns: 1fr 1fr; }
 }
+
+/* ── Password Strength & Requirement Rules ── */
+.pw-strength {
+  display: flex;
+  gap: 4px;
+  margin-top: 0.45rem;
+}
+
+.pw-strength-bar {
+  height: 4px;
+  flex: 1;
+  border-radius: 2px;
+  background: #E0D7C6;
+  transition: background 0.3s ease;
+}
+
+.pw-strength-bar.weak { background: #ef4444; }
+.pw-strength-bar.medium { background: #f59e0b; }
+.pw-strength-bar.strong { background: #10b981; }
+
+.pw-strength-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-top: 0.3rem;
+  text-align: right;
+  color: #6C7A92;
+  transition: color 0.2s ease;
+}
+
+.pw-rules {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem 0.6rem;
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  background: #FAF7F2;
+  border: 1px solid #E0D7C6;
+  border-radius: 0.55rem;
+  font-size: 0.72rem;
+  color: #64748b;
+  transition: all 0.25s ease;
+}
+
+.pw-rule-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  line-height: 1.3;
+  transition: all 0.2s ease;
+}
+
+.pw-rule-item i {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  transition: color 0.2s ease, transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.pw-rule-item.valid {
+  color: #047857;
+  font-weight: 600;
+}
+
+.pw-rule-item.valid i {
+  color: #10b981;
+  transform: scale(1.1);
+}
+
+.pw-rules.has-error {
+  border-color: #ef4444 !important;
+  background: #fef2f2 !important;
+  animation: pwShake 0.4s ease;
+}
+
+@keyframes pwShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+.pw-rule-item.invalid {
+  color: #dc2626 !important;
+  font-weight: 600;
+}
+
+.pw-rule-item.invalid i {
+  color: #ef4444 !important;
+  transform: scale(1.1);
+}

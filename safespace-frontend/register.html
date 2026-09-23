@@ -687,6 +687,20 @@
             <div class="pw-strength-bar" id="pwBar4"></div>
           </div>
           <div class="pw-strength-label" id="pwStrengthLabel"></div>
+          <div class="pw-rules" id="pwRules">
+            <div class="pw-rule-item" id="regRuleLen">
+              <i class="fas fa-circle-dot"></i> At least 8 characters
+            </div>
+            <div class="pw-rule-item" id="regRuleUpper">
+              <i class="fas fa-circle-dot"></i> Uppercase letter (A-Z)
+            </div>
+            <div class="pw-rule-item" id="regRuleNum">
+              <i class="fas fa-circle-dot"></i> At least one number (0-9)
+            </div>
+            <div class="pw-rule-item" id="regRuleSpecial">
+              <i class="fas fa-circle-dot"></i> Special symbol (!@#$%...)
+            </div>
+          </div>
         </div>
 
         <div class="form-group">
@@ -771,11 +785,25 @@
       ];
       const label = document.getElementById('pwStrengthLabel');
 
+      const rulesBox = document.getElementById('pwRules');
+      if (rulesBox) rulesBox.classList.remove('has-error');
+
+      const hasLen = pw.length >= 8;
+      const hasUpper = /[A-Z]/.test(pw);
+      const hasNum = /[0-9]/.test(pw);
+      const hasSpecial = /[^A-Za-z0-9]/.test(pw);
+
+      // Update rules checklist
+      updateRuleState('regRuleLen', hasLen);
+      updateRuleState('regRuleUpper', hasUpper);
+      updateRuleState('regRuleNum', hasNum);
+      updateRuleState('regRuleSpecial', hasSpecial);
+
       let score = 0;
-      if (pw.length >= 8) score++;
-      if (/[A-Z]/.test(pw)) score++;
-      if (/[0-9]/.test(pw)) score++;
-      if (/[^A-Za-z0-9]/.test(pw)) score++;
+      if (hasLen) score++;
+      if (hasUpper) score++;
+      if (hasNum) score++;
+      if (hasSpecial) score++;
 
       bars.forEach((bar, i) => {
         bar.className = 'pw-strength-bar';
@@ -795,9 +823,39 @@
       } else if (score <= 2) {
         label.textContent = 'Medium';
         label.style.color = '#f59e0b';
+      } else if (score === 3) {
+        label.textContent = 'Good';
+        label.style.color = '#10b981';
       } else {
         label.textContent = 'Strong';
         label.style.color = '#10b981';
+      }
+    }
+
+    function updateRuleState(ruleId, isValid) {
+      const el = document.getElementById(ruleId);
+      if (!el) return;
+      el.classList.remove('invalid');
+      if (isValid) {
+        el.classList.add('valid');
+        const icon = el.querySelector('i');
+        if (icon) icon.className = 'fas fa-circle-check';
+      } else {
+        el.classList.remove('valid');
+        const icon = el.querySelector('i');
+        if (icon) icon.className = 'fas fa-circle-dot';
+      }
+    }
+
+    function highlightMissingRules(ruleMap) {
+      for (const [ruleId, isValid] of Object.entries(ruleMap)) {
+        const el = document.getElementById(ruleId);
+        if (!el) continue;
+        if (!isValid) {
+          el.classList.add('invalid');
+          const icon = el.querySelector('i');
+          if (icon) icon.className = 'fas fa-circle-xmark';
+        }
       }
     }
 
@@ -810,6 +868,31 @@
 
       const password = document.getElementById('regPassword').value;
       const confirmPassword = document.getElementById('regConfirmPassword').value;
+
+      const hasLen = password.length >= 8;
+      const hasUpper = /[A-Z]/.test(password);
+      const hasNum = /[0-9]/.test(password);
+      const hasSpecial = /[^A-Za-z0-9]/.test(password);
+
+      const missing = [];
+      if (!hasLen) missing.push('at least 8 characters');
+      if (!hasUpper) missing.push('uppercase letter (A-Z)');
+      if (!hasNum) missing.push('at least one number (0-9)');
+      if (!hasSpecial) missing.push('special symbol (!@#$%...)');
+
+      const rulesBox = document.getElementById('pwRules');
+
+      if (missing.length > 0) {
+        errText.textContent = 'Password rejected: does not comply with requirements. Missing: ' + missing.join(', ') + '.';
+        errDiv.classList.add('visible');
+        if (rulesBox) {
+          rulesBox.classList.remove('has-error');
+          void rulesBox.offsetWidth;
+          rulesBox.classList.add('has-error');
+        }
+        highlightMissingRules({ regRuleLen: hasLen, regRuleUpper: hasUpper, regRuleNum: hasNum, regRuleSpecial: hasSpecial });
+        return;
+      }
 
       if (password !== confirmPassword) {
         errText.textContent = 'Passwords do not match.';

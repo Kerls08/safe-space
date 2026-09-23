@@ -77,4 +77,39 @@ class CredentialServiceTest {
         assertTrue(pwdBlank.startsWith("UserU@2026#"));
         assertTrue(pwdBlank.length() >= 14);
     }
+
+    @Test
+    @DisplayName("Should reject passwords that fail to comply with complexity requirements")
+    void testPasswordComplexityRejection() {
+        // Lacks uppercase
+        IllegalArgumentException exNoUpper = assertThrows(IllegalArgumentException.class, () ->
+                CredentialService.validatePasswordComplexity("password123!"));
+        assertTrue(exNoUpper.getMessage().contains("uppercase letter (A-Z)"));
+
+        // Lacks number
+        IllegalArgumentException exNoNum = assertThrows(IllegalArgumentException.class, () ->
+                CredentialService.validatePasswordComplexity("Password!"));
+        assertTrue(exNoNum.getMessage().contains("number (0-9)"));
+
+        // Lacks special symbol
+        IllegalArgumentException exNoSym = assertThrows(IllegalArgumentException.class, () ->
+                CredentialService.validatePasswordComplexity("Password123"));
+        assertTrue(exNoSym.getMessage().contains("special symbol (!@#$%...)"));
+
+        // Too short (< 8 chars)
+        IllegalArgumentException exTooShort = assertThrows(IllegalArgumentException.class, () ->
+                CredentialService.validatePasswordComplexity("P@1a"));
+        assertTrue(exTooShort.getMessage().contains("at least 8 characters"));
+
+        // Null password
+        assertThrows(IllegalArgumentException.class, () ->
+                CredentialService.validatePasswordComplexity(null));
+    }
+
+    @Test
+    @DisplayName("Should accept passwords that comply with all complexity requirements")
+    void testPasswordComplexityAcceptance() {
+        assertDoesNotThrow(() -> CredentialService.validatePasswordComplexity("ValidPass123!"));
+        assertDoesNotThrow(() -> CredentialService.validatePasswordComplexity("SafeSpace@2026"));
+    }
 }

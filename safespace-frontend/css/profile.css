@@ -396,6 +396,36 @@
   color: #161F36;
 }
 
+.profile-pw-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.profile-pw-wrapper input {
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: 2.75rem !important;
+}
+
+.profile-pw-toggle {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #8F9EB4;
+  cursor: pointer;
+  padding: 0.25rem;
+  font-size: 0.9rem;
+  transition: color 0.2s ease;
+}
+
+.profile-pw-toggle:hover {
+  color: #161F36;
+}
+
 /* ── Mobile Responsive ── */
 @media (max-width: 768px) {
   .profile-header {

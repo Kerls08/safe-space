@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/auth.css">
   <link rel="stylesheet" href="css/profile.css">
 </head>
 <body>
@@ -114,15 +115,51 @@
       <div style="display:flex;flex-direction:column;gap:1rem;">
         <div class="profile-field">
           <label for="pwCurrent">Current Password</label>
-          <input type="password" id="pwCurrent" placeholder="Enter current password">
+          <div class="profile-pw-wrapper">
+            <input type="password" id="pwCurrent" placeholder="Enter current password">
+            <button type="button" class="profile-pw-toggle" onclick="toggleProfilePw('pwCurrent', this)">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
         </div>
         <div class="profile-field">
-          <label for="pwNew">New Password</label>
-          <input type="password" id="pwNew" placeholder="Minimum 8 characters">
+          <label for="pwNew">New Password (min. 8 characters)</label>
+          <div class="profile-pw-wrapper">
+            <input type="password" id="pwNew" placeholder="Create a strong password" oninput="updateProfilePwStrength()">
+            <button type="button" class="profile-pw-toggle" onclick="toggleProfilePw('pwNew', this)">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          <div class="pw-strength" id="profilePwStrength">
+            <div class="pw-strength-bar" id="profilePwBar1"></div>
+            <div class="pw-strength-bar" id="profilePwBar2"></div>
+            <div class="pw-strength-bar" id="profilePwBar3"></div>
+            <div class="pw-strength-bar" id="profilePwBar4"></div>
+          </div>
+          <div class="pw-strength-label" id="profilePwStrengthLabel"></div>
+          <div class="pw-rules" id="profilePwRules">
+            <div class="pw-rule-item" id="profRuleLen">
+              <i class="fas fa-circle-dot"></i> At least 8 characters
+            </div>
+            <div class="pw-rule-item" id="profRuleUpper">
+              <i class="fas fa-circle-dot"></i> Uppercase letter (A-Z)
+            </div>
+            <div class="pw-rule-item" id="profRuleNum">
+              <i class="fas fa-circle-dot"></i> At least one number (0-9)
+            </div>
+            <div class="pw-rule-item" id="profRuleSpecial">
+              <i class="fas fa-circle-dot"></i> Special symbol (!@#$%...)
+            </div>
+          </div>
         </div>
         <div class="profile-field">
           <label for="pwConfirm">Confirm New Password</label>
-          <input type="password" id="pwConfirm" placeholder="Re-enter new password">
+          <div class="profile-pw-wrapper">
+            <input type="password" id="pwConfirm" placeholder="Re-enter new password">
+            <button type="button" class="profile-pw-toggle" onclick="toggleProfilePw('pwConfirm', this)">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
         </div>
         <div id="pwError" style="display:none;font-size:0.8rem;color:#dc2626;font-weight:600;"></div>
         <div class="profile-actions">
@@ -260,12 +297,124 @@
       document.getElementById('pwNew').value = '';
       document.getElementById('pwConfirm').value = '';
       document.getElementById('pwError').style.display = 'none';
+
+      // Reset strength meter & rules
+      const label = document.getElementById('profilePwStrengthLabel');
+      if (label) {
+        label.textContent = '';
+        label.style.color = '';
+      }
+      [1, 2, 3, 4].forEach(i => {
+        const bar = document.getElementById('profilePwBar' + i);
+        if (bar) bar.className = 'pw-strength-bar';
+      });
+      ['profRuleLen', 'profRuleUpper', 'profRuleNum', 'profRuleSpecial'].forEach(id => {
+        updateRuleState(id, false);
+      });
+
       document.getElementById('pwModal').style.display = 'flex';
       document.getElementById('pwCurrent').focus();
     }
 
     function closeChangePasswordModal() {
       document.getElementById('pwModal').style.display = 'none';
+    }
+
+    function toggleProfilePw(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+      } else {
+        input.type = 'password';
+        btn.innerHTML = '<i class="fas fa-eye"></i>';
+      }
+    }
+
+    function updateProfilePwStrength() {
+      const pw = document.getElementById('pwNew').value;
+      const bars = [
+        document.getElementById('profilePwBar1'),
+        document.getElementById('profilePwBar2'),
+        document.getElementById('profilePwBar3'),
+        document.getElementById('profilePwBar4')
+      ];
+      const label = document.getElementById('profilePwStrengthLabel');
+      const rulesBox = document.getElementById('profilePwRules');
+      if (rulesBox) rulesBox.classList.remove('has-error');
+
+      const hasLen = pw.length >= 8;
+      const hasUpper = /[A-Z]/.test(pw);
+      const hasNum = /[0-9]/.test(pw);
+      const hasSpecial = /[^A-Za-z0-9]/.test(pw);
+
+      // Update rules checklist
+      updateRuleState('profRuleLen', hasLen);
+      updateRuleState('profRuleUpper', hasUpper);
+      updateRuleState('profRuleNum', hasNum);
+      updateRuleState('profRuleSpecial', hasSpecial);
+
+      let score = 0;
+      if (hasLen) score++;
+      if (hasUpper) score++;
+      if (hasNum) score++;
+      if (hasSpecial) score++;
+
+      bars.forEach((bar, i) => {
+        if (!bar) return;
+        bar.className = 'pw-strength-bar';
+        if (i < score) {
+          if (score <= 1) bar.classList.add('weak');
+          else if (score <= 2) bar.classList.add('medium');
+          else bar.classList.add('strong');
+        }
+      });
+
+      if (!label) return;
+      if (pw.length === 0) {
+        label.textContent = '';
+        label.style.color = '';
+      } else if (score <= 1) {
+        label.textContent = 'Weak';
+        label.style.color = '#ef4444';
+      } else if (score <= 2) {
+        label.textContent = 'Medium';
+        label.style.color = '#f59e0b';
+      } else if (score === 3) {
+        label.textContent = 'Good';
+        label.style.color = '#10b981';
+      } else {
+        label.textContent = 'Strong';
+        label.style.color = '#10b981';
+      }
+    }
+
+    function updateRuleState(ruleId, isValid) {
+      const el = document.getElementById(ruleId);
+      if (!el) return;
+      el.classList.remove('invalid');
+      if (isValid) {
+        el.classList.add('valid');
+        const icon = el.querySelector('i');
+        if (icon) icon.className = 'fas fa-circle-check';
+      } else {
+        el.classList.remove('valid');
+        const icon = el.querySelector('i');
+        if (icon) icon.className = 'fas fa-circle-dot';
+      }
+    }
+
+    function highlightMissingRules(ruleMap) {
+      for (const [ruleId, isValid] of Object.entries(ruleMap)) {
+        const el = document.getElementById(ruleId);
+        if (!el) continue;
+        if (!isValid) {
+          el.classList.add('invalid');
+          const icon = el.querySelector('i');
+          if (icon) icon.className = 'fas fa-circle-xmark';
+        }
+      }
     }
 
     async function submitChangePassword() {
@@ -280,9 +429,28 @@
         return;
       }
 
-      if (newPw.length < 8) {
-        errorDiv.textContent = 'New password must be at least 8 characters.';
+      const hasLen = newPw.length >= 8;
+      const hasUpper = /[A-Z]/.test(newPw);
+      const hasNum = /[0-9]/.test(newPw);
+      const hasSpecial = /[^A-Za-z0-9]/.test(newPw);
+
+      const missing = [];
+      if (!hasLen) missing.push('at least 8 characters');
+      if (!hasUpper) missing.push('uppercase letter (A-Z)');
+      if (!hasNum) missing.push('at least one number (0-9)');
+      if (!hasSpecial) missing.push('special symbol (!@#$%...)');
+
+      const rulesBox = document.getElementById('profilePwRules');
+
+      if (missing.length > 0) {
+        errorDiv.textContent = 'Password rejected: does not comply with requirements. Missing: ' + missing.join(', ') + '.';
         errorDiv.style.display = 'block';
+        if (rulesBox) {
+          rulesBox.classList.remove('has-error');
+          void rulesBox.offsetWidth;
+          rulesBox.classList.add('has-error');
+        }
+        highlightMissingRules({ profRuleLen: hasLen, profRuleUpper: hasUpper, profRuleNum: hasNum, profRuleSpecial: hasSpecial });
         return;
       }
 

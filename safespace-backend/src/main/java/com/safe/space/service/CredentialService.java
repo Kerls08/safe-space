@@ -122,9 +122,7 @@ public class CredentialService {
 
     @Transactional
     public Map<String, String> changePassword(ChangePasswordRequest request) {
-        if (request.getNewPassword() == null || request.getNewPassword().length() < MIN_PASSWORD_LENGTH) {
-            throw new IllegalArgumentException("New password must be at least " + MIN_PASSWORD_LENGTH + " characters.");
-        }
+        validatePasswordComplexity(request.getNewPassword());
 
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new NoSuchElementException("User not found."));
@@ -203,8 +201,7 @@ public class CredentialService {
             throw new IllegalArgumentException("Full name is required.");
         if (request.getRole() == null || request.getRole().isBlank())
             throw new IllegalArgumentException("Role is required.");
-        if (request.getPassword() == null || request.getPassword().length() < MIN_PASSWORD_LENGTH)
-            throw new IllegalArgumentException("Password must be at least " + MIN_PASSWORD_LENGTH + " characters.");
+        validatePasswordComplexity(request.getPassword());
         if (!request.getPassword().equals(request.getConfirmPassword()))
             throw new IllegalArgumentException("Passwords do not match.");
 
@@ -317,6 +314,18 @@ public class CredentialService {
         log.info("User {} {}", user.getUsername(), user.isActive() ? "activated" : "deactivated");
         return Map.of("message", "User " + (user.isActive() ? "activated" : "deactivated") + ".",
                 "active", String.valueOf(user.isActive()));
+    }
+
+    @Transactional
+    public void deleteUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("User not found: " + username));
+        if ("ADMIN".equals(user.getRole()) && "admin".equalsIgnoreCase(user.getUsername())) {
+            throw new IllegalArgumentException("Cannot delete primary system administrator account.");
+        }
+        activeTokens.entrySet().removeIf(entry -> username.equals(entry.getValue()));
+        userRepository.delete(user);
+        log.info("User deleted by admin: username={}", username);
     }
 
     @Transactional
@@ -481,6 +490,25 @@ public class CredentialService {
     }
 
     // ── Helpers ──
+
+    public static void validatePasswordComplexity(String password) {
+        if (password == null || password.length() < MIN_PASSWORD_LENGTH) {
+            throw new IllegalArgumentException("Password must be at least " + MIN_PASSWORD_LENGTH + " characters long.");
+        }
+        List<String> missing = new ArrayList<>();
+        if (!password.matches(".*[A-Z].*")) {
+            missing.add("an uppercase letter (A-Z)");
+        }
+        if (!password.matches(".*[0-9].*")) {
+            missing.add("at least one number (0-9)");
+        }
+        if (!password.matches(".*[^A-Za-z0-9].*")) {
+            missing.add("a special symbol (!@#$%...)");
+        }
+        if (!missing.isEmpty()) {
+            throw new IllegalArgumentException("Password rejected: failed to comply with requirements. Missing: " + String.join(", ", missing) + ".");
+        }
+    }
 
     private void validateRegistration(RegisterUserRequest req) {
         if (req.getInstitutionalId() == null || req.getInstitutionalId().isBlank())
