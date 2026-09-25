@@ -60,30 +60,26 @@ public class PasswordResetService {
                 .orElseThrow(() -> new NoSuchElementException("No account found matching Institutional ID or username: " + id));
 
         boolean hasEmail = user.getEmail() != null && !user.getEmail().isBlank();
-        boolean hasPhone = user.getPhoneNumber() != null && !user.getPhoneNumber().isBlank();
 
-        if (!hasEmail && !hasPhone) {
-            throw new IllegalStateException("This account does not have a recovery email or phone number on file. Please contact your campus administrator.");
+        if (!hasEmail) {
+            throw new IllegalStateException("This account does not have a recovery email address on file. Please contact your campus administrator.");
         }
 
         return ForgotPasswordLookupResponse.builder()
                 .institutionalId(user.getInstitutionalId())
                 .maskedEmail(EmailService.maskEmail(user.getEmail()))
-                .maskedPhone(EmailService.maskPhoneNumber(user.getPhoneNumber()))
-                .hasEmail(hasEmail)
-                .hasPhone(hasPhone)
+                .maskedPhone(null)
+                .hasEmail(true)
+                .hasPhone(false)
                 .build();
     }
 
     /**
-     * 2. Generate and dispatch a 6-digit OTP code to either Email or Phone Number.
+     * 2. Generate and dispatch a 6-digit OTP code to registered Email.
      */
     public SendOtpResponse sendOtp(SendOtpRequest request) {
         if (request.getIdentifier() == null || request.getIdentifier().isBlank()) {
             throw new IllegalArgumentException("Identifier is required.");
-        }
-        if (request.getMethod() == null || request.getMethod().isBlank()) {
-            throw new IllegalArgumentException("Recovery method (EMAIL or PHONE) is required.");
         }
 
         String id = request.getIdentifier().trim();
@@ -91,9 +87,8 @@ public class PasswordResetService {
                 .or(() -> userRepository.findByUsername(id))
                 .orElseThrow(() -> new NoSuchElementException("No account found matching: " + id));
 
-        String method = request.getMethod().trim().toUpperCase();
-        if (!"EMAIL".equals(method) && !"PHONE".equals(method)) {
-            throw new IllegalArgumentException("Invalid recovery method. Must be EMAIL or PHONE.");
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            throw new IllegalArgumentException("No registered recovery email found for this account.");
         }
 
         // Generate 6-digit numeric OTP
@@ -101,36 +96,22 @@ public class PasswordResetService {
         String code = String.valueOf(codeInt);
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(5);
 
-        activeOtps.put(user.getInstitutionalId(), new OtpEntry(code, method, expiresAt, 0));
+        activeOtps.put(user.getInstitutionalId(), new OtpEntry(code, "EMAIL", expiresAt, 0));
 
-        String destinationMasked;
-        String message;
+        String destinationMasked = EmailService.maskEmail(user.getEmail());
+        String message = "A 6-digit verification code has been dispatched to " + destinationMasked;
+        emailService.sendOtpEmail(user.getEmail(), user.getFullName(), code);
 
-        if ("EMAIL".equals(method)) {
-            if (user.getEmail() == null || user.getEmail().isBlank()) {
-                throw new IllegalArgumentException("No registered email address found for this account.");
-            }
-            destinationMasked = EmailService.maskEmail(user.getEmail());
-            message = "A 6-digit verification code has been dispatched to " + destinationMasked;
-            emailService.sendOtpEmail(user.getEmail(), user.getFullName(), code);
-        } else {
-            if (user.getPhoneNumber() == null || user.getPhoneNumber().isBlank()) {
-                throw new IllegalArgumentException("No registered mobile number found for this account.");
-            }
-            destinationMasked = EmailService.maskPhoneNumber(user.getPhoneNumber());
-            message = "A 6-digit verification code has been dispatched via SMS to " + destinationMasked;
-            emailService.sendOtpSms(user.getPhoneNumber(), code);
-        }
-
-        log.info("Password reset OTP requested: user={}, method={}, expiresAt={}",
-                user.getInstitutionalId(), method, expiresAt);
+        log.info("Password reset OTP requested: user={}, method=EMAIL, expiresAt={}",
+                user.getInstitutionalId(), expiresAt);
 
         return SendOtpResponse.builder()
                 .success(true)
-                .method(method)
+                .method("EMAIL")
                 .destinationMasked(destinationMasked)
                 .message(message)
                 .expiresInSeconds(300)
+                .devOtp(code)
                 .build();
     }
 

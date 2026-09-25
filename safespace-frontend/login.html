@@ -209,34 +209,21 @@
           </button>
         </div>
 
-        <!-- ── STEP 2: Choose Method (Email vs Phone) ── -->
+        <!-- ── STEP 2: Confirm Registered Email ── -->
         <div id="forgotStep2" style="display:none;">
           <p style="font-size:0.85rem; color:#334155; margin-bottom:1rem; font-weight:500;">
-            Select how you want to receive your 6-digit recovery code:
+            We found your account. A 6-digit recovery code will be dispatched to your registered email:
           </p>
 
-          <!-- Email Option -->
-          <div class="recovery-option-card selected" id="optionEmailCard" onclick="selectRecoveryMethod('EMAIL')">
-            <input type="radio" name="recoveryMethod" id="methodEmail" value="EMAIL" checked>
+          <div class="recovery-option-card selected" style="cursor:default; margin-bottom:1.25rem;">
             <div class="option-icon-box">
               <i class="fas fa-envelope"></i>
             </div>
             <div style="flex:1;">
-              <div style="font-size:0.9rem; font-weight:700; color:#161F36;">Email Verification</div>
-              <div style="font-size:0.78rem; color:#64748b; margin-top:2px;" id="maskedEmailText">Loading...</div>
+              <div style="font-size:0.85rem; font-weight:700; color:#161F36;">Registered Recovery Email</div>
+              <div style="font-size:0.85rem; color:#1e5e3a; font-weight:700; margin-top:2px;" id="maskedEmailText">Loading...</div>
             </div>
-          </div>
-
-          <!-- Phone Option -->
-          <div class="recovery-option-card" id="optionPhoneCard" onclick="selectRecoveryMethod('PHONE')">
-            <input type="radio" name="recoveryMethod" id="methodPhone" value="PHONE">
-            <div class="option-icon-box">
-              <i class="fas fa-comment-sms"></i>
-            </div>
-            <div style="flex:1;">
-              <div style="font-size:0.9rem; font-weight:700; color:#161F36;">Phone Number (SMS OTP)</div>
-              <div style="font-size:0.78rem; color:#64748b; margin-top:2px;" id="maskedPhoneText">Loading...</div>
-            </div>
+            <span style="font-size:0.75rem; background:#dcfce7; color:#15803d; font-weight:700; padding:3px 8px; border-radius:12px;">Verified</span>
           </div>
 
           <button type="button" class="login-btn" id="forgotSendOtpBtn" onclick="handleSendOtp()">
@@ -253,7 +240,7 @@
         <!-- ── STEP 3: Enter 6-Digit OTP ── -->
         <div id="forgotStep3" style="display:none;">
           <p style="font-size:0.85rem; color:#334155; margin-bottom:1.25rem; line-height:1.4;">
-            We sent a 6-digit code to <strong id="otpTargetText" style="color:#161F36;">...</strong>. Enter the code below:
+            We sent a 6-digit verification code to <strong id="otpTargetText" style="color:#161F36;">...</strong>. Please check your inbox (and spam folder) and enter the code below:
           </p>
 
           <div class="form-group" style="text-align:center;">
@@ -277,8 +264,8 @@
           </button>
 
           <div style="text-align:center; margin-top:1rem;">
-            <a href="javascript:void(0)" onclick="goToForgotStep(2)" class="forgot-back-link">
-              <i class="fas fa-arrow-left"></i> Choose different method
+            <a href="javascript:void(0)" onclick="goToForgotStep(1)" class="forgot-back-link">
+              <i class="fas fa-arrow-left"></i> Change ID
             </a>
           </div>
         </div>
@@ -749,31 +736,10 @@
       }
       const subtitle = document.getElementById('forgotModalSubtitle');
       if (step === 1 && subtitle) subtitle.textContent = 'Search your account to begin recovery';
-      if (step === 2 && subtitle) subtitle.textContent = 'Choose your preferred recovery option';
+      if (step === 2 && subtitle) subtitle.textContent = 'Confirm your registered recovery email';
       if (step === 3 && subtitle) subtitle.textContent = 'Enter the 6-digit verification code';
       if (step === 4 && subtitle) subtitle.textContent = 'Create a strong new password';
       if (step === 5 && subtitle) subtitle.textContent = 'Password reset complete';
-    }
-
-    function selectRecoveryMethod(method) {
-      if (method === 'PHONE' && !recoveryState.hasPhone) return;
-      if (method === 'EMAIL' && !recoveryState.hasEmail) return;
-
-      recoveryState.method = method;
-      const emailCard = document.getElementById('optionEmailCard');
-      const phoneCard = document.getElementById('optionPhoneCard');
-      const methodEmailRadio = document.getElementById('methodEmail');
-      const methodPhoneRadio = document.getElementById('methodPhone');
-
-      if (method === 'EMAIL') {
-        emailCard.classList.add('selected');
-        phoneCard.classList.remove('selected');
-        if (methodEmailRadio) methodEmailRadio.checked = true;
-      } else {
-        phoneCard.classList.add('selected');
-        emailCard.classList.remove('selected');
-        if (methodPhoneRadio) methodPhoneRadio.checked = true;
-      }
     }
 
     function showForgotFeedback(inputId, msg) {
@@ -845,37 +811,11 @@
 
         recoveryState.identifier = data.institutionalId || identifier;
         recoveryState.maskedEmail = data.maskedEmail;
-        recoveryState.maskedPhone = data.maskedPhone;
-        recoveryState.hasEmail = data.hasEmail;
-        recoveryState.hasPhone = data.hasPhone;
+        recoveryState.method = 'EMAIL';
 
-        // Populate options in Step 2
-        const emailCard = document.getElementById('optionEmailCard');
-        const phoneCard = document.getElementById('optionPhoneCard');
         const maskedEmailText = document.getElementById('maskedEmailText');
-        const maskedPhoneText = document.getElementById('maskedPhoneText');
-
-        if (data.hasEmail) {
+        if (maskedEmailText) {
           maskedEmailText.textContent = data.maskedEmail;
-          emailCard.classList.remove('disabled');
-        } else {
-          maskedEmailText.textContent = 'No email registered on file';
-          emailCard.classList.add('disabled');
-        }
-
-        if (data.hasPhone) {
-          maskedPhoneText.textContent = data.maskedPhone;
-          phoneCard.classList.remove('disabled');
-        } else {
-          maskedPhoneText.textContent = 'No phone number registered on file';
-          phoneCard.classList.add('disabled');
-        }
-
-        // Set default selection
-        if (data.hasEmail) {
-          selectRecoveryMethod('EMAIL');
-        } else if (data.hasPhone) {
-          selectRecoveryMethod('PHONE');
         }
 
         goToForgotStep(2);
@@ -902,7 +842,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             identifier: recoveryState.identifier,
-            method: recoveryState.method
+            method: 'EMAIL'
           })
         });
         const data = await res.json();
@@ -910,7 +850,11 @@
           throw new Error(data.error || 'Failed to dispatch verification code.');
         }
 
-        document.getElementById('otpTargetText').textContent = data.destinationMasked || (recoveryState.method === 'EMAIL' ? recoveryState.maskedEmail : recoveryState.maskedPhone);
+        document.getElementById('otpTargetText').textContent = data.destinationMasked || recoveryState.maskedEmail;
+
+        if (data.devOtp) {
+          console.info(`%c🔑 [SafeSpace Dev OTP Code]: ${data.devOtp}`, 'background: #1e5e3a; color: #fff; font-size: 14px; font-weight: bold; padding: 4px 8px; border-radius: 4px;');
+        }
 
         // Reset and start countdown timer
         startOtpCountdown(data.expiresInSeconds || 300);

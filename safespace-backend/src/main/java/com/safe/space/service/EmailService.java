@@ -1,5 +1,6 @@
 package com.safe.space.service;
 
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -13,14 +14,15 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Brevo REST API Email Dispatch Service.
+ * Brevo REST API Email & SMS Dispatch Service.
  *
- * Handles asynchronous transactional email delivery for:
- *   1. Account Welcome & Credential Provisioning (Default Password)
+ * Handles asynchronous transactional delivery for:
+ *   1. Account Welcome & Credential Provisioning
  *   2. Admin-initiated Password Reset Notifications
+ *   3. Student Registration Confirmation (Email & Welcome SMS)
+ *   4. Forgot Password 6-Digit OTP (Email & SMS)
  *
- * Connects via Brevo HTTP API v3 (POST https://api.brevo.com/v3/smtp/email)
- * over standard HTTPS (Port 443), preventing cloud SMTP port blocking.
+ * Connects via Brevo HTTP API v3 over standard HTTPS (Port 443).
  */
 @Service
 @Slf4j
@@ -50,6 +52,21 @@ public class EmailService {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
+    }
+
+    @PostConstruct
+    public void init() {
+        if (apiKey == null || apiKey.isBlank()) {
+            apiKey = System.getProperty("BREVO_API_KEY");
+            if (apiKey == null || apiKey.isBlank()) {
+                apiKey = System.getenv("BREVO_API_KEY");
+            }
+        }
+        if (apiKey != null && !apiKey.isBlank()) {
+            log.info("✅ EmailService initialized with Brevo API key: {}...", apiKey.substring(0, Math.min(12, apiKey.length())));
+        } else {
+            log.warn("⚠️ EmailService initialized WITHOUT Brevo API key. Check safespace-backend/.env or BREVO_API_KEY.");
+        }
     }
 
     /**
@@ -122,6 +139,43 @@ public class EmailService {
     }
 
     /**
+     * Send Student Registration Welcome SMS notification asynchronously.
+     */
+    public void sendStudentRegistrationWelcomeSms(String rawPhoneNumber, String fullName, String username) {
+        if (rawPhoneNumber == null || rawPhoneNumber.isBlank()) {
+            log.warn("Student welcome SMS skipped: phone number is null/empty.");
+            return;
+        }
+
+        String normalizedPhone = normalizePhilippinePhone(rawPhoneNumber);
+        String maskedPhone = maskPhoneNumber(normalizedPhone);
+        String firstName = (fullName != null && !fullName.isBlank()) ? fullName.trim().split("\\s+")[0] : "Student";
+
+        String message = "SafeSpace: Welcome, " + firstName + "! Your account (" + username + ") is registered. Mental health & peer support is always here for you.";
+
+        // Always log prominently to dev console for local testing / audit:
+        log.info("===============================================================================");
+        log.info("📢 [STUDENT WELCOME SMS - LOCAL / AUDIT LOG]");
+        log.info("   Target Phone: {} (Raw: {})", maskedPhone, rawPhoneNumber);
+        log.info("   Student: {} ({})", fullName, username);
+        log.info("   Message: {}", message);
+        log.info("===============================================================================");
+
+        if (apiKey == null || apiKey.trim().isEmpty() || !mailEnabled) {
+            log.info("Brevo API key not configured or mail disabled. Simulated welcome SMS logged above.");
+            return;
+        }
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                sendBrevoSmsMessage(normalizedPhone, message);
+            } catch (Exception e) {
+                log.warn("Brevo SMS delivery attempt for {} failed: {}. (Welcome SMS logged above for dev testing)", maskedPhone, e.getMessage());
+            }
+        });
+    }
+
+    /**
      * Send 6-digit Password Reset OTP Code via SMS asynchronously.
      * Attempts Brevo Transactional SMS if API key / credits are available.
      * Always provides a development console fallback log for seamless local testing.
@@ -150,16 +204,15 @@ public class EmailService {
 
         CompletableFuture.runAsync(() -> {
             try {
-                sendBrevoSms(normalizedPhone, otpCode);
+                String messageContent = "SafeSpace: Your password recovery code is " + otpCode + ". Valid for 5 minutes. Do not share this code.";
+                sendBrevoSmsMessage(normalizedPhone, messageContent);
             } catch (Exception e) {
                 log.warn("Brevo SMS delivery attempt for {} failed: {}. (OTP is logged above for dev testing)", maskedPhone, e.getMessage());
             }
         });
     }
 
-    private void sendBrevoSms(String recipientPhone, String otpCode) throws Exception {
-        String messageContent = "SafeSpace: Your password recovery code is " + otpCode + ". Valid for 5 minutes. Do not share this code.";
-
+    private void sendBrevoSmsMessage(String recipientPhone, String messageContent) throws Exception {
         String jsonBody = """
             {
               "type": "transactional",
@@ -185,9 +238,12 @@ public class EmailService {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() >= 200 && response.statusCode() < 300) {
-            log.info("SMS OTP dispatched successfully to {} via Brevo (HTTP {}): {}", recipientPhone, response.statusCode(), response.body());
+            log.info("✅ SMS dispatched successfully to {} via Brevo (HTTP {}): {}", recipientPhone, response.statusCode(), response.body());
         } else {
-            log.warn("Brevo SMS API returned HTTP {}: {}. Dev log above can be used for testing.", response.statusCode(), response.body());
+            log.warn("⚠️ Brevo SMS API returned HTTP {}: {}. Dev audit log above can be used for testing.", response.statusCode(), response.body());
+            if (response.body() != null && response.body().contains("No sms related addons")) {
+                log.warn("👉 [BREVO NOTICE]: Brevo account does not have SMS credits enabled. To deliver real SMS to mobile phones, prepaid SMS credits must be purchased in Brevo (Usage and plan -> Addons -> SMS credits).");
+            }
         }
     }
 
