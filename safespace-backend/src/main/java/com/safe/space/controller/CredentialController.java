@@ -5,6 +5,7 @@ import com.safe.space.dto.AuthDTOs.*;
 import com.safe.space.model.User;
 import com.safe.space.service.CredentialService;
 import com.safe.space.service.FileImportService;
+import com.safe.space.service.PasswordResetService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -51,6 +52,7 @@ public class CredentialController {
 
     private final CredentialService credentialService;
     private final FileImportService fileImportService;
+    private final PasswordResetService passwordResetService;
 
     // ── Authentication ──
 
@@ -102,6 +104,44 @@ public class CredentialController {
     public ResponseEntity<RegisterUserResponse> selfRegister(@RequestBody SelfRegisterRequest request) {
         RegisterUserResponse response = credentialService.selfRegister(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    // ── Public Self-Service Account Recovery (Forgot Password) ──
+
+    /**
+     * Step 1: Look up account by Student/Employee ID or username and return masked recovery options.
+     */
+    @PostMapping("/forgot-password/lookup")
+    public ResponseEntity<ForgotPasswordLookupResponse> forgotPasswordLookup(@RequestBody ForgotPasswordLookupRequest request) {
+        ForgotPasswordLookupResponse response = passwordResetService.lookupAccount(request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Step 2: Dispatch a 6-digit OTP code to the student's chosen destination (EMAIL or PHONE).
+     */
+    @PostMapping("/forgot-password/send-otp")
+    public ResponseEntity<SendOtpResponse> sendOtp(@RequestBody SendOtpRequest request) {
+        SendOtpResponse response = passwordResetService.sendOtp(request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Step 3: Verify the 6-digit OTP code and issue a 10-minute single-use reset authorization token.
+     */
+    @PostMapping("/forgot-password/verify-otp")
+    public ResponseEntity<VerifyOtpResponse> verifyOtp(@RequestBody VerifyOtpRequest request) {
+        VerifyOtpResponse response = passwordResetService.verifyOtp(request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Step 4: Reset the user's password using the single-use reset authorization token.
+     */
+    @PostMapping("/forgot-password/reset-password")
+    public ResponseEntity<Map<String, String>> resetPasswordWithToken(@RequestBody ResetPasswordWithTokenRequest request) {
+        passwordResetService.resetPasswordWithToken(request);
+        return ResponseEntity.ok(Map.of("message", "Password reset successful! You can now log in with your new password."));
     }
 
     /**

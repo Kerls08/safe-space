@@ -43,6 +43,7 @@ public class AuthDTOs {
         private String institutionalId;
         private String fullName;
         private String email;
+        private String phoneNumber;
         private String department;
         private String yearLevel;
         private String role; // STUDENT, PROFESSIONAL
@@ -55,6 +56,7 @@ public class AuthDTOs {
         private String institutionalId;
         private String fullName;
         private String email;
+        private String phoneNumber;
         private String department;
         private String yearLevel;
         private String role; // STUDENT, PROFESSIONAL
@@ -99,6 +101,7 @@ public class AuthDTOs {
         private String username;
         private String fullName;
         private String email;
+        private String phoneNumber;
         private String department;
         private String yearLevel;
         private String role;
@@ -127,7 +130,60 @@ public class AuthDTOs {
         private String username;
         private String fullName;
         private String email;
+        private String phoneNumber;
         private String department;
         private String yearLevel;
+    }
+
+    // ── Forgot Password / Account Recovery DTOs ──
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor
+    public static class ForgotPasswordLookupRequest {
+        private String identifier;
+    }
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class ForgotPasswordLookupResponse {
+        private String institutionalId;
+        private String maskedEmail;
+        private String maskedPhone;
+        private boolean hasEmail;
+        private boolean hasPhone;
+    }
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor
+    public static class SendOtpRequest {
+        private String identifier;
+        private String method; // "EMAIL" or "PHONE"
+    }
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class SendOtpResponse {
+        private boolean success;
+        private String method;
+        private String destinationMasked;
+        private String message;
+        private long expiresInSeconds;
+    }
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor
+    public static class VerifyOtpRequest {
+        private String identifier;
+        private String otpCode;
+    }
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class VerifyOtpResponse {
+        private boolean verified;
+        private String resetToken;
+        private String message;
+    }
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor
+    public static class ResetPasswordWithTokenRequest {
+        private String identifier;
+        private String resetToken;
+        private String newPassword;
+        private String confirmPassword;
     }
 }

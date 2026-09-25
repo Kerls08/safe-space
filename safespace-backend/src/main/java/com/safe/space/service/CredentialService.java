@@ -164,6 +164,7 @@ public class CredentialService {
                 .passwordHash(ENCODER.encode(rawPassword))
                 .fullName(request.getFullName())
                 .email(request.getEmail())
+                .phoneNumber(request.getPhoneNumber())
                 .department(request.getDepartment())
                 .yearLevel(request.getYearLevel())
                 .role(role)
@@ -207,6 +208,14 @@ public class CredentialService {
             throw new IllegalArgumentException("Please provide a valid email address (e.g. name@ustp.edu.ph or gmail.com).");
         }
 
+        if (request.getPhoneNumber() == null || request.getPhoneNumber().isBlank())
+            throw new IllegalArgumentException("Mobile phone number is required.");
+
+        String cleanPhone = request.getPhoneNumber().trim().replaceAll("[\\s\\-\\(\\)]", "");
+        if (!cleanPhone.matches("^(09|\\+639)\\d{9}$")) {
+            throw new IllegalArgumentException("Please provide a valid Philippine mobile number (e.g. 09123456789).");
+        }
+
         if (request.getRole() == null || request.getRole().isBlank())
             throw new IllegalArgumentException("Role is required.");
         validatePasswordComplexity(request.getPassword());
@@ -233,6 +242,7 @@ public class CredentialService {
                 .passwordHash(ENCODER.encode(request.getPassword()))
                 .fullName(request.getFullName().trim())
                 .email(cleanEmail)
+                .phoneNumber(cleanPhone)
                 .department(request.getDepartment())
                 .yearLevel(request.getYearLevel())
                 .role(role)
@@ -445,6 +455,15 @@ public class CredentialService {
             user.setYearLevel(request.getYearLevel().trim().isEmpty() ? null : request.getYearLevel().trim());
         }
 
+        // Phone number
+        if (request.getPhoneNumber() != null) {
+            String phone = request.getPhoneNumber().trim().replaceAll("[\\s\\-\\(\\)]", "");
+            if (!phone.isEmpty() && !phone.matches("^(09|\\+639)\\d{9}$")) {
+                throw new IllegalArgumentException("Invalid phone number format (e.g. 09123456789).");
+            }
+            user.setPhoneNumber(phone.isEmpty() ? null : phone);
+        }
+
         userRepository.save(user);
 
         // If username changed, re-map active tokens so the user stays logged in
@@ -609,6 +628,7 @@ public class CredentialService {
                 .username(u.getUsername())
                 .fullName(u.getFullName())
                 .email(u.getEmail())
+                .phoneNumber(u.getPhoneNumber())
                 .department(u.getDepartment())
                 .yearLevel(u.getYearLevel())
                 .role(u.getRole())

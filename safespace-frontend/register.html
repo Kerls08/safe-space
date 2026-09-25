@@ -727,6 +727,20 @@
           </div>
         </div>
 
+        <div class="form-group">
+          <label class="form-label" for="regPhone">Mobile Number <span style="color:#DC2626;">*</span></label>
+          <div class="input-wrapper">
+            <i class="fas fa-mobile-screen-button input-icon-left"></i>
+            <input class="form-input input-icon" type="tel" id="regPhone"
+              placeholder="e.g. 09123456789" autocomplete="tel" oninput="clearFieldFeedback('regPhone')">
+          </div>
+          <div class="field-feedback" id="regPhoneFeedback"></div>
+          <div style="font-size:0.73rem;color:#6C7A92;margin-top:5px;display:flex;align-items:center;gap:6px;line-height:1.35;">
+            <i class="fas fa-comment-sms" style="color:#566F3E;flex-shrink:0;"></i>
+            <span>Required for SMS account recovery and emergency notifications.</span>
+          </div>
+        </div>
+
         <div class="register-row" id="deptRow">
           <!-- Student Department -->
           <div class="form-group" id="studentDeptGroup">
@@ -1000,7 +1014,7 @@
     }
 
     function clearAllFeedbacks() {
-      ['regFullName', 'regInstId', 'regEmail', 'regDepartment', 'regYearLevel', 'regPassword', 'regConfirmPassword'].forEach(id => {
+      ['regFullName', 'regInstId', 'regEmail', 'regPhone', 'regDepartment', 'regYearLevel', 'regPassword', 'regConfirmPassword'].forEach(id => {
         clearFieldFeedback(id);
       });
       clearTermsFeedback();
@@ -1022,6 +1036,7 @@
       const fullName = document.getElementById('regFullName').value.trim();
       const instId = document.getElementById('regInstId').value.trim();
       const email = document.getElementById('regEmail').value.trim();
+      const phone = document.getElementById('regPhone').value.trim();
       const department = document.getElementById('regDepartment').value;
       const yearLevel = document.getElementById('regYearLevel').value;
       const password = document.getElementById('regPassword').value;
@@ -1052,19 +1067,30 @@
         if (!firstInvalidInput) firstInvalidInput = document.getElementById('regEmail');
       }
 
-      // 4. Department
+      // 4. Mobile Number (Mandatory)
+      const cleanPhone = phone.replace(/[\s\-()]/g, '');
+      const phoneRegex = /^(09|\+639)\d{9}$/;
+      if (!phone) {
+        showFieldFeedback('regPhone', 'Please enter your mobile phone number for SMS recovery.');
+        if (!firstInvalidInput) firstInvalidInput = document.getElementById('regPhone');
+      } else if (!phoneRegex.test(cleanPhone)) {
+        showFieldFeedback('regPhone', 'Please enter a valid Philippine mobile number (e.g. 09123456789).');
+        if (!firstInvalidInput) firstInvalidInput = document.getElementById('regPhone');
+      }
+
+      // 5. Department
       if (!department) {
         showFieldFeedback('regDepartment', 'Please select your department.');
         if (!firstInvalidInput) firstInvalidInput = document.getElementById('regDepartment');
       }
 
-      // 5. Year Level
+      // 6. Year Level
       if (!yearLevel) {
         showFieldFeedback('regYearLevel', 'Please select your year level.');
         if (!firstInvalidInput) firstInvalidInput = document.getElementById('regYearLevel');
       }
 
-      // 6. Password Complexity
+      // 7. Password Complexity
       const hasLen = password.length >= 8;
       const hasUpper = /[A-Z]/.test(password);
       const hasNum = /[0-9]/.test(password);
@@ -1088,7 +1114,7 @@
         if (!firstInvalidInput) firstInvalidInput = document.getElementById('regPassword');
       }
 
-      // 7. Confirm Password
+      // 8. Confirm Password
       if (!confirmPassword) {
         showFieldFeedback('regConfirmPassword', 'Please re-enter your password to confirm.');
         if (!firstInvalidInput) firstInvalidInput = document.getElementById('regConfirmPassword');
@@ -1097,7 +1123,7 @@
         if (!firstInvalidInput) firstInvalidInput = document.getElementById('regConfirmPassword');
       }
 
-      // 8. Terms & Conditions
+      // 9. Terms & Conditions
       let termsValid = true;
       if (!terms || !terms.checked) {
         termsValid = false;
@@ -1113,7 +1139,7 @@
       // Stop and display smooth feedback if any validation failed
       if (firstInvalidInput) {
         let errorMsg = 'Please complete the highlighted fields before proceeding.';
-        if (!termsValid && fullName && instId && email && department && yearLevel && missing.length === 0 && password === confirmPassword) {
+        if (!termsValid && fullName && instId && email && phone && department && yearLevel && missing.length === 0 && password === confirmPassword) {
           errorMsg = 'Please agree to the Terms and Conditions and Privacy Policy to create your account.';
         } else if (missing.length > 0) {
           errorMsg = 'Password rejected: does not comply with requirements. Missing: ' + missing.join(', ') + '.';
@@ -1144,6 +1170,7 @@
           institutionalId: document.getElementById('regInstId').value.trim(),
           fullName: document.getElementById('regFullName').value.trim(),
           email: document.getElementById('regEmail').value.trim(),
+          phoneNumber: cleanPhone,
           department: document.getElementById('regDepartment').value || undefined,
           yearLevel: document.getElementById('regYearLevel').value || undefined,
           role: 'STUDENT',
@@ -1207,6 +1234,10 @@
           showFieldFeedback('regEmail', msg);
           const emailEl = document.getElementById('regEmail');
           if (emailEl) emailEl.focus({ preventScroll: true });
+        } else if (msg.toLowerCase().includes('mobile') || msg.toLowerCase().includes('phone')) {
+          showFieldFeedback('regPhone', msg);
+          const phoneEl = document.getElementById('regPhone');
+          if (phoneEl) phoneEl.focus({ preventScroll: true });
         } else if (msg.toLowerCase().includes('institutional id')) {
           showFieldFeedback('regInstId', msg);
           const instEl = document.getElementById('regInstId');

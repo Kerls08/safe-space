@@ -70,8 +70,13 @@
         Your identity is protected. All activity is anonymous.
       </div>
 
-      <div style="text-align:center;margin-top:1.25rem;font-size:0.85rem;color:#6C7A92;">
-        Don't have an account? <a href="register.html" style="color:#161F36;text-decoration:none;font-weight:700;transition:color 0.2s ease;">Register here</a>
+      <div class="login-links-bottom">
+        <div>
+          <a href="javascript:void(0)" onclick="openForgotPasswordModal()" class="forgot-link">Forgot password?</a>
+        </div>
+        <div>
+          Don't have an account? <a href="register.html" class="register-here-link">Register here</a>
+        </div>
       </div>
     </div>
   </div>
@@ -156,6 +161,205 @@
           Update Password
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- Forgot Password Recovery Modal -->
+  <div class="pw-change-overlay" id="forgotPwOverlay" style="display:none;">
+    <div class="login-card" style="animation: modal-slide 0.3s ease; max-width: 440px; position:relative; max-height:92vh; overflow-y:auto;">
+      <!-- Close button -->
+      <button type="button" class="modal-close-btn" onclick="closeForgotPasswordModal()" aria-label="Close">
+        <i class="fas fa-xmark"></i>
+      </button>
+
+      <div class="login-brand" style="margin-bottom:1.5rem;">
+        <div class="brand-icon">
+          <i class="fas fa-key"></i>
+        </div>
+        <h1>Account <span>Recovery</span></h1>
+        <p id="forgotModalSubtitle">Search your account to begin recovery</p>
+      </div>
+
+      <div class="auth-form" style="width:100%;">
+        <!-- Error / Notice Banner -->
+        <div class="login-error" id="forgotError">
+          <i class="fas fa-exclamation-circle"></i>
+          <span id="forgotErrorText"></span>
+        </div>
+
+        <!-- ── STEP 1: Account Lookup ── -->
+        <div id="forgotStep1">
+          <div class="form-group">
+            <label class="form-label" for="forgotIdentifier">Student / Employee ID</label>
+            <div class="input-wrapper">
+              <i class="fas fa-id-badge input-icon-left"></i>
+              <input class="form-input input-icon" type="text" id="forgotIdentifier"
+                placeholder="e.g. 2021-00001" autocomplete="username"
+                oninput="clearForgotFeedback('forgotIdentifier')"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();handleForgotLookup();}">
+            </div>
+            <div class="field-feedback" id="forgotIdentifierFeedback"></div>
+            <p style="font-size:0.75rem; color:#6C7A92; margin-top:6px; line-height:1.4;">
+              Enter your Institutional ID to search for your registered recovery options.
+            </p>
+          </div>
+
+          <button type="button" class="login-btn" id="forgotLookupBtn" onclick="handleForgotLookup()">
+            <i class="fas fa-magnifying-glass"></i> Find Account
+          </button>
+        </div>
+
+        <!-- ── STEP 2: Choose Method (Email vs Phone) ── -->
+        <div id="forgotStep2" style="display:none;">
+          <p style="font-size:0.85rem; color:#334155; margin-bottom:1rem; font-weight:500;">
+            Select how you want to receive your 6-digit recovery code:
+          </p>
+
+          <!-- Email Option -->
+          <div class="recovery-option-card selected" id="optionEmailCard" onclick="selectRecoveryMethod('EMAIL')">
+            <input type="radio" name="recoveryMethod" id="methodEmail" value="EMAIL" checked>
+            <div class="option-icon-box">
+              <i class="fas fa-envelope"></i>
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:0.9rem; font-weight:700; color:#161F36;">Email Verification</div>
+              <div style="font-size:0.78rem; color:#64748b; margin-top:2px;" id="maskedEmailText">Loading...</div>
+            </div>
+          </div>
+
+          <!-- Phone Option -->
+          <div class="recovery-option-card" id="optionPhoneCard" onclick="selectRecoveryMethod('PHONE')">
+            <input type="radio" name="recoveryMethod" id="methodPhone" value="PHONE">
+            <div class="option-icon-box">
+              <i class="fas fa-comment-sms"></i>
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:0.9rem; font-weight:700; color:#161F36;">Phone Number (SMS OTP)</div>
+              <div style="font-size:0.78rem; color:#64748b; margin-top:2px;" id="maskedPhoneText">Loading...</div>
+            </div>
+          </div>
+
+          <button type="button" class="login-btn" id="forgotSendOtpBtn" onclick="handleSendOtp()">
+            <i class="fas fa-paper-plane"></i> Send Verification Code
+          </button>
+
+          <div style="text-align:center; margin-top:1rem;">
+            <a href="javascript:void(0)" onclick="goToForgotStep(1)" class="forgot-back-link">
+              <i class="fas fa-arrow-left"></i> Change ID
+            </a>
+          </div>
+        </div>
+
+        <!-- ── STEP 3: Enter 6-Digit OTP ── -->
+        <div id="forgotStep3" style="display:none;">
+          <p style="font-size:0.85rem; color:#334155; margin-bottom:1.25rem; line-height:1.4;">
+            We sent a 6-digit code to <strong id="otpTargetText" style="color:#161F36;">...</strong>. Enter the code below:
+          </p>
+
+          <div class="form-group" style="text-align:center;">
+            <label class="form-label" for="forgotOtpCode" style="text-align:center;">6-Digit Verification Code</label>
+            <div style="max-width:260px; margin:0.4rem auto 0;">
+              <input class="form-input otp-input-field" type="text" id="forgotOtpCode" maxlength="6"
+                placeholder="000000" autocomplete="one-time-code"
+                oninput="clearForgotFeedback('forgotOtpCode')"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();handleVerifyOtp();}">
+            </div>
+            <div class="field-feedback" id="forgotOtpCodeFeedback" style="text-align:center; justify-content:center;"></div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; font-size:0.8rem;">
+            <span style="color:#6C7A92;"><i class="fas fa-clock"></i> Expires: <strong id="otpCountdown" style="color:#DC2626;">05:00</strong></span>
+            <a href="javascript:void(0)" id="resendOtpLink" onclick="handleResendOtp()" class="forgot-resend-link">Resend Code</a>
+          </div>
+
+          <button type="button" class="login-btn" id="forgotVerifyBtn" onclick="handleVerifyOtp()">
+            <i class="fas fa-check"></i> Verify &amp; Continue
+          </button>
+
+          <div style="text-align:center; margin-top:1rem;">
+            <a href="javascript:void(0)" onclick="goToForgotStep(2)" class="forgot-back-link">
+              <i class="fas fa-arrow-left"></i> Choose different method
+            </a>
+          </div>
+        </div>
+
+        <!-- ── STEP 4: Set New Password ── -->
+        <div id="forgotStep4" style="display:none;">
+          <p style="font-size:0.85rem; color:#334155; margin-bottom:1rem; font-weight:500;">
+            Create a new strong password for your account:
+          </p>
+
+          <div class="form-group">
+            <label class="form-label" for="forgotNewPw">New Password</label>
+            <div class="input-wrapper">
+              <i class="fas fa-lock input-icon-left"></i>
+              <input class="form-input input-icon" type="password" id="forgotNewPw"
+                placeholder="Enter new password" minlength="8"
+                oninput="updateForgotPwStrength(); clearForgotFeedback('forgotNewPw');">
+              <button type="button" class="input-toggle-pw" onclick="togglePasswordVisibility('forgotNewPw', this)">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+            <div class="field-feedback" id="forgotNewPwFeedback"></div>
+
+            <div class="pw-strength" id="forgotPwStrength">
+              <div class="pw-strength-bar" id="forgotPwBar1"></div>
+              <div class="pw-strength-bar" id="forgotPwBar2"></div>
+              <div class="pw-strength-bar" id="forgotPwBar3"></div>
+              <div class="pw-strength-bar" id="forgotPwBar4"></div>
+            </div>
+            <div class="pw-strength-label" id="forgotPwStrengthLabel"></div>
+            <div class="pw-rules" id="forgotPwRules">
+              <div class="pw-rule-item" id="forgotRuleLen">
+                <i class="fas fa-circle-dot"></i> At least 8 characters
+              </div>
+              <div class="pw-rule-item" id="forgotRuleUpper">
+                <i class="fas fa-circle-dot"></i> Uppercase letter (A-Z)
+              </div>
+              <div class="pw-rule-item" id="forgotRuleNum">
+                <i class="fas fa-circle-dot"></i> At least one number (0-9)
+              </div>
+              <div class="pw-rule-item" id="forgotRuleSpecial">
+                <i class="fas fa-circle-dot"></i> Special symbol (!@#$%...)
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="forgotConfirmPw">Confirm New Password</label>
+            <div class="input-wrapper">
+              <i class="fas fa-check-double input-icon-left"></i>
+              <input class="form-input input-icon" type="password" id="forgotConfirmPw"
+                placeholder="Re-enter new password" minlength="8"
+                oninput="clearForgotFeedback('forgotConfirmPw')"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();handleResetPasswordWithToken();}">
+              <button type="button" class="input-toggle-pw" onclick="togglePasswordVisibility('forgotConfirmPw', this)">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+            <div class="field-feedback" id="forgotConfirmPwFeedback"></div>
+          </div>
+
+          <button type="button" class="login-btn" id="forgotResetBtn" onclick="handleResetPasswordWithToken()">
+            <i class="fas fa-shield-halved"></i> Reset Password
+          </button>
+        </div>
+
+        <!-- ── STEP 5: Success ── -->
+        <div id="forgotStep5" style="display:none; text-align:center;">
+          <div style="width:4.5rem; height:4.5rem; border-radius:1rem; background:linear-gradient(135deg, #161F36 0%, #223152 100%); color:#BACBD8; display:flex; align-items:center; justify-content:center; font-size:1.75rem; margin:0.5rem auto 1.25rem; box-shadow:0 8px 22px rgba(22, 31, 54, 0.28);">
+            <i class="fas fa-check"></i>
+          </div>
+          <h2 style="font-size:1.35rem; color:#161F36; margin-bottom:0.5rem;">Password Reset Complete!</h2>
+          <p style="font-size:0.85rem; color:#475569; margin-bottom:1.5rem; line-height:1.5;">
+            Your account password has been successfully updated. You can now sign in with your new credentials.
+          </p>
+
+          <button type="button" class="login-btn" onclick="finishForgotPassword()">
+            <i class="fas fa-right-to-bracket"></i> Sign In to SafeSpace
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -498,6 +702,452 @@
           const icon = el.querySelector('i');
           if (icon) icon.className = 'fas fa-circle-xmark';
         }
+      }
+    }
+
+    // ── Forgot Password / Account Recovery Handlers ──
+
+    let recoveryState = {
+      identifier: '',
+      method: 'EMAIL',
+      maskedEmail: '',
+      maskedPhone: '',
+      hasEmail: false,
+      hasPhone: false,
+      resetToken: '',
+      timerInterval: null,
+      countdownSeconds: 300
+    };
+
+    function openForgotPasswordModal() {
+      clearForgotFeedbacks();
+      goToForgotStep(1);
+      const prefillId = document.getElementById('loginUsername').value.trim();
+      if (prefillId) {
+        document.getElementById('forgotIdentifier').value = prefillId;
+      }
+      document.getElementById('forgotPwOverlay').style.display = 'flex';
+      setTimeout(() => {
+        const idInput = document.getElementById('forgotIdentifier');
+        if (idInput) idInput.focus();
+      }, 50);
+    }
+
+    function closeForgotPasswordModal() {
+      document.getElementById('forgotPwOverlay').style.display = 'none';
+      if (recoveryState.timerInterval) {
+        clearInterval(recoveryState.timerInterval);
+        recoveryState.timerInterval = null;
+      }
+    }
+
+    function goToForgotStep(step) {
+      clearForgotFeedbacks();
+      for (let i = 1; i <= 5; i++) {
+        const stepEl = document.getElementById('forgotStep' + i);
+        if (stepEl) stepEl.style.display = (i === step) ? 'block' : 'none';
+      }
+      const subtitle = document.getElementById('forgotModalSubtitle');
+      if (step === 1 && subtitle) subtitle.textContent = 'Search your account to begin recovery';
+      if (step === 2 && subtitle) subtitle.textContent = 'Choose your preferred recovery option';
+      if (step === 3 && subtitle) subtitle.textContent = 'Enter the 6-digit verification code';
+      if (step === 4 && subtitle) subtitle.textContent = 'Create a strong new password';
+      if (step === 5 && subtitle) subtitle.textContent = 'Password reset complete';
+    }
+
+    function selectRecoveryMethod(method) {
+      if (method === 'PHONE' && !recoveryState.hasPhone) return;
+      if (method === 'EMAIL' && !recoveryState.hasEmail) return;
+
+      recoveryState.method = method;
+      const emailCard = document.getElementById('optionEmailCard');
+      const phoneCard = document.getElementById('optionPhoneCard');
+      const methodEmailRadio = document.getElementById('methodEmail');
+      const methodPhoneRadio = document.getElementById('methodPhone');
+
+      if (method === 'EMAIL') {
+        emailCard.classList.add('selected');
+        phoneCard.classList.remove('selected');
+        if (methodEmailRadio) methodEmailRadio.checked = true;
+      } else {
+        phoneCard.classList.add('selected');
+        emailCard.classList.remove('selected');
+        if (methodPhoneRadio) methodPhoneRadio.checked = true;
+      }
+    }
+
+    function showForgotFeedback(inputId, msg) {
+      const input = document.getElementById(inputId);
+      if (input) {
+        input.classList.add('has-error');
+        const wrapper = input.closest('.input-wrapper');
+        if (wrapper) wrapper.classList.add('has-error');
+      }
+      const fb = document.getElementById(inputId + 'Feedback');
+      if (fb) {
+        fb.innerHTML = '<i class="fas fa-circle-exclamation"></i> <span>' + escapeHtml(msg) + '</span>';
+        fb.classList.add('visible');
+      }
+    }
+
+    function clearForgotFeedback(inputId) {
+      const input = document.getElementById(inputId);
+      if (input) {
+        input.classList.remove('has-error');
+        const wrapper = input.closest('.input-wrapper');
+        if (wrapper) wrapper.classList.remove('has-error');
+      }
+      const fb = document.getElementById(inputId + 'Feedback');
+      if (fb) fb.classList.remove('visible');
+    }
+
+    function clearForgotFeedbacks() {
+      ['forgotIdentifier', 'forgotOtpCode', 'forgotNewPw', 'forgotConfirmPw'].forEach(id => {
+        clearForgotFeedback(id);
+      });
+      const err = document.getElementById('forgotError');
+      if (err) err.classList.remove('visible');
+    }
+
+    function showForgotError(msg) {
+      const err = document.getElementById('forgotError');
+      const text = document.getElementById('forgotErrorText');
+      if (err && text) {
+        text.textContent = msg;
+        err.classList.add('visible');
+      }
+    }
+
+    async function handleForgotLookup() {
+      clearForgotFeedbacks();
+      const idInput = document.getElementById('forgotIdentifier');
+      const identifier = idInput.value.trim();
+      if (!identifier) {
+        showForgotFeedback('forgotIdentifier', 'Please enter your Institutional ID or username.');
+        idInput.focus();
+        return;
+      }
+
+      const btn = document.getElementById('forgotLookupBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching Account...';
+
+      try {
+        const res = await fetch(`${API}/forgot-password/lookup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: identifier })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'No account found matching this ID.');
+        }
+
+        recoveryState.identifier = data.institutionalId || identifier;
+        recoveryState.maskedEmail = data.maskedEmail;
+        recoveryState.maskedPhone = data.maskedPhone;
+        recoveryState.hasEmail = data.hasEmail;
+        recoveryState.hasPhone = data.hasPhone;
+
+        // Populate options in Step 2
+        const emailCard = document.getElementById('optionEmailCard');
+        const phoneCard = document.getElementById('optionPhoneCard');
+        const maskedEmailText = document.getElementById('maskedEmailText');
+        const maskedPhoneText = document.getElementById('maskedPhoneText');
+
+        if (data.hasEmail) {
+          maskedEmailText.textContent = data.maskedEmail;
+          emailCard.classList.remove('disabled');
+        } else {
+          maskedEmailText.textContent = 'No email registered on file';
+          emailCard.classList.add('disabled');
+        }
+
+        if (data.hasPhone) {
+          maskedPhoneText.textContent = data.maskedPhone;
+          phoneCard.classList.remove('disabled');
+        } else {
+          maskedPhoneText.textContent = 'No phone number registered on file';
+          phoneCard.classList.add('disabled');
+        }
+
+        // Set default selection
+        if (data.hasEmail) {
+          selectRecoveryMethod('EMAIL');
+        } else if (data.hasPhone) {
+          selectRecoveryMethod('PHONE');
+        }
+
+        goToForgotStep(2);
+
+      } catch (err) {
+        const msg = err.message || 'Lookup failed.';
+        showForgotFeedback('forgotIdentifier', msg);
+        showForgotError(msg);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-magnifying-glass"></i> Find Account';
+      }
+    }
+
+    async function handleSendOtp() {
+      clearForgotFeedbacks();
+      const btn = document.getElementById('forgotSendOtpBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending Code...';
+
+      try {
+        const res = await fetch(`${API}/forgot-password/send-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            identifier: recoveryState.identifier,
+            method: recoveryState.method
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to dispatch verification code.');
+        }
+
+        document.getElementById('otpTargetText').textContent = data.destinationMasked || (recoveryState.method === 'EMAIL' ? recoveryState.maskedEmail : recoveryState.maskedPhone);
+
+        // Reset and start countdown timer
+        startOtpCountdown(data.expiresInSeconds || 300);
+
+        goToForgotStep(3);
+        document.getElementById('forgotOtpCode').value = '';
+        setTimeout(() => {
+          document.getElementById('forgotOtpCode').focus();
+        }, 50);
+
+      } catch (err) {
+        showForgotError(err.message || 'Failed to send verification code.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Verification Code';
+      }
+    }
+
+    function startOtpCountdown(seconds) {
+      if (recoveryState.timerInterval) {
+        clearInterval(recoveryState.timerInterval);
+      }
+      recoveryState.countdownSeconds = seconds;
+      const display = document.getElementById('otpCountdown');
+      const resendLink = document.getElementById('resendOtpLink');
+      if (resendLink) {
+        resendLink.style.pointerEvents = 'none';
+        resendLink.style.opacity = '0.5';
+      }
+
+      function updateDisplay() {
+        const mins = Math.floor(recoveryState.countdownSeconds / 60);
+        const secs = recoveryState.countdownSeconds % 60;
+        if (display) {
+          display.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+        }
+        if (recoveryState.countdownSeconds <= 0) {
+          clearInterval(recoveryState.timerInterval);
+          recoveryState.timerInterval = null;
+          if (display) display.textContent = 'Expired';
+          if (resendLink) {
+            resendLink.style.pointerEvents = 'auto';
+            resendLink.style.opacity = '1';
+          }
+        } else {
+          recoveryState.countdownSeconds--;
+        }
+      }
+
+      updateDisplay();
+      recoveryState.timerInterval = setInterval(updateDisplay, 1000);
+    }
+
+    async function handleResendOtp() {
+      handleSendOtp();
+    }
+
+    async function handleVerifyOtp() {
+      clearForgotFeedbacks();
+      const otpInput = document.getElementById('forgotOtpCode');
+      const code = otpInput.value.trim();
+      if (!code || code.length < 6) {
+        showForgotFeedback('forgotOtpCode', 'Please enter the complete 6-digit verification code.');
+        otpInput.focus();
+        return;
+      }
+
+      const btn = document.getElementById('forgotVerifyBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+
+      try {
+        const res = await fetch(`${API}/forgot-password/verify-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            identifier: recoveryState.identifier,
+            otpCode: code
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Invalid verification code.');
+        }
+
+        recoveryState.resetToken = data.resetToken;
+
+        // Clear timer
+        if (recoveryState.timerInterval) {
+          clearInterval(recoveryState.timerInterval);
+          recoveryState.timerInterval = null;
+        }
+
+        goToForgotStep(4);
+        setTimeout(() => {
+          document.getElementById('forgotNewPw').focus();
+        }, 50);
+
+      } catch (err) {
+        showForgotFeedback('forgotOtpCode', err.message || 'Verification failed.');
+        showForgotError(err.message || 'Verification failed.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Verify &amp; Continue';
+      }
+    }
+
+    function updateForgotPwStrength() {
+      const pw = document.getElementById('forgotNewPw').value;
+      const bars = [
+        document.getElementById('forgotPwBar1'),
+        document.getElementById('forgotPwBar2'),
+        document.getElementById('forgotPwBar3'),
+        document.getElementById('forgotPwBar4')
+      ];
+      const label = document.getElementById('forgotPwStrengthLabel');
+
+      const hasLen = pw.length >= 8;
+      const hasUpper = /[A-Z]/.test(pw);
+      const hasNum = /[0-9]/.test(pw);
+      const hasSpecial = /[^A-Za-z0-9]/.test(pw);
+
+      updateRuleState('forgotRuleLen', hasLen);
+      updateRuleState('forgotRuleUpper', hasUpper);
+      updateRuleState('forgotRuleNum', hasNum);
+      updateRuleState('forgotRuleSpecial', hasSpecial);
+
+      let score = 0;
+      if (hasLen) score++;
+      if (hasUpper) score++;
+      if (hasNum) score++;
+      if (hasSpecial) score++;
+
+      bars.forEach((bar, i) => {
+        bar.className = 'pw-strength-bar';
+        if (i < score) {
+          if (score <= 1) bar.classList.add('weak');
+          else if (score <= 2) bar.classList.add('medium');
+          else bar.classList.add('strong');
+        }
+      });
+
+      if (pw.length === 0) {
+        label.textContent = '';
+      } else if (score <= 1) {
+        label.textContent = 'Weak';
+        label.style.color = '#ef4444';
+      } else if (score <= 2) {
+        label.textContent = 'Medium';
+        label.style.color = '#f59e0b';
+      } else if (score === 3) {
+        label.textContent = 'Good';
+        label.style.color = '#10b981';
+      } else {
+        label.textContent = 'Strong';
+        label.style.color = '#10b981';
+      }
+    }
+
+    async function handleResetPasswordWithToken() {
+      clearForgotFeedbacks();
+      const newPw = document.getElementById('forgotNewPw').value;
+      const confirmPw = document.getElementById('forgotConfirmPw').value;
+
+      let firstInvalid = null;
+      const hasLen = newPw.length >= 8;
+      const hasUpper = /[A-Z]/.test(newPw);
+      const hasNum = /[0-9]/.test(newPw);
+      const hasSpecial = /[^A-Za-z0-9]/.test(newPw);
+
+      const missing = [];
+      if (!hasLen) missing.push('at least 8 characters');
+      if (!hasUpper) missing.push('uppercase letter (A-Z)');
+      if (!hasNum) missing.push('at least one number (0-9)');
+      if (!hasSpecial) missing.push('special symbol (!@#$%...)');
+
+      if (missing.length > 0) {
+        showForgotFeedback('forgotNewPw', 'Password must satisfy all requirements below.');
+        highlightMissingRules({
+          forgotRuleLen: hasLen,
+          forgotRuleUpper: hasUpper,
+          forgotRuleNum: hasNum,
+          forgotRuleSpecial: hasSpecial
+        });
+        if (!firstInvalid) firstInvalid = document.getElementById('forgotNewPw');
+      }
+
+      if (!confirmPw) {
+        showForgotFeedback('forgotConfirmPw', 'Please re-enter your new password to confirm.');
+        if (!firstInvalid) firstInvalid = document.getElementById('forgotConfirmPw');
+      } else if (newPw !== confirmPw) {
+        showForgotFeedback('forgotConfirmPw', 'Passwords do not match. Please verify both inputs.');
+        if (!firstInvalid) firstInvalid = document.getElementById('forgotConfirmPw');
+      }
+
+      if (firstInvalid) {
+        firstInvalid.focus();
+        return;
+      }
+
+      const btn = document.getElementById('forgotResetBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resetting Password...';
+
+      try {
+        const res = await fetch(`${API}/forgot-password/reset-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            identifier: recoveryState.identifier,
+            resetToken: recoveryState.resetToken,
+            newPassword: newPw,
+            confirmPassword: confirmPw
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to reset password.');
+        }
+
+        goToForgotStep(5);
+
+      } catch (err) {
+        showForgotError(err.message || 'Password reset failed.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Reset Password';
+      }
+    }
+
+    function finishForgotPassword() {
+      const recoveredUser = recoveryState.identifier;
+      closeForgotPasswordModal();
+      if (recoveredUser) {
+        document.getElementById('loginUsername').value = recoveredUser;
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('loginPassword').focus();
       }
     }
 

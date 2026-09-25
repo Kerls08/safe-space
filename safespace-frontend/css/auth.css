@@ -131,11 +131,13 @@
 }
 
 /* Auth Form */
-.auth-form .form-group {
+.auth-form .form-group,
+.form-group {
   margin-bottom: 1.25rem;
 }
 
-.auth-form .form-label {
+.auth-form .form-label,
+.form-label {
   display: block;
   font-size: 0.8rem;
   font-weight: 600;
@@ -143,7 +145,8 @@
   margin-bottom: 0.4rem;
 }
 
-.auth-form .form-input {
+.auth-form .form-input,
+.form-input {
   width: 100%;
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
@@ -154,19 +157,23 @@
   border-radius: 0.75rem;
   outline: none;
   transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
-.auth-form .form-input:focus {
+.auth-form .form-input:focus,
+.form-input:focus {
   border-color: #BACBD8;
   box-shadow: 0 0 0 3px rgba(186, 203, 216, 0.35);
   background: #fff;
 }
 
-.auth-form .form-input.input-icon {
+.auth-form .form-input.input-icon,
+.form-input.input-icon {
   padding-left: 2.75rem;
 }
 
-.auth-form .form-select {
+.auth-form .form-select,
+.form-select {
   width: 100%;
   padding: 0.75rem 2.25rem 0.75rem 2.75rem;
   font-size: 0.875rem;
@@ -178,6 +185,15 @@
   outline: none;
   transition: all 0.3s ease;
   cursor: pointer;
+  box-sizing: border-box;
+}
+
+.auth-form .form-select:focus,
+.form-select:focus {
+  border-color: #BACBD8;
+  box-shadow: 0 0 0 3px rgba(186, 203, 216, 0.35);
+  background: #fff;
+}
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -1183,3 +1199,162 @@
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.15); opacity: 0.85; }
 }
+
+/* ── Forgot Password & Recovery Styles ── */
+.login-links-bottom {
+  text-align: center;
+  margin-top: 1.25rem;
+  font-size: 0.85rem;
+  color: var(--dark-600, #6C7A92);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.forgot-link {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--dark, #161F36);
+  text-decoration: none;
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+.forgot-link:hover {
+  color: #566F3E;
+  text-decoration: underline;
+}
+
+.register-here-link {
+  color: var(--dark, #161F36);
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+.register-here-link:hover {
+  color: #566F3E;
+  text-decoration: underline;
+}
+
+/* Recovery Modal Specific Styles */
+.modal-close-btn {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: #8F9EB4;
+  font-size: 1.15rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.modal-close-btn:hover {
+  background: #F1F5F9;
+  color: #161F36;
+}
+
+.recovery-option-card {
+  border: 1.5px solid #E0D7C6;
+  border-radius: 0.85rem;
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: #FFFFFF;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.recovery-option-card:hover {
+  border-color: #BACBD8;
+  background: #FAF7F2;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(22, 31, 54, 0.05);
+}
+
+.recovery-option-card.selected {
+  border-color: #161F36;
+  background: #F4F7FB;
+  box-shadow: 0 4px 14px rgba(22, 31, 54, 0.08);
+}
+
+.recovery-option-card input[type="radio"] {
+  accent-color: #161F36;
+  width: 1.15rem;
+  height: 1.15rem;
+  cursor: pointer;
+}
+
+.recovery-option-card .option-icon-box {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.6rem;
+  background: #E8EFF4;
+  color: #161F36;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.recovery-option-card.selected .option-icon-box {
+  background: #161F36;
+  color: #BACBD8;
+}
+
+.recovery-option-card.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: #F8FAFC;
+  border-color: #E2E8F0;
+}
+
+.otp-input-field {
+  font-size: 1.5rem !important;
+  letter-spacing: 8px !important;
+  font-weight: 800 !important;
+  text-align: center !important;
+  font-family: monospace !important;
+  padding: 0.75rem 0.5rem !important;
+}
+
+.forgot-resend-link {
+  color: #161F36;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.forgot-resend-link:hover {
+  color: #566F3E;
+  text-decoration: underline;
+}
+
+.forgot-back-link {
+  color: #6C7A92;
+  font-size: 0.82rem;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: color 0.2s ease;
+}
+
+.forgot-back-link:hover {
+  color: #161F36;
+  text-decoration: underline;
+}
+

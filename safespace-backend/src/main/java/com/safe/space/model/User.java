@@ -48,6 +48,10 @@ public class User {
     @Column(length = 200)
     private String email;
 
+    /** Mobile/Phone number for SMS alerts and account recovery. */
+    @Column(length = 30)
+    private String phoneNumber;
+
     /** Department / Program (from directory). */
     @Column(length = 200)
     private String department;
