@@ -1,7 +1,9 @@
 package com.safe.space.controller;
 
 import com.safe.space.dto.*;
+import com.safe.space.model.User;
 import com.safe.space.service.DashboardService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -50,5 +52,24 @@ public class DashboardController {
     public ResponseEntity<DashboardTrendsResponse> getTrends(
             @RequestParam(defaultValue = "30") int days) {
         return ResponseEntity.ok(dashboardService.getTrends(days));
+    }
+
+    /**
+     * Formal Monthly Situationer Report for USTP Balubal Psychometricians & Guidance Center.
+     * Generates aggregated, anonymized student mental health, emotional climate,
+     * crisis triggers, and counseling analytics for printing or PDF export.
+     *
+     * @param year report calendar year (e.g. 2026)
+     * @param month report calendar month (1-12)
+     */
+    @GetMapping("/monthly-report")
+    public ResponseEntity<MonthlyReportResponse> getMonthlyReport(
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month,
+            HttpServletRequest request) {
+        User currentUser = (User) request.getAttribute("auth.user");
+        int targetYear = (year != null && year > 0) ? year : java.time.LocalDate.now().getYear();
+        int targetMonth = (month != null && month >= 1 && month <= 12) ? month : java.time.LocalDate.now().getMonthValue();
+        return ResponseEntity.ok(dashboardService.getMonthlyReport(targetYear, targetMonth, currentUser));
     }
 }

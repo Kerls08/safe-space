@@ -21,10 +21,10 @@
     <header class="alerts-header" id="alertsHeader">
       <div class="alerts-header-inner">
         <div class="alerts-header-left">
-          <div class="alerts-header-icon"><i class="fas fa-shield-heart"></i></div>
+          <div class="alerts-header-icon"><i class="fas fa-bell"></i></div>
           <div>
-            <h1>Clinical Crisis Alerts</h1>
-            <p>Real-time campus-wide trauma-informed safety &amp; emergency triage protocol</p>
+            <h1>Crisis Alerts</h1>
+            <p>Real-time crisis monitoring &amp; response management</p>
           </div>
         </div>
         <div class="stats-chips" id="statsChips">
@@ -188,7 +188,7 @@
       }
 
       if (filtered.length === 0) {
-        container.innerHTML = `<div class="alerts-empty"><i class="fas fa-shield-heart" style="color:#10b981;"></i><h3>All Clear — Safety Thresholds Normal</h3><p>${currentSevFilter !== 'ALL' ? 'No ' + currentSevFilter.toLowerCase() + ' alerts currently in queue.' : 'Campus safety monitoring is active and all expressions remain within normal emotional parameters.'}</p></div>`;
+        container.innerHTML = `<div class="alerts-empty"><i class="fas fa-check-circle" style="color:#10b981;"></i><p>${currentSevFilter !== 'ALL' ? 'No ' + currentSevFilter.toLowerCase() + ' alerts' : 'All clear — no active alerts'}</p></div>`;
         return;
       }
       container.innerHTML = filtered.map(a => buildAlertCard(a, true)).join('');
@@ -201,7 +201,7 @@
         const alerts = await res.json();
         const container = document.getElementById('unresolvedContainer');
         if (alerts.length === 0) {
-          container.innerHTML = '<div class="alerts-empty"><i class="fas fa-circle-check" style="color:#10b981;"></i><h3>Zero Pending Triage Items</h3><p>All safety alerts have been evaluated and triaged by campus mental health professionals.</p></div>';
+          container.innerHTML = '<div class="alerts-empty"><i class="fas fa-check-double" style="color:#10b981;"></i><p>No unresolved alerts</p></div>';
           return;
         }
         container.innerHTML = alerts.map(a => buildAlertCard(a, true)).join('');
@@ -216,7 +216,7 @@
         const alerts = await res.json();
         const container = document.getElementById('historyContainer');
         if (alerts.length === 0) {
-          container.innerHTML = '<div class="alerts-empty"><i class="fas fa-clock-rotate-left" style="color:#6366f1;"></i><h3>No Alert History Found</h3><p>No historical crisis incidents have been logged yet.</p></div>';
+          container.innerHTML = '<div class="alerts-empty"><i class="fas fa-clock-rotate-left" style="color:#6366f1;"></i><p>No alert history found</p></div>';
           return;
         }
         container.innerHTML = alerts.map(a => buildAlertCard(a, false)).join('');

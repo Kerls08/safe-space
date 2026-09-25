@@ -85,6 +85,24 @@ public class EmailService {
         });
     }
 
+    /**
+     * Send Self-Registration Confirmation notification email asynchronously.
+     * Note: Plaintext passwords are NEVER sent since students configure their own password.
+     */
+    public void sendRegistrationConfirmationEmail(String toEmail, String fullName, String username, String department, String yearLevel) {
+        if (!shouldSend(toEmail)) return;
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                String subject = "SafeSpace — Registration Confirmed | USTP Balubal";
+                String htmlBody = buildRegistrationConfirmationHtml(fullName, username, department, yearLevel);
+                sendBrevoMail(toEmail, fullName, subject, htmlBody);
+            } catch (Exception e) {
+                log.warn("Failed to send registration confirmation email to {} ({}): {}", username, toEmail, e.getMessage());
+            }
+        });
+    }
+
     // ── Internal Helpers ──
 
     private boolean shouldSend(String toEmail) {
@@ -277,6 +295,123 @@ public class EmailService {
             </body>
             </html>
             """.formatted(escapeHtml(fullName), escapeHtml(username), escapeHtml(newTempPassword), escapeHtml(appUrl));
+    }
+
+    private String buildRegistrationConfirmationHtml(String fullName, String username, String department, String yearLevel) {
+        String deptYearDisplay = "";
+        if (department != null && !department.isBlank()) {
+            deptYearDisplay += department.trim();
+        }
+        if (yearLevel != null && !yearLevel.isBlank()) {
+            deptYearDisplay += (deptYearDisplay.isEmpty() ? "" : " • ") + yearLevel.trim();
+        }
+        if (deptYearDisplay.isEmpty()) {
+            deptYearDisplay = "USTP Balubal Student";
+        }
+
+        String loginUrl = appUrl != null && !appUrl.isBlank() ? appUrl.trim() : "http://localhost:5173";
+        if (!loginUrl.endsWith(".html")) {
+            if (loginUrl.endsWith("/")) {
+                loginUrl += "login.html";
+            } else {
+                loginUrl += "/login.html";
+            }
+        }
+
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 24px 12px; color: #1e293b; }
+                .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
+                .header { background: linear-gradient(135deg, #1e5e3a 0%%, #2d7d46 50%%, #3f9b5c 100%%); color: #ffffff; padding: 36px 24px 30px; text-align: center; }
+                .header-logo { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
+                .header-sub { margin: 6px 0 0 0; opacity: 0.92; font-size: 13px; font-weight: 400; letter-spacing: 0.3px; }
+                .content { padding: 32px 28px; }
+                .greeting { font-size: 19px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
+                .intro { font-size: 14px; line-height: 1.6; color: #334155; margin-bottom: 22px; }
+                .card-box { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #2d7d46; border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+                .field { margin-bottom: 10px; }
+                .field:last-child { margin-bottom: 0; }
+                .label { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 0.5px; }
+                .value { font-size: 15px; font-weight: 600; color: #0f172a; margin-top: 2px; }
+                .badge-active { display: inline-block; background: #dcfce7; color: #15803d; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 20px; }
+                
+                .security-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 15px 18px; margin: 18px 0; font-size: 13px; line-height: 1.5; color: #1e40af; }
+                .security-title { font-weight: 700; display: block; margin-bottom: 4px; color: #1e3a8a; }
+                
+                .privacy-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 15px 18px; margin: 18px 0; font-size: 13px; line-height: 1.5; color: #166534; }
+                .privacy-title { font-weight: 700; display: block; margin-bottom: 4px; color: #14532d; }
+                
+                .crisis-box { background: #fffbeb; border: 1px solid #fef3c7; border-radius: 10px; padding: 16px 18px; margin: 22px 0; font-size: 13px; color: #92400e; }
+                .crisis-title { font-weight: 700; display: block; margin-bottom: 8px; color: #78350f; font-size: 14px; }
+                .crisis-item { margin-bottom: 6px; line-height: 1.4; }
+                .crisis-item:last-child { margin-bottom: 0; }
+                
+                .btn-container { text-align: center; margin: 30px 0 15px 0; }
+                .btn { display: inline-block; background: #2d7d46; color: #ffffff !important; text-decoration: none; padding: 14px 34px; border-radius: 10px; font-weight: 700; font-size: 15px; }
+                .footer { background: #f8fafc; padding: 22px; text-align: center; font-size: 12px; line-height: 1.5; color: #64748b; border-top: 1px solid #e2e8f0; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <div class="header-logo">SafeSpace</div>
+                  <div class="header-sub">Student Wellness &amp; Mental Health Portal • USTP Balubal</div>
+                </div>
+                <div class="content">
+                  <div class="greeting">Welcome to SafeSpace, %s! 👋</div>
+                  <div class="intro">
+                    Your student account has been successfully registered. You now have full access to our campus mental health resources, anonymous venting rooms, and confidential peer or professional counseling.
+                  </div>
+                  
+                  <div class="card-box">
+                    <div class="field">
+                      <div class="label">Institutional ID / Username</div>
+                      <div class="value">%s</div>
+                    </div>
+                    <div class="field" style="margin-top: 12px;">
+                      <div class="label">Department &amp; Year Level</div>
+                      <div class="value">%s</div>
+                    </div>
+                    <div class="field" style="margin-top: 12px;">
+                      <div class="label">Account Status</div>
+                      <div style="margin-top: 4px;"><span class="badge-active">● Active &amp; Verified</span></div>
+                    </div>
+                  </div>
+
+                  <div class="security-box">
+                    <span class="security-title">🔒 Password Security Notice</span>
+                    Because you configured your own private password during registration, your password is cryptographically encrypted and is <strong>never</strong> transmitted by email or viewable by anyone. Please keep your login credentials private.
+                  </div>
+
+                  <div class="privacy-box">
+                    <span class="privacy-title">🛡️ Confidentiality &amp; Anonymity Protected</span>
+                    SafeSpace is your trusted sanctuary. When you participate in community discussions or seek peer support, your real identity is completely hidden behind an anonymous pseudonym.
+                  </div>
+
+                  <div class="crisis-box">
+                    <span class="crisis-title">📞 24/7 Emergency Support Directory</span>
+                    <div class="crisis-item"><strong>USTP Balubal Guidance Office:</strong> guidance.balubal@ustp.edu.ph</div>
+                    <div class="crisis-item"><strong>NCMH Crisis Hotline:</strong> 1553 (Toll-Free Nationwide) | 0917-899-USAP (8727)</div>
+                    <div class="crisis-item"><strong>Hopeline Philippines:</strong> 0917-558-4673 | (02) 8804-4673</div>
+                  </div>
+
+                  <div class="btn-container">
+                    <a href="%s" class="btn">Log In to SafeSpace</a>
+                  </div>
+                </div>
+                <div class="footer">
+                  This is an automated notification confirming your registration on SafeSpace USTP Balubal.<br>
+                  If you did not register for this account, please immediately inform the campus guidance center.
+                </div>
+              </div>
+            </body>
+            </html>
+            """.formatted(escapeHtml(fullName), escapeHtml(username), escapeHtml(deptYearDisplay), escapeHtml(loginUrl));
     }
 
     private String escapeHtml(String text) {

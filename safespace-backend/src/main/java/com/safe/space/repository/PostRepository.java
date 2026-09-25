@@ -66,6 +66,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT COUNT(p) FROM Post p WHERE p.createdAt BETWEEN :from AND :to")
     long countByCreatedAtBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
+    List<Post> findByCreatedAtBetweenOrderByCreatedAtDesc(LocalDateTime from, LocalDateTime to);
+
     long countByFlaggedTrue();
 
     /** Count of unreviewed flagged posts. */

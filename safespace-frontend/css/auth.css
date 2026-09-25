@@ -7,51 +7,86 @@
 .login-page {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   background: linear-gradient(145deg, #FAF7F2 0%, #F2EDE2 45%, #FFFFFF 75%, #ECE5D6 100%);
-  padding: 2rem;
+  padding: 2.5rem 1rem 3.5rem 1rem;
   position: relative;
-  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .login-page::before {
   content: '';
-  position: absolute;
+  position: fixed;
   width: 540px;
   height: 540px;
-  background: radial-gradient(circle, rgba(186, 203, 216, 0.38), transparent 70%);
+  background: radial-gradient(circle, rgba(186, 203, 216, 0.35), transparent 70%);
   top: -120px;
   right: -120px;
   border-radius: 50%;
   pointer-events: none;
+  transform: translateZ(0);
+  z-index: 0;
 }
 
 .login-page::after {
   content: '';
-  position: absolute;
+  position: fixed;
   width: 460px;
   height: 460px;
-  background: radial-gradient(circle, rgba(22, 31, 54, 0.08), transparent 70%);
+  background: radial-gradient(circle, rgba(22, 31, 54, 0.06), transparent 70%);
   bottom: -100px;
   left: -100px;
   border-radius: 50%;
   pointer-events: none;
+  transform: translateZ(0);
+  z-index: 0;
 }
 
 .login-card {
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: #FFFFFF;
   border: 1px solid rgba(224, 215, 198, 0.9);
   border-radius: 1.5rem;
-  box-shadow: 0 25px 60px rgba(22, 31, 54, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.9);
+  box-shadow: 0 15px 40px rgba(22, 31, 54, 0.07), 0 2px 6px rgba(22, 31, 54, 0.04);
   width: 100%;
   max-width: 440px;
   padding: 2.5rem;
   position: relative;
   z-index: 1;
+  margin: auto 0;
+  transform: translateZ(0);
+  backface-visibility: hidden;
   animation: card-entrance 0.6s ease-out;
+}
+
+/* ── Back to Home Link (Text-only with hover highlight, as requested) ── */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: #161F36;
+  text-decoration: none;
+  margin-bottom: 1.25rem;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  padding: 0.2rem 0;
+  transition: color 0.2s ease, transform 0.2s ease;
+  width: fit-content;
+  cursor: pointer;
+}
+.back-link:hover {
+  color: #2563eb;
+  transform: translateX(-3px);
+}
+.back-link i {
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+}
+.back-link:hover i {
+  transform: translateX(-2px);
 }
 
 @keyframes card-entrance {
@@ -868,8 +903,8 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .login-page { padding: 1rem; }
-  .login-card { padding: 1.5rem; border-radius: 1.15rem; max-width: 100%; }
+  .login-page { padding: 1.25rem 0.75rem 2.5rem 0.75rem; }
+  .login-card { padding: 1.5rem; border-radius: 1.15rem; max-width: 100%; margin: 0 auto; }
   .login-brand { margin-bottom: 1.5rem; }
   .login-brand .brand-icon { width: 3.25rem; height: 3.25rem; font-size: 1.25rem; }
   .login-brand h1 { font-size: 1.25rem; }
@@ -1007,4 +1042,144 @@
 .pw-rule-item.invalid i {
   color: #ef4444 !important;
   transform: scale(1.1);
+}
+
+/* ── Universal Smooth Feedback System ── */
+.input-wrapper.has-error .form-input,
+.form-input.has-error,
+.form-select.has-error {
+  border-color: #f87171 !important;
+  background: #fffafa !important;
+  box-shadow: 0 0 0 3.5px rgba(239, 68, 68, 0.15) !important;
+  animation: smoothShake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.input-wrapper.has-error .input-icon-left {
+  color: #ef4444 !important;
+}
+
+.field-feedback {
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #dc2626;
+  margin-top: 0.35rem;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.field-feedback.visible {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.field-feedback i {
+  font-size: 0.75rem;
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
+/* ── Terms & Conditions Checkbox & Smooth Warning ── */
+.terms-row {
+  margin: 1.1rem 0 0.6rem 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.85rem;
+  border: 1.5px solid transparent;
+  background: transparent;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.terms-row.has-error {
+  background: #fef2f2 !important;
+  border-color: #f87171 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+}
+
+.terms-row.has-error .terms-checkbox {
+  outline: 2px solid #ef4444 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+}
+
+.terms-row.has-error .terms-text {
+  color: #991b1b !important;
+  font-weight: 500 !important;
+}
+
+.terms-feedback {
+  display: none;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #dc2626;
+  margin-top: 0.45rem;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.terms-row.has-error .terms-feedback {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.terms-feedback i {
+  font-size: 0.8rem;
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
+/* ── Smooth Alert Banners ── */
+.register-error, .login-error {
+  display: none;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1.15rem;
+  background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%);
+  border: 1.5px solid #fecaca;
+  border-radius: 0.85rem;
+  color: #b91c1c;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.08);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(-4px);
+  opacity: 0;
+}
+
+.register-error.visible, .login-error.visible {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+  animation: smoothSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.register-error i, .login-error i {
+  font-size: 1rem;
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
+@keyframes smoothShake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+  40%, 60% { transform: translate3d(3px, 0, 0); }
+}
+
+@keyframes smoothSlideDown {
+  0% { opacity: 0; transform: translateY(-8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseAlert {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.85; }
 }

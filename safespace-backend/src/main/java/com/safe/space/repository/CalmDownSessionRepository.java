@@ -41,4 +41,6 @@ public interface CalmDownSessionRepository extends JpaRepository<CalmDownSession
 
     /** Crisis-detected sessions. */
     long countByCrisisDetectedTrue();
+
+    List<CalmDownSession> findByCreatedAtBetweenOrderByCreatedAtDesc(LocalDateTime from, LocalDateTime to);
 }

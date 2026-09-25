@@ -199,6 +199,14 @@ public class CredentialService {
             throw new IllegalArgumentException("Institutional ID is required.");
         if (request.getFullName() == null || request.getFullName().isBlank())
             throw new IllegalArgumentException("Full name is required.");
+        if (request.getEmail() == null || request.getEmail().isBlank())
+            throw new IllegalArgumentException("Email address is required.");
+
+        String cleanEmail = request.getEmail().trim();
+        if (!cleanEmail.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            throw new IllegalArgumentException("Please provide a valid email address (e.g. name@ustp.edu.ph or gmail.com).");
+        }
+
         if (request.getRole() == null || request.getRole().isBlank())
             throw new IllegalArgumentException("Role is required.");
         validatePasswordComplexity(request.getPassword());
@@ -220,11 +228,11 @@ public class CredentialService {
         String role = "STUDENT";
 
         User user = User.builder()
-                .institutionalId(request.getInstitutionalId())
+                .institutionalId(request.getInstitutionalId().trim())
                 .username(username)
                 .passwordHash(ENCODER.encode(request.getPassword()))
-                .fullName(request.getFullName())
-                .email(request.getEmail())
+                .fullName(request.getFullName().trim())
+                .email(cleanEmail)
                 .department(request.getDepartment())
                 .yearLevel(request.getYearLevel())
                 .role(role)
@@ -235,15 +243,25 @@ public class CredentialService {
 
         userRepository.save(user);
 
-        log.info("Self-registration: institutionalId={}, username={}, role={}",
-                user.getInstitutionalId(), user.getUsername(), user.getRole());
+        log.info("Self-registration: institutionalId={}, username={}, email={}, role={}",
+                user.getInstitutionalId(), user.getUsername(), user.getEmail(), user.getRole());
+
+        // Asynchronously dispatch official registration confirmation email
+        emailService.sendRegistrationConfirmationEmail(
+                user.getEmail(),
+                user.getFullName(),
+                user.getUsername(),
+                user.getDepartment(),
+                user.getYearLevel()
+        );
 
         return RegisterUserResponse.builder()
                 .institutionalId(user.getInstitutionalId())
                 .username(user.getUsername())
                 .fullName(user.getFullName())
+                .email(user.getEmail())
                 .role(user.getRole())
-                .message("Registration successful! You can now log in.")
+                .message("Registration successful! An official confirmation has been sent to your email.")
                 .build();
     }
 

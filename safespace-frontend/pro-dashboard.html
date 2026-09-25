@@ -32,6 +32,9 @@
           </div>
         </div>
         <div class="dash-actions">
+          <button class="monthly-report-trigger-btn" id="monthlyReportBtn" onclick="openMonthlyReportModal()">
+            <i class="fas fa-file-invoice"></i> Monthly Report
+          </button>
           <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">
             <i class="fas fa-rotate-right"></i> Refresh
           </button>
@@ -396,6 +399,590 @@
     // Boot
     refreshAll();
     startAutoRefresh();
+
+    // ── Monthly Report Feature ──
+    let reportMonthsInitialized = false;
+
+    function initMonthSelector() {
+      if (reportMonthsInitialized) return;
+      const select = document.getElementById('reportMonthSelect');
+      select.innerHTML = '';
+      
+      const now = new Date();
+      // Generate past 12 months (descending)
+      for (let i = 0; i < 12; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const y = d.getFullYear();
+        const m = d.getMonth() + 1;
+        const monthName = d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+        
+        const opt = document.createElement('option');
+        opt.value = `${y}-${m}`;
+        opt.textContent = monthName;
+        if (i === 0) opt.selected = true;
+        select.appendChild(opt);
+      }
+      reportMonthsInitialized = true;
+    }
+
+    function openMonthlyReportModal() {
+      initMonthSelector();
+      document.getElementById('reportModalOverlay').classList.add('active');
+      document.body.style.overflow = 'hidden';
+      fetchMonthlyReport();
+    }
+
+    function closeMonthlyReportModal() {
+      document.getElementById('reportModalOverlay').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    function handleReportOverlayClick(e) {
+      if (e.target.id === 'reportModalOverlay') {
+        closeMonthlyReportModal();
+      }
+    }
+
+    function printReport() {
+      window.print();
+    }
+
+    function formatDateTime(iso) {
+      if (!iso) return '—';
+      try {
+        const d = new Date(iso);
+        return d.toLocaleString('en-US', {
+          month: 'short', day: 'numeric', year: 'numeric',
+          hour: 'numeric', minute: '2-digit', hour12: true
+        });
+      } catch (e) {
+        return iso;
+      }
+    }
+
+    async function fetchMonthlyReport() {
+      const select = document.getElementById('reportMonthSelect');
+      const val = select.value || '';
+      const [year, month] = val.split('-');
+
+      const loader = document.getElementById('reportLoadingState');
+      const errBox = document.getElementById('reportErrorState');
+      const doc = document.getElementById('printableReport');
+
+      loader.style.display = 'flex';
+      errBox.style.display = 'none';
+      doc.style.display = 'none';
+
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/monthly-report?year=${year}&month=${month}`);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        renderPrintableReport(data);
+        doc.style.display = 'block';
+      } catch (err) {
+        console.error('Failed to generate monthly report:', err);
+        document.getElementById('reportErrorMsg').textContent = 'Unable to compile monthly report: ' + (err.message || 'Network error');
+        errBox.style.display = 'flex';
+      } finally {
+        loader.style.display = 'none';
+      }
+    }
+
+    function renderPrintableReport(d) {
+      const container = document.getElementById('printableReport');
+      
+      // Energy status pill
+      let energyPill = '';
+      if (d.averageEnergyScore >= 7.5) {
+        energyPill = '<span class="rep-status-pill distress">Acute Distress</span>';
+      } else if (d.averageEnergyScore >= 5.0) {
+        energyPill = '<span class="rep-status-pill mod">Moderate Tension</span>';
+      } else if (d.totalExpressions > 0) {
+        energyPill = '<span class="rep-status-pill calm">Calm & Resilient</span>';
+      } else {
+        energyPill = '<span class="rep-status-pill mod">No Expressions</span>';
+      }
+
+      // Emotions rows
+      let emotionRowsHtml = '';
+      if (d.emotionBreakdown && d.emotionBreakdown.length > 0) {
+        d.emotionBreakdown.forEach((em, idx) => {
+          const color = EMOTION_COLORS[em.emotion] || '#64748B';
+          const riskLabel = em.avgEnergy >= 8 ? 'High Tension ⚡' : em.avgEnergy >= 5 ? 'Moderate' : 'Low / Stable';
+          const riskColor = em.avgEnergy >= 8 ? '#DC2626' : em.avgEnergy >= 5 ? '#D97706' : '#166534';
+          emotionRowsHtml += `
+            <tr>
+              <td style="font-weight:700;text-align:center;width:40px;">${idx + 1}</td>
+              <td><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${color};margin-right:6px;"></span><strong>${escapeHtml(em.emotion)}</strong></td>
+              <td style="text-align:center;font-weight:700;">${em.count}</td>
+              <td>
+                <div class="rep-mini-bar">
+                  <div class="rep-track">
+                    <div class="rep-fill" style="width:${Math.max(em.percentage, 4)}%;background:${color};"></div>
+                  </div>
+                  <span style="font-size:0.7rem;font-weight:700;width:42px;text-align:right;">${em.percentage}%</span>
+                </div>
+              </td>
+              <td style="text-align:center;font-weight:800;color:${riskColor};">⚡ ${em.avgEnergy}</td>
+              <td style="font-size:0.7rem;color:${riskColor};font-weight:600;">${riskLabel}</td>
+            </tr>`;
+        });
+      } else {
+        emotionRowsHtml = `<tr><td colspan="6" style="text-align:center;color:#64748B;padding:1rem;">No emotional expressions logged for this reporting period.</td></tr>`;
+      }
+
+      // Department rows
+      let deptRowsHtml = '';
+      if (d.departmentBreakdown && d.departmentBreakdown.length > 0) {
+        d.departmentBreakdown.forEach(dept => {
+          deptRowsHtml += `
+            <tr>
+              <td><strong>${escapeHtml(dept.department)}</strong></td>
+              <td style="text-align:center;font-weight:700;">${dept.count}</td>
+              <td style="text-align:right;font-weight:700;color:#0284C7;">${dept.percentage}%</td>
+            </tr>`;
+        });
+      } else {
+        deptRowsHtml = `<tr><td colspan="3" style="text-align:center;color:#64748B;padding:0.75rem;">No departmental data available.</td></tr>`;
+      }
+
+      // Year level rows
+      let yearRowsHtml = '';
+      if (d.yearLevelBreakdown && d.yearLevelBreakdown.length > 0) {
+        d.yearLevelBreakdown.forEach(yl => {
+          yearRowsHtml += `
+            <tr>
+              <td><strong>${escapeHtml(yl.yearLevel)}</strong></td>
+              <td style="text-align:center;font-weight:700;">${yl.count}</td>
+              <td style="text-align:right;font-weight:700;color:#0284C7;">${yl.percentage}%</td>
+            </tr>`;
+        });
+      } else {
+        yearRowsHtml = `<tr><td colspan="3" style="text-align:center;color:#64748B;padding:0.75rem;">No year-level data available.</td></tr>`;
+      }
+
+      // Crisis audit rows
+      let crisisRowsHtml = '';
+      if (d.crisisIncidents && d.crisisIncidents.length > 0) {
+        d.crisisIncidents.forEach(c => {
+          const sevClass = (c.severity || 'moderate').toLowerCase();
+          const isRev = c.reviewed;
+          const statusBadge = isRev
+            ? `<span class="rep-badge reviewed"><i class="fas fa-check"></i> Reviewed</span>`
+            : `<span class="rep-badge pending"><i class="fas fa-triangle-exclamation"></i> Pending</span>`;
+          crisisRowsHtml += `
+            <tr>
+              <td style="font-family:monospace;font-size:0.68rem;color:#475569;">${escapeHtml(c.incidentId.substring(0, 18))}…</td>
+              <td style="font-size:0.68rem;font-weight:600;">${c.source === 'RANT_POST' ? '<i class="fas fa-comment-dots"></i> Rant' : '<i class="fas fa-comments"></i> Chat'}</td>
+              <td style="font-weight:700;color:#1E293B;">${escapeHtml(c.pseudonym)}</td>
+              <td><span class="rep-badge ${sevClass}">${escapeHtml(c.severity)}</span></td>
+              <td style="font-size:0.7rem;max-width:220px;word-break:break-word;">
+                <div style="font-weight:600;color:#0F172A;">${escapeHtml(c.summary)}</div>
+                ${c.flaggedKeywords ? `<div style="font-size:0.64rem;color:#DC2626;margin-top:2px;">Trigger: ${escapeHtml(c.flaggedKeywords)}</div>` : ''}
+              </td>
+              <td style="text-align:center;font-weight:800;color:#DC2626;">⚡${c.energyScore}</td>
+              <td style="text-align:center;">${statusBadge}</td>
+              <td style="font-size:0.68rem;color:#475569;">${c.reviewedBy ? escapeHtml(c.reviewedBy) : '—'}</td>
+            </tr>`;
+        });
+      } else {
+        crisisRowsHtml = `<tr><td colspan="8" style="text-align:center;color:#166534;background:#F0FDF4;padding:1rem;font-weight:600;"><i class="fas fa-shield-check"></i> Zero crisis triggers or high-tension flags recorded during this reporting window.</td></tr>`;
+      }
+
+      // Dialogues rows
+      let dialogueRowsHtml = '';
+      if (d.recentDialogues && d.recentDialogues.length > 0) {
+        d.recentDialogues.forEach(dlg => {
+          dialogueRowsHtml += `
+            <tr>
+              <td style="font-family:monospace;font-size:0.68rem;color:#475569;">${escapeHtml(dlg.sessionId.substring(0, 16))}…</td>
+              <td style="font-weight:700;">${escapeHtml(dlg.studentPseudonym)}</td>
+              <td style="color:#0284C7;font-weight:600;">${escapeHtml(dlg.professionalName)}</td>
+              <td style="font-size:0.7rem;">${escapeHtml(dlg.topic || 'General psychological support')}</td>
+              <td style="text-align:center;"><span class="rep-badge ${dlg.status === 'ACTIVE' ? 'high' : dlg.status === 'CLOSED' ? 'reviewed' : 'moderate'}">${escapeHtml(dlg.status)}</span></td>
+              <td style="text-align:center;font-weight:700;">${dlg.messageCount}</td>
+              <td style="font-size:0.68rem;color:#64748B;">${formatDateTime(dlg.createdAt)}</td>
+            </tr>`;
+        });
+      } else {
+        dialogueRowsHtml = `<tr><td colspan="7" style="text-align:center;color:#64748B;padding:0.75rem;">No counseling dialogues recorded in this cycle.</td></tr>`;
+      }
+
+      // Kit modalities rows
+      let kitRowsHtml = '';
+      if (d.kitModalities && d.kitModalities.length > 0) {
+        d.kitModalities.forEach(k => {
+          const modName = k.kitType === 'breathing' ? '4-7-8 Breathing De-escalation'
+            : k.kitType === 'grounding' ? '5-4-3-2-1 Sensory Grounding'
+            : k.kitType === 'quote' ? 'Affirmative Thought Reframing'
+            : k.kitType;
+          kitRowsHtml += `
+            <tr>
+              <td><strong>${escapeHtml(modName)}</strong></td>
+              <td style="text-align:center;font-weight:700;">${k.prescribedCount}</td>
+              <td style="text-align:center;font-weight:700;color:#166534;">${k.completedCount}</td>
+              <td style="text-align:center;font-weight:800;color:#0284C7;">${k.completionRate}%</td>
+              <td>
+                <div class="rep-mini-bar">
+                  <div class="rep-track">
+                    <div class="rep-fill" style="width:${Math.max(k.completionRate, 3)}%;background:#10B981;"></div>
+                  </div>
+                </div>
+              </td>
+            </tr>`;
+        });
+      } else {
+        kitRowsHtml = `<tr><td colspan="5" style="text-align:center;color:#64748B;padding:0.75rem;">No grounding exercises prescribed in this cycle.</td></tr>`;
+      }
+
+      // Observations
+      let obsHtml = '';
+      (d.clinicalObservations || []).forEach(obs => {
+        obsHtml += `<li><i class="fas fa-circle-check"></i> <span>${escapeHtml(obs)}</span></li>`;
+      });
+
+      // Recommendations
+      let recHtml = '';
+      (d.actionRecommendations || []).forEach(rec => {
+        recHtml += `<li>${escapeHtml(rec)}</li>`;
+      });
+
+      // Document HTML
+      container.innerHTML = `
+        <!-- Institutional Header -->
+        <header class="rep-header">
+          <div class="rep-top-row">
+            <div class="rep-institution-block">
+              <div class="rep-logo-seal"><i class="fas fa-shield-heart"></i></div>
+              <div class="rep-inst-titles">
+                <h3>University of Science and Technology of Southern Philippines</h3>
+                <h4>USTP Balubal Campus — Cagayan de Oro City</h4>
+                <p>Office of Student Affairs & Services • Guidance and Counseling Center • SafeSpace System</p>
+              </div>
+            </div>
+            <div class="rep-doc-meta-badge">
+              <span class="rep-confidential-pill">STRICTLY CONFIDENTIAL</span>
+              <div class="rep-ref-no">REF: USTP-BAL-${d.year}-${String(d.month).padStart(2, '0')}</div>
+            </div>
+          </div>
+
+          <div class="rep-title-banner">
+            <h1>MONTHLY STUDENT MENTAL HEALTH & EMOTIONAL SITUATIONER</h1>
+            <div class="rep-title-meta-grid">
+              <div><strong>Reporting Window:</strong> ${d.startDate} to ${d.endDate} (${d.monthName})</div>
+              <div><strong>Target Population:</strong> USTP Balubal Campus Students (Aggregated)</div>
+              <div><strong>Date Generated:</strong> ${formatDateTime(d.generatedAt)}</div>
+              <div><strong>Evaluating Officer:</strong> ${escapeHtml(d.generatedBy)} (${escapeHtml(d.generatedByRole)})</div>
+            </div>
+          </div>
+        </header>
+
+        <!-- Compliance Banner -->
+        <div class="rep-compliance-notice">
+          <i class="fas fa-shield-halved"></i>
+          <div>
+            <strong>DATA PRIVACY ACT (RA 10173) & MENTAL HEALTH ACT (RA 11036) COMPLIANCE:</strong>
+            All student reflections, emotional indices, and support interactions are presented in de-identified, cryptographically pseudonymized form. This administrative situationer is issued strictly for psychological climate assessment, wellness resource allocation, and clinical guidance triage.
+          </div>
+        </div>
+
+        <!-- Section I: Key Indicators -->
+        <section class="rep-section">
+          <div class="rep-section-header">
+            <i class="fas fa-chart-line"></i> I. Executive Key Performance Indicators & Climate Assessment
+          </div>
+          <div class="rep-kpi-grid">
+            <div class="rep-kpi-card">
+              <div class="rep-kpi-val">${d.totalExpressions}</div>
+              <div class="rep-kpi-label">Student Expressions</div>
+              <div class="rep-kpi-sub">Total rants & peer reflections</div>
+            </div>
+            <div class="rep-kpi-card">
+              <div class="rep-kpi-val">
+                ${d.averageEnergyScore} <span class="unit">/ 10</span>
+              </div>
+              <div class="rep-kpi-label">Emotional Energy Baseline</div>
+              <div class="rep-kpi-sub">${energyPill}</div>
+            </div>
+            <div class="rep-kpi-card">
+              <div class="rep-kpi-val" style="color:#DC2626;">
+                ${d.totalCrisisAlerts} <span class="unit">cases</span>
+              </div>
+              <div class="rep-kpi-label">Crisis Triggers Intercepted</div>
+              <div class="rep-kpi-sub">${d.flaggedPosts} flagged, ${d.crisisChatSessions} urgent chats</div>
+            </div>
+            <div class="rep-kpi-card">
+              <div class="rep-kpi-val">${d.totalSupportDialogues}</div>
+              <div class="rep-kpi-label">Counseling Dialogues</div>
+              <div class="rep-kpi-sub">${d.activeSupportDialogues} active, ${d.closedSupportDialogues} completed</div>
+            </div>
+            <div class="rep-kpi-card">
+              <div class="rep-kpi-val">${d.groundingPrescriptions}</div>
+              <div class="rep-kpi-label">Grounding Exercises</div>
+              <div class="rep-kpi-sub">${d.groundingCompletionRate}% completion rate (${d.groundingCompletions} done)</div>
+            </div>
+            <div class="rep-kpi-card">
+              <div class="rep-kpi-val">${d.uniqueActiveStudents}</div>
+              <div class="rep-kpi-label">Student Pseudonyms</div>
+              <div class="rep-kpi-sub">Distinct active participants</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section II: Emotional Energy Stratification & Emotions -->
+        <section class="rep-section">
+          <div class="rep-section-header">
+            <i class="fas fa-heart-pulse"></i> II. Campus Emotional Baseline & Energy Stratification
+          </div>
+          
+          <div style="background:#FAF7F2;border:1px solid #E2D9CC;border-radius:0.5rem;padding:0.85rem 1rem;margin-bottom:1rem;">
+            <div style="display:flex;justify-content:space-between;font-size:0.75rem;font-weight:700;margin-bottom:0.4rem;">
+              <span style="color:#166534;"><i class="fas fa-circle" style="font-size:0.6rem;"></i> Low Tension (1–3): ${d.energyLow} (${d.energyLowPct}%)</span>
+              <span style="color:#92400E;"><i class="fas fa-circle" style="font-size:0.6rem;"></i> Moderate (4–7): ${d.energyModerate} (${d.energyModeratePct}%)</span>
+              <span style="color:#991B1B;"><i class="fas fa-circle" style="font-size:0.6rem;"></i> High Tension (8–10): ${d.energyHigh} (${d.energyHighPct}%)</span>
+            </div>
+            <div style="display:flex;height:12px;border-radius:4px;overflow:hidden;background:#E2E8F0;">
+              <div style="width:${d.energyLowPct}%;background:#10B981;" title="Low Tension: ${d.energyLowPct}%"></div>
+              <div style="width:${d.energyModeratePct}%;background:#F59E0B;" title="Moderate Tension: ${d.energyModeratePct}%"></div>
+              <div style="width:${d.energyHighPct}%;background:#EF4444;" title="High Tension: ${d.energyHighPct}%"></div>
+            </div>
+          </div>
+
+          <div class="rep-table-wrap">
+            <table class="rep-table">
+              <thead>
+                <tr>
+                  <th style="text-align:center;">#</th>
+                  <th>Emotion Tag</th>
+                  <th style="text-align:center;">Frequency</th>
+                  <th>Distribution Share (%)</th>
+                  <th style="text-align:center;">Avg Energy</th>
+                  <th>Clinical Intensity</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${emotionRowsHtml}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Section III: Department & Year Level Analysis -->
+        <section class="rep-section">
+          <div class="rep-section-header">
+            <i class="fas fa-graduation-cap"></i> III. Departmental & Academic Cohort Breakdown
+          </div>
+          <div class="rep-split-grid">
+            <div>
+              <div style="font-size:0.75rem;font-weight:800;color:#161F36;margin-bottom:0.4rem;text-transform:uppercase;">Academic Department / Program</div>
+              <div class="rep-table-wrap">
+                <table class="rep-table">
+                  <thead>
+                    <tr>
+                      <th>Program</th>
+                      <th style="text-align:center;">Count</th>
+                      <th style="text-align:right;">Share</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${deptRowsHtml}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:0.75rem;font-weight:800;color:#161F36;margin-bottom:0.4rem;text-transform:uppercase;">Year Level Distribution</div>
+              <div class="rep-table-wrap">
+                <table class="rep-table">
+                  <thead>
+                    <tr>
+                      <th>Year Level</th>
+                      <th style="text-align:center;">Count</th>
+                      <th style="text-align:right;">Share</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${yearRowsHtml}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section IV: Crisis Sentinel Log -->
+        <section class="rep-section">
+          <div class="rep-section-header" style="justify-content:space-between;">
+            <div><i class="fas fa-triangle-exclamation" style="color:#DC2626;"></i> IV. Crisis Sentinel Interceptions & Risk Audit Log</div>
+            <div style="font-size:0.72rem;font-weight:700;color:#475569;text-transform:none;">
+              Reviewed: <span style="color:#166534;">${d.crisisReviewedCount}</span> | Pending: <span style="color:#DC2626;">${d.crisisPendingCount}</span>
+            </div>
+          </div>
+          <div class="rep-table-wrap">
+            <table class="rep-table">
+              <thead>
+                <tr>
+                  <th>Ref ID</th>
+                  <th>Source</th>
+                  <th>Student Pseudonym</th>
+                  <th>Severity</th>
+                  <th>Detected Keywords / Snippet</th>
+                  <th style="text-align:center;">Energy</th>
+                  <th style="text-align:center;">Triage Status</th>
+                  <th>Reviewer</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${crisisRowsHtml}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Section V: Support Dialogues -->
+        <section class="rep-section">
+          <div class="rep-section-header">
+            <i class="fas fa-comments"></i> V. Guidance Counseling Support Dialogues
+          </div>
+          <div class="rep-table-wrap">
+            <table class="rep-table">
+              <thead>
+                <tr>
+                  <th>Session ID</th>
+                  <th>Student Pseudonym</th>
+                  <th>Assigned Counselor</th>
+                  <th>Dialogue Topic / Presenting Concern</th>
+                  <th style="text-align:center;">Status</th>
+                  <th style="text-align:center;">Messages</th>
+                  <th>Date & Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${dialogueRowsHtml}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Section VI: Grounding Kit Efficacy -->
+        <section class="rep-section">
+          <div class="rep-section-header">
+            <i class="fas fa-spa"></i> VI. Adaptive Grounding Kit Modality Efficacy
+          </div>
+          <div class="rep-table-wrap">
+            <table class="rep-table">
+              <thead>
+                <tr>
+                  <th>Grounding Modality</th>
+                  <th style="text-align:center;">Prescriptions</th>
+                  <th style="text-align:center;">Completions</th>
+                  <th style="text-align:center;">Adherence Rate</th>
+                  <th>Efficacy Bar</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${kitRowsHtml}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Section VII: Clinical Observations -->
+        <section class="rep-section">
+          <div class="rep-section-header">
+            <i class="fas fa-stethoscope"></i> VII. Clinical Observations & Empirical Insights
+          </div>
+          <ul class="rep-bullet-list">
+            ${obsHtml}
+          </ul>
+        </section>
+
+        <!-- Section VIII: Recommendations -->
+        <section class="rep-section">
+          <div class="rep-section-header">
+            <i class="fas fa-clipboard-check"></i> VIII. Institutional Action Recommendations
+          </div>
+          <ol class="rep-recommend-list">
+            ${recHtml}
+          </ol>
+        </section>
+
+        <!-- Section IX: Signatures & Certification -->
+        <section class="rep-signatures">
+          <div class="rep-sig-box">
+            <div class="rep-sig-line"></div>
+            <div class="rep-sig-name">${escapeHtml(d.generatedBy)}</div>
+            <div class="rep-sig-role">Evaluating Psychometrician / Counselor<br>Guidance and Counseling Center</div>
+          </div>
+          <div class="rep-sig-box">
+            <div class="rep-sig-line"></div>
+            <div class="rep-sig-name">Guidance Coordinator</div>
+            <div class="rep-sig-role">Office of Student Affairs & Services<br>USTP Balubal Campus</div>
+          </div>
+          <div class="rep-sig-box">
+            <div class="rep-sig-line"></div>
+            <div class="rep-sig-name">Campus Director</div>
+            <div class="rep-sig-role">USTP Balubal Campus<br>Cagayan de Oro City</div>
+          </div>
+        </section>
+
+        <!-- Footer -->
+        <div class="rep-footer-doc">
+          <span>SafeSpace Student Wellness System • USTP Balubal Campus</span>
+          <span>Certified Compliant with RA 10173 & RA 11036 • End of Report</span>
+        </div>
+      `;
+    }
   </script>
+
+  <!-- Monthly Report Modal -->
+  <div class="report-modal-overlay" id="reportModalOverlay" onclick="handleReportOverlayClick(event)">
+    <div class="report-modal-container">
+      <!-- Modal Floating Header (Screen Only) -->
+      <div class="report-modal-header no-print">
+        <div class="report-modal-title">
+          <i class="fas fa-file-invoice"></i>
+          <div>
+            <h2>Monthly Student Situationer</h2>
+            <p>USTP Balubal Campus — Guidance and Counseling Emotional Climate Analysis</p>
+          </div>
+        </div>
+        <div class="report-modal-controls">
+          <div class="month-selector-group">
+            <label for="reportMonthSelect"><i class="fas fa-calendar-alt"></i> Month:</label>
+            <select id="reportMonthSelect" onchange="fetchMonthlyReport()">
+              <!-- Populated dynamically via JS -->
+            </select>
+          </div>
+          <button class="report-action-btn print" onclick="printReport()">
+            <i class="fas fa-print"></i> Print / Save as PDF
+          </button>
+          <button class="report-action-btn close" onclick="closeMonthlyReportModal()" title="Close Report">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="report-modal-body">
+        <div id="reportLoadingState" class="report-loading no-print" style="display:none;">
+          <i class="fas fa-circle-notch fa-spin"></i>
+          <p>Compiling Monthly Situationer for USTP Balubal...</p>
+        </div>
+
+        <div id="reportErrorState" class="report-error no-print" style="display:none;">
+          <i class="fas fa-circle-exclamation"></i>
+          <p id="reportErrorMsg">Unable to generate report.</p>
+          <button class="refresh-btn" onclick="fetchMonthlyReport()"><i class="fas fa-redo"></i> Retry</button>
+        </div>
+
+        <!-- Printable Document Canvas -->
+        <article id="printableReport" class="printable-document">
+          <!-- Populated dynamically by renderPrintableReport(data) -->
+        </article>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

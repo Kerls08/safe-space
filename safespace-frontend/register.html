@@ -12,47 +12,66 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/auth.css">
   <style>
+    html {
+      scroll-behavior: smooth;
+      height: 100%;
+    }
+    body {
+      min-height: 100%;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(145deg, #FAF7F2 0%, #F2EDE2 45%, #FFFFFF 75%, #ECE5D6 100%);
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
     /* ── Registration Page — Compass Psychological Palette ── */
     .register-page {
       min-height: 100vh;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      background: linear-gradient(145deg, #FAF7F2 0%, #F2EDE2 45%, #FFFFFF 75%, #ECE5D6 100%);
-      padding: 2.5rem 1rem;
+      justify-content: flex-start;
+      padding: 2.5rem 1rem 3.5rem 1rem;
       position: relative;
-      overflow: hidden;
+      box-sizing: border-box;
     }
     .register-page::before {
       content: '';
-      position: absolute;
+      position: fixed;
       top: -160px; right: -160px;
       width: 520px; height: 520px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(186, 203, 216, 0.38) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(186, 203, 216, 0.35) 0%, transparent 70%);
       pointer-events: none;
+      transform: translateZ(0);
+      z-index: 0;
     }
     .register-page::after {
       content: '';
-      position: absolute;
+      position: fixed;
       bottom: -140px; left: -140px;
       width: 480px; height: 480px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(22, 31, 54, 0.08) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(22, 31, 54, 0.06) 0%, transparent 70%);
       pointer-events: none;
+      transform: translateZ(0);
+      z-index: 0;
     }
     .register-card {
-      background: rgba(255, 255, 255, 0.96);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: #FFFFFF;
       border: 1px solid rgba(224, 215, 198, 0.9);
       border-radius: 1.5rem;
-      box-shadow: 0 25px 60px rgba(22, 31, 54, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.9);
+      box-shadow: 0 15px 40px rgba(22, 31, 54, 0.07), 0 2px 6px rgba(22, 31, 54, 0.04);
       width: 100%;
       max-width: 520px;
       padding: 2.5rem;
       position: relative;
       z-index: 1;
+      margin: auto 0;
+      transform: translateZ(0);
+      backface-visibility: hidden;
     }
     .register-brand {
       text-align: center;
@@ -200,18 +219,31 @@
     .register-error {
       display: none;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1rem;
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      border-radius: 0.6rem;
-      color: #dc2626;
+      gap: 0.65rem;
+      padding: 0.85rem 1.15rem;
+      background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%);
+      border: 1.5px solid #fecaca;
+      border-radius: 0.85rem;
+      color: #b91c1c;
       font-size: 0.82rem;
-      font-weight: 500;
-      margin-bottom: 1rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.08);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: translateY(-4px);
+      opacity: 0;
     }
-    .register-error.visible { display: flex; }
-    .register-error i { flex-shrink: 0; }
+    .register-error.visible {
+      display: flex;
+      opacity: 1;
+      transform: translateY(0);
+      animation: smoothSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .register-error i {
+      font-size: 1rem;
+      color: #ef4444;
+      flex-shrink: 0;
+    }
 
     .register-success {
       display: none;
@@ -285,22 +317,48 @@
       color: #3D4D6E;
     }
 
+    /* ── Back to Home Link (Text-only with hover highlight, as requested) ── */
     .back-link {
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
-      font-size: 0.82rem;
+      gap: 0.45rem;
+      font-size: 0.85rem;
       color: #161F36;
       text-decoration: none;
       margin-bottom: 1.25rem;
       font-weight: 600;
-      transition: color 0.2s ease;
+      background: transparent;
+      border: none;
+      padding: 0.2rem 0;
+      transition: color 0.2s ease, transform 0.2s ease;
+      width: fit-content;
+      cursor: pointer;
     }
-    .back-link:hover { color: #3D4D6E; }
+    .back-link:hover {
+      color: #2563eb;
+      transform: translateX(-3px);
+    }
+    .back-link i {
+      font-size: 0.8rem;
+      transition: transform 0.2s ease;
+    }
+    .back-link:hover i {
+      transform: translateX(-2px);
+    }
 
-    /* ── Terms & Conditions Checkbox ── */
+    /* ── Terms & Conditions Checkbox & Smooth Warning ── */
     .terms-row {
-      margin: 1rem 0 0.5rem 0;
+      margin: 1rem 0 0.6rem 0;
+      padding: 0.65rem 0.85rem;
+      border-radius: 0.85rem;
+      border: 1.5px solid transparent;
+      background: transparent;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .terms-row.has-error {
+      background: #fef2f2 !important;
+      border-color: #f87171 !important;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
     }
     .terms-label {
       display: flex;
@@ -317,11 +375,22 @@
       accent-color: #161F36;
       cursor: pointer;
       border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+    .terms-row.has-error .terms-checkbox {
+      outline: 2px solid #ef4444 !important;
+      outline-offset: 2px !important;
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+    }
+    .terms-row.has-error .terms-text {
+      color: #991b1b !important;
+      font-weight: 500 !important;
     }
     .terms-text {
       font-size: 0.815rem;
       color: #4A5568;
       line-height: 1.45;
+      transition: color 0.2s ease;
     }
     .terms-link {
       color: #161F36;
@@ -333,6 +402,28 @@
     .terms-link:hover {
       color: #3D4D6E;
       opacity: 0.85;
+    }
+    .terms-feedback {
+      display: none;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #dc2626;
+      margin-top: 0.45rem;
+      opacity: 0;
+      transform: translateY(-2px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .terms-row.has-error .terms-feedback {
+      display: flex;
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .terms-feedback i {
+      font-size: 0.8rem;
+      color: #ef4444;
+      flex-shrink: 0;
     }
 
     /* ── Terms & Conditions Modal ── */
@@ -564,8 +655,8 @@
     }
 
     @media (max-width: 640px) {
-      .register-page { padding: 1rem 0.75rem; }
-      .register-card { padding: 1.5rem 1.15rem; }
+      .register-page { padding: 1.25rem 0.75rem 2.5rem 0.75rem; }
+      .register-card { padding: 1.5rem 1.15rem; margin: 0 auto; }
       .register-row { grid-template-columns: 1fr; }
       .role-selector { gap: 0.35rem; }
       .role-option { padding: 0.6rem 0.5rem; font-size: 0.8rem; }
@@ -599,39 +690,40 @@
       </div>
 
       <!-- Registration Form -->
-      <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)" style="display:block;">
-        <div style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;background:#F4F7EF;border:1px solid #D8E3CB;border-radius:0.75rem;margin-bottom:1.25rem;">
-          <i class="fas fa-shield-halved" style="color:#6F8C51;font-size:1.1rem;flex-shrink:0;"></i>
-          <div style="font-size:0.78rem;color:#2D3A22;line-height:1.4;">
-            <strong>Student Voluntary Registration:</strong> Create your private SafeSpace account to express thoughts, access mindful coping tools, or connect anonymously with campus guidance counselors.
-          </div>
-        </div>
+      <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)" novalidate style="display:block;">
         <input type="hidden" id="regRole" value="STUDENT">
 
         <div class="form-group">
-          <label class="form-label">Full Name</label>
+          <label class="form-label" for="regFullName">Full Name</label>
           <div class="input-wrapper">
             <i class="fas fa-user input-icon-left"></i>
             <input class="form-input input-icon" type="text" id="regFullName"
-              placeholder="e.g. Juan Dela Cruz" required autocomplete="name">
+              placeholder="e.g. Juan Dela Cruz" autocomplete="name" oninput="clearFieldFeedback('regFullName')">
           </div>
+          <div class="field-feedback" id="regFullNameFeedback"></div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Institutional ID</label>
+          <label class="form-label" for="regInstId">Institutional ID</label>
           <div class="input-wrapper">
             <i class="fas fa-id-badge input-icon-left"></i>
             <input class="form-input input-icon" type="text" id="regInstId"
-              placeholder="e.g. 2021-00001" required>
+              placeholder="e.g. 2021-00001" oninput="clearFieldFeedback('regInstId')">
           </div>
+          <div class="field-feedback" id="regInstIdFeedback"></div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Email</label>
+          <label class="form-label" for="regEmail">Email Address <span style="color:#DC2626;">*</span></label>
           <div class="input-wrapper">
             <i class="fas fa-envelope input-icon-left"></i>
             <input class="form-input input-icon" type="email" id="regEmail"
-              placeholder="e.g. juan@school.edu" autocomplete="email">
+              placeholder="e.g. juan@ustp.edu.ph or juan@gmail.com" autocomplete="email" oninput="clearFieldFeedback('regEmail')">
+          </div>
+          <div class="field-feedback" id="regEmailFeedback"></div>
+          <div style="font-size:0.73rem;color:#6C7A92;margin-top:5px;display:flex;align-items:center;gap:6px;line-height:1.35;">
+            <i class="fas fa-shield-halved" style="color:#566F3E;flex-shrink:0;"></i>
+            <span>Required for official registration notification &amp; support access. Kept strictly confidential.</span>
           </div>
         </div>
 
@@ -641,7 +733,7 @@
             <label class="form-label" for="regDepartment">Department</label>
             <div class="input-wrapper">
               <i class="fas fa-building input-icon-left"></i>
-              <select class="form-input form-select" id="regDepartment">
+              <select class="form-input form-select" id="regDepartment" onchange="clearFieldFeedback('regDepartment')">
                 <option value="" disabled selected>Select Department</option>
                 <option value="BSIT">BSIT</option>
                 <option value="BSA">BSA</option>
@@ -650,6 +742,7 @@
               </select>
               <i class="fas fa-chevron-down select-arrow"></i>
             </div>
+            <div class="field-feedback" id="regDepartmentFeedback"></div>
           </div>
 
           <!-- Student Year Level -->
@@ -657,7 +750,7 @@
             <label class="form-label" for="regYearLevel">Year Level</label>
             <div class="input-wrapper">
               <i class="fas fa-layer-group input-icon-left"></i>
-              <select class="form-input form-select" id="regYearLevel">
+              <select class="form-input form-select" id="regYearLevel" onchange="clearFieldFeedback('regYearLevel')">
                 <option value="" disabled selected>Select Year Level</option>
                 <option value="1ST YEAR">1ST YEAR</option>
                 <option value="2ND YEAR">2ND YEAR</option>
@@ -666,20 +759,22 @@
               </select>
               <i class="fas fa-chevron-down select-arrow"></i>
             </div>
+            <div class="field-feedback" id="regYearLevelFeedback"></div>
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Password (min. 8 characters)</label>
+          <label class="form-label" for="regPassword">Password (min. 8 characters)</label>
           <div class="input-wrapper">
             <i class="fas fa-lock input-icon-left"></i>
             <input class="form-input input-icon" type="password" id="regPassword"
-              placeholder="Create a strong password" required minlength="8"
-              autocomplete="new-password" oninput="updatePasswordStrength()">
+              placeholder="Create a strong password" minlength="8"
+              autocomplete="new-password" oninput="updatePasswordStrength(); clearFieldFeedback('regPassword');">
             <button type="button" class="input-toggle-pw" onclick="togglePw('regPassword', this)">
               <i class="fas fa-eye"></i>
             </button>
           </div>
+          <div class="field-feedback" id="regPasswordFeedback"></div>
           <div class="pw-strength" id="pwStrength">
             <div class="pw-strength-bar" id="pwBar1"></div>
             <div class="pw-strength-bar" id="pwBar2"></div>
@@ -704,25 +799,30 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Confirm Password</label>
+          <label class="form-label" for="regConfirmPassword">Confirm Password</label>
           <div class="input-wrapper">
             <i class="fas fa-check-double input-icon-left"></i>
             <input class="form-input input-icon" type="password" id="regConfirmPassword"
-              placeholder="Re-enter your password" required minlength="8"
-              autocomplete="new-password">
+              placeholder="Re-enter your password" minlength="8"
+              autocomplete="new-password" oninput="clearFieldFeedback('regConfirmPassword')">
             <button type="button" class="input-toggle-pw" onclick="togglePw('regConfirmPassword', this)">
               <i class="fas fa-eye"></i>
             </button>
           </div>
+          <div class="field-feedback" id="regConfirmPasswordFeedback"></div>
         </div>
 
-        <div class="terms-row">
+        <div class="terms-row" id="termsRow">
           <label class="terms-label" for="regTerms">
-            <input type="checkbox" id="regTerms" class="terms-checkbox" required>
+            <input type="checkbox" id="regTerms" class="terms-checkbox" onchange="clearTermsFeedback()">
             <span class="terms-text">
               I agree to the <a href="javascript:void(0)" class="terms-link" onclick="openTermsModal('terms')">Terms and Conditions</a> and <a href="javascript:void(0)" class="terms-link" onclick="openTermsModal('privacy')">Privacy Policy</a>
             </span>
           </label>
+          <div class="terms-feedback" id="termsFeedback">
+            <i class="fas fa-circle-exclamation"></i>
+            <span>Please agree to the Terms and Conditions and Privacy Policy to proceed.</span>
+          </div>
         </div>
 
         <button type="submit" class="login-btn" id="registerBtn" style="margin-top:0.5rem;">
@@ -734,7 +834,7 @@
       <div class="register-success" id="registerSuccess">
         <div class="success-icon"><i class="fas fa-check"></i></div>
         <h2>Registration Successful!</h2>
-        <p>Your account has been created. You can now log in with your credentials.</p>
+        <p>Your account has been created. An official confirmation email with your registration details and emergency support contacts has been dispatched to your inbox.</p>
         <div class="cred-info" id="credInfo"></div>
         <a href="login.html" class="login-btn" style="display:inline-flex;text-decoration:none;justify-content:center;">
           <i class="fas fa-right-to-bracket"></i> Go to Login
@@ -859,6 +959,57 @@
       }
     }
 
+    function showFieldFeedback(inputId, msg) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      input.classList.add('has-error');
+      const wrapper = input.closest('.input-wrapper');
+      if (wrapper) wrapper.classList.add('has-error');
+
+      const fb = document.getElementById(inputId + 'Feedback');
+      if (fb) {
+        fb.innerHTML = '<i class="fas fa-circle-exclamation"></i> <span>' + escapeHtml(msg) + '</span>';
+        fb.classList.add('visible');
+      }
+    }
+
+    function clearFieldFeedback(inputId) {
+      const input = document.getElementById(inputId);
+      if (input) {
+        input.classList.remove('has-error');
+        const wrapper = input.closest('.input-wrapper');
+        if (wrapper) wrapper.classList.remove('has-error');
+      }
+      const fb = document.getElementById(inputId + 'Feedback');
+      if (fb) {
+        fb.classList.remove('visible');
+      }
+    }
+
+    function clearTermsFeedback() {
+      const row = document.getElementById('termsRow');
+      if (row) row.classList.remove('has-error');
+      const terms = document.getElementById('regTerms');
+      if (terms && terms.checked) {
+        const errDiv = document.getElementById('registerError');
+        const errText = document.getElementById('registerErrorText');
+        if (errText && errText.textContent.includes('Terms and Conditions')) {
+          errDiv.classList.remove('visible');
+        }
+      }
+    }
+
+    function clearAllFeedbacks() {
+      ['regFullName', 'regInstId', 'regEmail', 'regDepartment', 'regYearLevel', 'regPassword', 'regConfirmPassword'].forEach(id => {
+        clearFieldFeedback(id);
+      });
+      clearTermsFeedback();
+      const pwRules = document.getElementById('pwRules');
+      if (pwRules) pwRules.classList.remove('has-error');
+      const errDiv = document.getElementById('registerError');
+      if (errDiv) errDiv.classList.remove('visible');
+    }
+
     async function handleRegister(e) {
       e.preventDefault();
 
@@ -866,9 +1017,54 @@
       const errDiv = document.getElementById('registerError');
       const errText = document.getElementById('registerErrorText');
 
+      clearAllFeedbacks();
+
+      const fullName = document.getElementById('regFullName').value.trim();
+      const instId = document.getElementById('regInstId').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const department = document.getElementById('regDepartment').value;
+      const yearLevel = document.getElementById('regYearLevel').value;
       const password = document.getElementById('regPassword').value;
       const confirmPassword = document.getElementById('regConfirmPassword').value;
+      const terms = document.getElementById('regTerms');
 
+      let firstInvalidInput = null;
+
+      // 1. Full Name
+      if (!fullName) {
+        showFieldFeedback('regFullName', 'Please enter your full name.');
+        if (!firstInvalidInput) firstInvalidInput = document.getElementById('regFullName');
+      }
+
+      // 2. Institutional ID
+      if (!instId) {
+        showFieldFeedback('regInstId', 'Please enter your Institutional ID (e.g. 2021-00001).');
+        if (!firstInvalidInput) firstInvalidInput = document.getElementById('regInstId');
+      }
+
+      // 3. Email Address (Mandatory)
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email) {
+        showFieldFeedback('regEmail', 'Please enter your email address for registration confirmation.');
+        if (!firstInvalidInput) firstInvalidInput = document.getElementById('regEmail');
+      } else if (!emailRegex.test(email)) {
+        showFieldFeedback('regEmail', 'Please enter a valid email address (e.g. student@ustp.edu.ph or juan@gmail.com).');
+        if (!firstInvalidInput) firstInvalidInput = document.getElementById('regEmail');
+      }
+
+      // 4. Department
+      if (!department) {
+        showFieldFeedback('regDepartment', 'Please select your department.');
+        if (!firstInvalidInput) firstInvalidInput = document.getElementById('regDepartment');
+      }
+
+      // 5. Year Level
+      if (!yearLevel) {
+        showFieldFeedback('regYearLevel', 'Please select your year level.');
+        if (!firstInvalidInput) firstInvalidInput = document.getElementById('regYearLevel');
+      }
+
+      // 6. Password Complexity
       const hasLen = password.length >= 8;
       const hasUpper = /[A-Z]/.test(password);
       const hasNum = /[0-9]/.test(password);
@@ -880,30 +1076,62 @@
       if (!hasNum) missing.push('at least one number (0-9)');
       if (!hasSpecial) missing.push('special symbol (!@#$%...)');
 
-      const rulesBox = document.getElementById('pwRules');
-
       if (missing.length > 0) {
-        errText.textContent = 'Password rejected: does not comply with requirements. Missing: ' + missing.join(', ') + '.';
-        errDiv.classList.add('visible');
+        showFieldFeedback('regPassword', 'Password must comply with all requirements below.');
+        const rulesBox = document.getElementById('pwRules');
         if (rulesBox) {
           rulesBox.classList.remove('has-error');
           void rulesBox.offsetWidth;
           rulesBox.classList.add('has-error');
         }
         highlightMissingRules({ regRuleLen: hasLen, regRuleUpper: hasUpper, regRuleNum: hasNum, regRuleSpecial: hasSpecial });
-        return;
+        if (!firstInvalidInput) firstInvalidInput = document.getElementById('regPassword');
       }
 
-      if (password !== confirmPassword) {
-        errText.textContent = 'Passwords do not match.';
-        errDiv.classList.add('visible');
-        return;
+      // 7. Confirm Password
+      if (!confirmPassword) {
+        showFieldFeedback('regConfirmPassword', 'Please re-enter your password to confirm.');
+        if (!firstInvalidInput) firstInvalidInput = document.getElementById('regConfirmPassword');
+      } else if (password !== confirmPassword) {
+        showFieldFeedback('regConfirmPassword', 'Passwords do not match. Please ensure both passwords are identical.');
+        if (!firstInvalidInput) firstInvalidInput = document.getElementById('regConfirmPassword');
       }
 
-      const terms = document.getElementById('regTerms');
-      if (terms && !terms.checked) {
-        errText.textContent = 'Please accept the Terms and Conditions to create your account.';
+      // 8. Terms & Conditions
+      let termsValid = true;
+      if (!terms || !terms.checked) {
+        termsValid = false;
+        const row = document.getElementById('termsRow');
+        if (row) {
+          row.classList.remove('has-error');
+          void row.offsetWidth;
+          row.classList.add('has-error');
+        }
+        if (!firstInvalidInput) firstInvalidInput = terms;
+      }
+
+      // Stop and display smooth feedback if any validation failed
+      if (firstInvalidInput) {
+        let errorMsg = 'Please complete the highlighted fields before proceeding.';
+        if (!termsValid && fullName && instId && email && department && yearLevel && missing.length === 0 && password === confirmPassword) {
+          errorMsg = 'Please agree to the Terms and Conditions and Privacy Policy to create your account.';
+        } else if (missing.length > 0) {
+          errorMsg = 'Password rejected: does not comply with requirements. Missing: ' + missing.join(', ') + '.';
+        } else if (password !== confirmPassword) {
+          errorMsg = 'Passwords do not match.';
+        }
+        errText.textContent = errorMsg;
         errDiv.classList.add('visible');
+
+        // Keep error banner and navigation smoothly in view without aggressively pushing card header away
+        if (errDiv && errDiv.classList.contains('visible')) {
+          errDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else if (firstInvalidInput) {
+          firstInvalidInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        if (typeof firstInvalidInput.focus === 'function') {
+          firstInvalidInput.focus({ preventScroll: true });
+        }
         return;
       }
 
@@ -915,7 +1143,7 @@
         const body = {
           institutionalId: document.getElementById('regInstId').value.trim(),
           fullName: document.getElementById('regFullName').value.trim(),
-          email: document.getElementById('regEmail').value.trim() || undefined,
+          email: document.getElementById('regEmail').value.trim(),
           department: document.getElementById('regDepartment').value || undefined,
           yearLevel: document.getElementById('regYearLevel').value || undefined,
           role: 'STUDENT',
@@ -952,6 +1180,10 @@
             <span class="label">Role</span>
             <span class="value">${escapeHtml(data.role)}</span>
           </div>
+          <div class="cred-row">
+            <span class="label">Confirmation Email</span>
+            <span class="value" style="color:#1E5E3A;font-weight:600;"><i class="fas fa-envelope-circle-check" style="color:#2D7D46;margin-right:4px;"></i>Sent to ${escapeHtml(data.email || email)}</span>
+          </div>
           ${data.department ? `
           <div class="cred-row">
             <span class="label">${selectedRole === 'STUDENT' ? 'Department' : 'Professional Role'}</span>
@@ -971,8 +1203,18 @@
         if (msg === 'Failed to fetch' || msg.includes('NetworkError')) {
           msg = 'Unable to connect to backend server. Please ensure the backend is running on ' + API_BASE;
         }
+        if (msg.toLowerCase().includes('email')) {
+          showFieldFeedback('regEmail', msg);
+          const emailEl = document.getElementById('regEmail');
+          if (emailEl) emailEl.focus({ preventScroll: true });
+        } else if (msg.toLowerCase().includes('institutional id')) {
+          showFieldFeedback('regInstId', msg);
+          const instEl = document.getElementById('regInstId');
+          if (instEl) instEl.focus({ preventScroll: true });
+        }
         errText.textContent = msg;
         errDiv.classList.add('visible');
+        errDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
@@ -1008,7 +1250,10 @@
 
     function acceptTermsAndClose() {
       const termsCheckbox = document.getElementById('regTerms');
-      if (termsCheckbox) termsCheckbox.checked = true;
+      if (termsCheckbox) {
+        termsCheckbox.checked = true;
+        clearTermsFeedback();
+      }
       closeTermsModal();
     }
 

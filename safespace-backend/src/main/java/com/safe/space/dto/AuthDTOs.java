@@ -68,6 +68,7 @@ public class AuthDTOs {
         private String username;
         private String generatedPassword;
         private String fullName;
+        private String email;
         private String role;
         private String message;
     }

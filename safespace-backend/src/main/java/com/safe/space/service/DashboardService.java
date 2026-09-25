@@ -1,8 +1,10 @@
 package com.safe.space.service;
 
 import com.safe.space.dto.*;
+import com.safe.space.model.CalmDownSession;
 import com.safe.space.model.ChatSession;
 import com.safe.space.model.Post;
+import com.safe.space.model.User;
 import com.safe.space.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.TextStyle;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -35,6 +38,7 @@ public class DashboardService {
     private final AutoReplyLogRepository autoReplyLogRepository;
     private final CalmDownSessionRepository calmDownSessionRepository;
     private final ChatSessionRepository chatSessionRepository;
+    private final UserRepository userRepository;
 
     // ── 1. OVERVIEW ──
 
@@ -256,6 +260,318 @@ public class DashboardService {
                 .daysIncluded(days)
                 .dailySnapshots(snapshots)
                 .emotionTrend(emotionTrend)
+                .build();
+    }
+
+    // ── 4. MONTHLY REPORT ──
+
+    @Transactional(readOnly = true)
+    public MonthlyReportResponse getMonthlyReport(int year, int month, User currentUser) {
+        if (year <= 0) {
+            year = LocalDate.now().getYear();
+        }
+        if (month < 1 || month > 12) {
+            month = LocalDate.now().getMonthValue();
+        }
+
+        LocalDate firstDay = LocalDate.of(year, month, 1);
+        LocalDate lastDay = firstDay.withDayOfMonth(firstDay.lengthOfMonth());
+        LocalDateTime startOfMonth = firstDay.atStartOfDay();
+        LocalDateTime endOfMonth = lastDay.atTime(LocalTime.MAX);
+
+        String monthName = firstDay.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH) + " " + year;
+
+        // 1. Fetch Month Posts
+        List<Post> posts = postRepository.findByCreatedAtBetweenOrderByCreatedAtDesc(startOfMonth, endOfMonth);
+        long totalPosts = posts.size();
+        long flaggedPosts = posts.stream().filter(Post::isFlagged).count();
+
+        double avgEnergy = totalPosts > 0
+                ? posts.stream().mapToInt(Post::getEnergyScore).average().orElse(0.0)
+                : 0.0;
+        avgEnergy = Math.round(avgEnergy * 10.0) / 10.0;
+
+        String climateStatus;
+        if (avgEnergy >= 7.5) {
+            climateStatus = "Acute Student Stress / High Crisis Potential";
+        } else if (avgEnergy >= 5.0) {
+            climateStatus = "Moderate Academic Tension / Mid-Level Pressure";
+        } else if (totalPosts == 0) {
+            climateStatus = "No Activity Recorded";
+        } else {
+            climateStatus = "Calm, Stable & Emotionally Resilient";
+        }
+
+        // Energy Distribution
+        long energyLow = posts.stream().filter(p -> p.getEnergyScore() >= 1 && p.getEnergyScore() <= 3).count();
+        long energyMod = posts.stream().filter(p -> p.getEnergyScore() >= 4 && p.getEnergyScore() <= 7).count();
+        long energyHigh = posts.stream().filter(p -> p.getEnergyScore() >= 8 && p.getEnergyScore() <= 10).count();
+
+        double energyLowPct = totalPosts > 0 ? Math.round((energyLow * 1000.0) / totalPosts) / 10.0 : 0.0;
+        double energyModPct = totalPosts > 0 ? Math.round((energyMod * 1000.0) / totalPosts) / 10.0 : 0.0;
+        double energyHighPct = totalPosts > 0 ? Math.round((energyHigh * 1000.0) / totalPosts) / 10.0 : 0.0;
+
+        long uniqueStudents = posts.stream().map(Post::getPseudonym).filter(Objects::nonNull).distinct().count();
+
+        // 2. Emotion Breakdown
+        Map<String, List<Post>> postsByEmotion = posts.stream()
+                .filter(p -> p.getEmotionTag() != null && !p.getEmotionTag().isBlank())
+                .collect(Collectors.groupingBy(Post::getEmotionTag));
+
+        List<MonthlyReportResponse.EmotionStat> emotionStats = postsByEmotion.entrySet().stream()
+                .map(entry -> {
+                    String em = entry.getKey();
+                    List<Post> group = entry.getValue();
+                    double avgE = group.stream().mapToInt(Post::getEnergyScore).average().orElse(0.0);
+                    return MonthlyReportResponse.EmotionStat.builder()
+                            .emotion(em)
+                            .count(group.size())
+                            .percentage(totalPosts > 0 ? Math.round((group.size() * 1000.0) / totalPosts) / 10.0 : 0.0)
+                            .avgEnergy(Math.round(avgE * 10.0) / 10.0)
+                            .build();
+                })
+                .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
+                .collect(Collectors.toList());
+
+        // 3. Department & Year Level Distribution
+        Map<String, User> userMap = userRepository.findAll().stream()
+                .filter(u -> u.getUsername() != null)
+                .collect(Collectors.toMap(User::getUsername, u -> u, (u1, u2) -> u1));
+
+        Map<String, Long> deptCounts = new HashMap<>();
+        Map<String, Long> yearCounts = new HashMap<>();
+
+        for (Post p : posts) {
+            String dept = "General / Unspecified";
+            String yearLvl = "General / Unspecified";
+            if (p.getOwnerUsername() != null && userMap.containsKey(p.getOwnerUsername())) {
+                User u = userMap.get(p.getOwnerUsername());
+                if (u.getDepartment() != null && !u.getDepartment().isBlank()) dept = u.getDepartment();
+                if (u.getYearLevel() != null && !u.getYearLevel().isBlank()) yearLvl = u.getYearLevel();
+            }
+            deptCounts.put(dept, deptCounts.getOrDefault(dept, 0L) + 1);
+            yearCounts.put(yearLvl, yearCounts.getOrDefault(yearLvl, 0L) + 1);
+        }
+
+        List<MonthlyReportResponse.DepartmentStat> deptStats = deptCounts.entrySet().stream()
+                .map(e -> MonthlyReportResponse.DepartmentStat.builder()
+                        .department(e.getKey())
+                        .count(e.getValue())
+                        .percentage(totalPosts > 0 ? Math.round((e.getValue() * 1000.0) / totalPosts) / 10.0 : 0.0)
+                        .build())
+                .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
+                .collect(Collectors.toList());
+
+        List<MonthlyReportResponse.YearLevelStat> yearStats = yearCounts.entrySet().stream()
+                .map(e -> MonthlyReportResponse.YearLevelStat.builder()
+                        .yearLevel(e.getKey())
+                        .count(e.getValue())
+                        .percentage(totalPosts > 0 ? Math.round((e.getValue() * 1000.0) / totalPosts) / 10.0 : 0.0)
+                        .build())
+                .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
+                .collect(Collectors.toList());
+
+        // 4. Support Dialogues (Chat Sessions)
+        List<ChatSession> chats = chatSessionRepository.findByCreatedAtBetweenOrderByCreatedAtDesc(startOfMonth, endOfMonth);
+        long totalChats = chats.size();
+        long activeChats = chats.stream().filter(c -> "ACTIVE".equalsIgnoreCase(c.getStatus())).count();
+        long closedChats = chats.stream().filter(c -> "CLOSED".equalsIgnoreCase(c.getStatus())).count();
+        long crisisChats = chats.stream().filter(ChatSession::isCrisisFlag).count();
+        Double avgMsgs = totalChats > 0
+                ? Math.round(chats.stream().mapToInt(ChatSession::getMessageCount).average().orElse(0.0) * 10.0) / 10.0
+                : 0.0;
+
+        List<MonthlyReportResponse.SupportDialogueItem> dialogueItems = chats.stream()
+                .map(c -> MonthlyReportResponse.SupportDialogueItem.builder()
+                        .sessionId(c.getSessionId())
+                        .studentPseudonym(c.getStudentPseudonym())
+                        .professionalName(c.getProfessionalName() != null ? c.getProfessionalName() : "Awaiting Counselor")
+                        .status(c.getStatus())
+                        .topic(truncate(c.getTopic(), 100))
+                        .emotionTag(c.getEmotionTag())
+                        .messageCount(c.getMessageCount())
+                        .crisisFlag(c.isCrisisFlag())
+                        .createdAt(c.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+
+        // 5. Calm-Down Kits
+        List<CalmDownSession> kits = calmDownSessionRepository.findByCreatedAtBetweenOrderByCreatedAtDesc(startOfMonth, endOfMonth);
+        long kitPrescribed = kits.size();
+        long kitCompleted = kits.stream().filter(CalmDownSession::isCompleted).count();
+        double kitRate = kitPrescribed > 0
+                ? Math.round(((double) kitCompleted / kitPrescribed) * 1000.0) / 10.0
+                : 0.0;
+
+        Map<String, List<CalmDownSession>> kitsByType = kits.stream()
+                .collect(Collectors.groupingBy(k -> k.getKitType() != null ? k.getKitType() : "other"));
+
+        List<MonthlyReportResponse.KitModalityStat> kitStats = kitsByType.entrySet().stream()
+                .map(e -> {
+                    long done = e.getValue().stream().filter(CalmDownSession::isCompleted).count();
+                    long total = e.getValue().size();
+                    return MonthlyReportResponse.KitModalityStat.builder()
+                            .kitType(e.getKey())
+                            .prescribedCount(total)
+                            .completedCount(done)
+                            .completionRate(total > 0 ? Math.round((done * 1000.0) / total) / 10.0 : 0.0)
+                            .build();
+                })
+                .sorted((a, b) -> Long.compare(b.getPrescribedCount(), a.getPrescribedCount()))
+                .collect(Collectors.toList());
+
+        // 6. Crisis Incidents & Trigger Audit
+        List<MonthlyReportResponse.CrisisIncidentItem> crisisItems = new ArrayList<>();
+
+        for (Post p : posts) {
+            if (p.isFlagged() || p.getEnergyScore() >= 8) {
+                crisisItems.add(MonthlyReportResponse.CrisisIncidentItem.builder()
+                        .incidentId(p.getPostId())
+                        .source("RANT_POST")
+                        .pseudonym(p.getPseudonym())
+                        .severity(p.isFlagged() ? (p.getSeverity() != null ? p.getSeverity() : "CRITICAL") : "MODERATE")
+                        .summary(truncate(p.getContent(), 120))
+                        .flaggedKeywords(p.getFlaggedKeywords() != null ? p.getFlaggedKeywords() : (p.getEnergyScore() >= 8 ? "High Energy (Level " + p.getEnergyScore() + "/10)" : "None"))
+                        .emotionTag(p.getEmotionTag())
+                        .energyScore(p.getEnergyScore())
+                        .reviewed(p.isReviewed())
+                        .reviewedBy(p.getReviewedBy())
+                        .timestamp(p.getCreatedAt())
+                        .build());
+            }
+        }
+
+        for (ChatSession cs : chats) {
+            if (cs.isCrisisFlag()) {
+                crisisItems.add(MonthlyReportResponse.CrisisIncidentItem.builder()
+                        .incidentId(cs.getSessionId())
+                        .source("SUPPORT_CHAT")
+                        .pseudonym(cs.getStudentPseudonym())
+                        .severity("CRITICAL")
+                        .summary("Support Dialogue: " + truncate(cs.getTopic(), 100))
+                        .flaggedKeywords("Crisis Keywords Detected")
+                        .emotionTag(cs.getEmotionTag())
+                        .energyScore(cs.getEnergyScore() != null ? cs.getEnergyScore() : 10)
+                        .reviewed("CLOSED".equalsIgnoreCase(cs.getStatus()) || "ACTIVE".equalsIgnoreCase(cs.getStatus()))
+                        .reviewedBy(cs.getProfessionalName())
+                        .timestamp(cs.getCreatedAt())
+                        .build());
+            }
+        }
+
+        crisisItems.sort((a, b) -> {
+            if (a.isReviewed() != b.isReviewed()) return a.isReviewed() ? 1 : -1;
+            int s1 = severityOrder(a.getSeverity());
+            int s2 = severityOrder(b.getSeverity());
+            if (s1 != s2) return s1 - s2;
+            return b.getTimestamp().compareTo(a.getTimestamp());
+        });
+
+        long crisisReviewed = crisisItems.stream().filter(MonthlyReportResponse.CrisisIncidentItem::isReviewed).count();
+        long crisisPending = crisisItems.size() - crisisReviewed;
+
+        // 7. Clinical Observations
+        List<String> observations = new ArrayList<>();
+        if (totalPosts == 0) {
+            observations.add("No student expressions were logged on the platform during the month of " + monthName + ".");
+        } else {
+            observations.add(String.format("During %s, SafeSpace logged %d student expressions with an aggregate Campus Emotional Energy index of %.1f/10 (%s).",
+                    monthName, totalPosts, avgEnergy, climateStatus));
+
+            if (!emotionStats.isEmpty()) {
+                MonthlyReportResponse.EmotionStat topEmotion = emotionStats.get(0);
+                String secondEmotionStr = emotionStats.size() > 1
+                        ? String.format(", followed by %s (%d expressions, %.1f%%)",
+                        emotionStats.get(1).getEmotion(), emotionStats.get(1).getCount(), emotionStats.get(1).getPercentage())
+                        : "";
+                observations.add(String.format("Predominant affective state among USTP Balubal respondents is %s (%d expressions, %.1f%%%s).",
+                        topEmotion.getEmotion(), topEmotion.getCount(), topEmotion.getPercentage(), secondEmotionStr));
+            }
+
+            if (!crisisItems.isEmpty()) {
+                observations.add(String.format("Automated crisis sentinel intercepted %d high-risk indicators (%d flagged posts and %d crisis chats). %d of %d cases have been reviewed.",
+                        crisisItems.size(), flaggedPosts, crisisChats, crisisReviewed, crisisItems.size()));
+            } else {
+                observations.add("Zero critical crisis incidents were detected during this reporting cycle, demonstrating emotional baseline stability.");
+            }
+
+            if (kitPrescribed > 0) {
+                observations.add(String.format("Adaptive grounding kit interventions recorded %d prescriptions with an overall completion efficacy of %.1f%% (%d completions).",
+                        kitPrescribed, kitRate, kitCompleted));
+            }
+
+            if (totalChats > 0) {
+                observations.add(String.format("Professional support dialogues engaged %d sessions (average dialogue depth: %.1f messages), ensuring psychological safety without breaking anonymity.",
+                        totalChats, avgMsgs));
+            }
+        }
+
+        // 8. Institutional Recommendations
+        List<String> recommendations = new ArrayList<>();
+        if (energyHighPct >= 30.0 || flaggedPosts > 0) {
+            recommendations.add("Schedule proactive stress-deceleration and test-anxiety coping sessions with academic units experiencing heightened emotional energy.");
+        }
+        if (!emotionStats.isEmpty() && emotionStats.get(0).getEmotion().equalsIgnoreCase("Anxious")) {
+            recommendations.add("Deploy targeted psychoeducational campaigns addressing academic workload management and peer-support dynamics across campus bulletin channels.");
+        } else if (!emotionStats.isEmpty() && emotionStats.get(0).getEmotion().equalsIgnoreCase("Lonely")) {
+            recommendations.add("Coordinate with student organizations to initiate campus connectivity and communal engagement activities to mitigate isolation.");
+        }
+        if (crisisPending > 0) {
+            recommendations.add(String.format("Prioritize immediate triage and review for the %d pending crisis alert(s) in the psychometrician priority queue.", crisisPending));
+        }
+        recommendations.add("Maintain continuous monitoring of anonymous student expressions leading up to institutional examination and project defense milestones.");
+        recommendations.add("Promote SafeSpace grounding kit exercises in student orientations to reinforce proactive self-regulation habits.");
+
+        String genName = (currentUser != null && currentUser.getFullName() != null && !currentUser.getFullName().isBlank())
+                ? currentUser.getFullName()
+                : "Harold B. Vicada, RPm";
+        String genRole = (currentUser != null && currentUser.getRole() != null)
+                ? currentUser.getRole()
+                : "PROFESSIONAL";
+
+        return MonthlyReportResponse.builder()
+                .year(year)
+                .month(month)
+                .monthName(monthName)
+                .startDate(firstDay.toString())
+                .endDate(lastDay.toString())
+                .institution("University of Science and Technology of Southern Philippines")
+                .campus("Balubal Campus, Cagayan de Oro City")
+                .departmentUnit("Guidance and Counseling Center / Psychometrician Unit")
+                .confidentialityNotice("CONFIDENTIAL DOCUMENT // IN STRICT COMPLIANCE WITH RA 10173 (DATA PRIVACY ACT) & RA 11036 (MENTAL HEALTH ACT)")
+                .generatedAt(LocalDateTime.now())
+                .generatedBy(genName)
+                .generatedByRole(genRole)
+                .totalExpressions(totalPosts)
+                .averageEnergyScore(avgEnergy)
+                .climateStatus(climateStatus)
+                .totalCrisisAlerts(crisisItems.size())
+                .flaggedPosts(flaggedPosts)
+                .crisisChatSessions(crisisChats)
+                .totalSupportDialogues(totalChats)
+                .activeSupportDialogues(activeChats)
+                .closedSupportDialogues(closedChats)
+                .groundingPrescriptions(kitPrescribed)
+                .groundingCompletions(kitCompleted)
+                .groundingCompletionRate(kitRate)
+                .uniqueActiveStudents(uniqueStudents)
+                .energyLow(energyLow)
+                .energyModerate(energyMod)
+                .energyHigh(energyHigh)
+                .energyLowPct(energyLowPct)
+                .energyModeratePct(energyModPct)
+                .energyHighPct(energyHighPct)
+                .emotionBreakdown(emotionStats)
+                .departmentBreakdown(deptStats)
+                .yearLevelBreakdown(yearStats)
+                .crisisIncidents(crisisItems)
+                .crisisReviewedCount(crisisReviewed)
+                .crisisPendingCount(crisisPending)
+                .recentDialogues(dialogueItems)
+                .avgMessagesPerChat(avgMsgs)
+                .kitModalities(kitStats)
+                .clinicalObservations(observations)
+                .actionRecommendations(recommendations)
                 .build();
     }
 

@@ -17,7 +17,7 @@
   <div class="login-page">
     <div class="login-card">
       <!-- Back to Home -->
-      <a href="landing.html" style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.82rem;color:#161F36;text-decoration:none;margin-bottom:1.25rem;font-weight:600;transition:color 0.2s ease;">
+      <a href="landing.html" class="back-link">
         <i class="fas fa-arrow-left"></i> Back to Home
       </a>
 
@@ -35,26 +35,28 @@
       </div>
 
       <!-- Login Form -->
-      <form class="auth-form" id="loginForm" onsubmit="handleLogin(event)">
+      <form class="auth-form" id="loginForm" onsubmit="handleLogin(event)" novalidate>
         <div class="form-group">
-          <label class="form-label">Student / Employee ID</label>
+          <label class="form-label" for="loginUsername">Student / Employee ID</label>
           <div class="input-wrapper">
             <i class="fas fa-id-badge input-icon-left"></i>
             <input class="form-input input-icon" type="text" id="loginUsername"
-              placeholder="e.g. 2021-00001" required autocomplete="username">
+              placeholder="e.g. 2021-00001" autocomplete="username" oninput="clearLoginFeedback('loginUsername')">
           </div>
+          <div class="field-feedback" id="loginUsernameFeedback"></div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Password</label>
+          <label class="form-label" for="loginPassword">Password</label>
           <div class="input-wrapper">
             <i class="fas fa-lock input-icon-left"></i>
             <input class="form-input input-icon" type="password" id="loginPassword"
-              placeholder="Enter your password" required autocomplete="current-password">
+              placeholder="Enter your password" autocomplete="current-password" oninput="clearLoginFeedback('loginPassword')">
             <button type="button" class="input-toggle-pw" onclick="togglePasswordVisibility('loginPassword', this)">
               <i class="fas fa-eye"></i>
             </button>
           </div>
+          <div class="field-feedback" id="loginPasswordFeedback"></div>
         </div>
 
         <button type="submit" class="login-btn" id="loginBtn">
@@ -90,27 +92,29 @@
         <span id="pwChangeErrorText"></span>
       </div>
 
-      <form class="auth-form" onsubmit="handlePasswordChange(event)">
+      <form class="auth-form" onsubmit="handlePasswordChange(event)" novalidate>
         <div class="form-group">
-          <label class="form-label">Current Password</label>
+          <label class="form-label" for="pwCurrent">Current Password</label>
           <div class="input-wrapper">
             <i class="fas fa-lock input-icon-left"></i>
             <input class="form-input input-icon" type="password" id="pwCurrent"
-              placeholder="Enter current password" required>
+              placeholder="Enter current password" oninput="clearLoginFeedback('pwCurrent')">
           </div>
+          <div class="field-feedback" id="pwCurrentFeedback"></div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">New Password (min. 8 characters)</label>
+          <label class="form-label" for="pwNew">New Password (min. 8 characters)</label>
           <div class="input-wrapper">
             <i class="fas fa-shield-halved input-icon-left"></i>
             <input class="form-input input-icon" type="password" id="pwNew"
-              placeholder="Create a strong password" required minlength="8"
-              oninput="updatePwChangeStrength()">
+              placeholder="Create a strong password" minlength="8"
+              oninput="updatePwChangeStrength(); clearLoginFeedback('pwNew');">
             <button type="button" class="input-toggle-pw" onclick="togglePasswordVisibility('pwNew', this)">
               <i class="fas fa-eye"></i>
             </button>
           </div>
+          <div class="field-feedback" id="pwNewFeedback"></div>
           <div class="pw-strength" id="pwStrength">
             <div class="pw-strength-bar" id="pwBar1"></div>
             <div class="pw-strength-bar" id="pwBar2"></div>
@@ -135,15 +139,16 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Confirm New Password</label>
+          <label class="form-label" for="pwConfirm">Confirm New Password</label>
           <div class="input-wrapper">
             <i class="fas fa-check-double input-icon-left"></i>
             <input class="form-input input-icon" type="password" id="pwConfirm"
-              placeholder="Re-enter new password" required minlength="8">
+              placeholder="Re-enter new password" minlength="8" oninput="clearLoginFeedback('pwConfirm')">
             <button type="button" class="input-toggle-pw" onclick="togglePasswordVisibility('pwConfirm', this)">
               <i class="fas fa-eye"></i>
             </button>
           </div>
+          <div class="field-feedback" id="pwConfirmFeedback"></div>
         </div>
 
         <button type="submit" class="login-btn" id="pwChangeBtn" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
@@ -160,11 +165,80 @@
     let loginToken = null;
     let loginUsername = null;
 
+    function showLoginFeedback(inputId, msg) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      input.classList.add('has-error');
+      const wrapper = input.closest('.input-wrapper');
+      if (wrapper) wrapper.classList.add('has-error');
+
+      const fb = document.getElementById(inputId + 'Feedback');
+      if (fb) {
+        fb.innerHTML = '<i class="fas fa-circle-exclamation"></i> <span>' + escapeHtml(msg) + '</span>';
+        fb.classList.add('visible');
+      }
+    }
+
+    function clearLoginFeedback(inputId) {
+      const input = document.getElementById(inputId);
+      if (input) {
+        input.classList.remove('has-error');
+        const wrapper = input.closest('.input-wrapper');
+        if (wrapper) wrapper.classList.remove('has-error');
+      }
+      const fb = document.getElementById(inputId + 'Feedback');
+      if (fb) {
+        fb.classList.remove('visible');
+      }
+    }
+
+    function clearLoginFeedbacks() {
+      ['loginUsername', 'loginPassword', 'pwCurrent', 'pwNew', 'pwConfirm'].forEach(id => {
+        clearLoginFeedback(id);
+      });
+      const err1 = document.getElementById('loginError');
+      if (err1) err1.classList.remove('visible');
+      const err2 = document.getElementById('pwChangeError');
+      if (err2) err2.classList.remove('visible');
+      const pwRules = document.getElementById('pwRules');
+      if (pwRules) pwRules.classList.remove('has-error');
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
     async function handleLogin(e) {
       e.preventDefault();
       const btn = document.getElementById('loginBtn');
       const errDiv = document.getElementById('loginError');
       const errText = document.getElementById('loginErrorText');
+
+      clearLoginFeedbacks();
+
+      const usernameInput = document.getElementById('loginUsername');
+      const passwordInput = document.getElementById('loginPassword');
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
+
+      let firstInvalid = null;
+      if (!username) {
+        showLoginFeedback('loginUsername', 'Please enter your Institutional ID or username.');
+        if (!firstInvalid) firstInvalid = usernameInput;
+      }
+      if (!password) {
+        showLoginFeedback('loginPassword', 'Please enter your password.');
+        if (!firstInvalid) firstInvalid = passwordInput;
+      }
+      if (firstInvalid) {
+        errText.textContent = 'Please provide both your username and password.';
+        errDiv.classList.add('visible');
+        firstInvalid.focus();
+        return;
+      }
 
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
@@ -175,8 +249,8 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            username: document.getElementById('loginUsername').value.trim(),
-            password: document.getElementById('loginPassword').value
+            username: username,
+            password: password
           })
         });
 
@@ -206,10 +280,12 @@
         redirectAfterLogin(data.role);
 
       } catch (err) {
-        if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+        const isNetworkError = err.message === 'Failed to fetch' || err.name === 'TypeError' || (err.message && err.message.toLowerCase().includes('network'));
+        if (isNetworkError) {
           errText.textContent = 'Unable to connect to the SafeSpace server. Please check that the backend is running.';
         } else {
-          errText.textContent = err.message;
+          errText.textContent = err.message || 'Login failed. Please check your credentials.';
+          showLoginFeedback('loginPassword', err.message || 'Invalid credentials. Please verify your password.');
         }
         errDiv.classList.add('visible');
       } finally {
@@ -224,8 +300,19 @@
       const errDiv = document.getElementById('pwChangeError');
       const errText = document.getElementById('pwChangeErrorText');
 
+      clearLoginFeedback('pwCurrent');
+      clearLoginFeedback('pwNew');
+      clearLoginFeedback('pwConfirm');
+
+      const currentPw = document.getElementById('pwCurrent').value;
       const newPw = document.getElementById('pwNew').value;
       const confirmPw = document.getElementById('pwConfirm').value;
+
+      let firstInvalid = null;
+      if (!currentPw) {
+        showLoginFeedback('pwCurrent', 'Please enter your current temporary password.');
+        if (!firstInvalid) firstInvalid = document.getElementById('pwCurrent');
+      }
 
       const hasLen = newPw.length >= 8;
       const hasUpper = /[A-Z]/.test(newPw);
@@ -241,20 +328,34 @@
       const rulesBox = document.getElementById('pwRules');
 
       if (missing.length > 0) {
-        errText.textContent = 'Password rejected: does not comply with requirements. Missing: ' + missing.join(', ') + '.';
-        errDiv.classList.add('visible');
+        showLoginFeedback('pwNew', 'Password must comply with all requirements below.');
         if (rulesBox) {
           rulesBox.classList.remove('has-error');
           void rulesBox.offsetWidth;
           rulesBox.classList.add('has-error');
         }
         highlightMissingRules({ ruleLen: hasLen, ruleUpper: hasUpper, ruleNum: hasNum, ruleSpecial: hasSpecial });
-        return;
+        if (!firstInvalid) firstInvalid = document.getElementById('pwNew');
       }
 
-      if (newPw !== confirmPw) {
-        errText.textContent = 'Passwords do not match.';
+      if (!confirmPw) {
+        showLoginFeedback('pwConfirm', 'Please re-enter your new password.');
+        if (!firstInvalid) firstInvalid = document.getElementById('pwConfirm');
+      } else if (newPw !== confirmPw) {
+        showLoginFeedback('pwConfirm', 'Passwords do not match. Please ensure both passwords are identical.');
+        if (!firstInvalid) firstInvalid = document.getElementById('pwConfirm');
+      }
+
+      if (firstInvalid) {
+        let msg = 'Please correct the highlighted fields.';
+        if (missing.length > 0) {
+          msg = 'Password rejected: does not comply with requirements. Missing: ' + missing.join(', ') + '.';
+        } else if (newPw !== confirmPw) {
+          msg = 'Passwords do not match.';
+        }
+        errText.textContent = msg;
         errDiv.classList.add('visible');
+        firstInvalid.focus();
         return;
       }
 
