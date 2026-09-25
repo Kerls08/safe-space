@@ -145,6 +145,13 @@
   margin-bottom: 0.4rem;
 }
 
+.required-star,
+.form-label .required-star {
+  color: #DC2626 !important;
+  font-weight: 700;
+  margin-left: 3px;
+}
+
 .auth-form .form-input,
 .form-input {
   width: 100%;

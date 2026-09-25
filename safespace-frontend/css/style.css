@@ -69,6 +69,11 @@ body {
 
 /* small helpers */
 .lead { font-size:1.05rem; color:var(--dark-600); }
+.required-star {
+  color: #DC2626 !important;
+  font-weight: 700;
+  margin-left: 3px;
+}
 
 /* navbar */
 .navbar {

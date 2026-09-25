@@ -694,7 +694,7 @@
         <input type="hidden" id="regRole" value="STUDENT">
 
         <div class="form-group">
-          <label class="form-label" for="regFullName">Full Name</label>
+          <label class="form-label" for="regFullName">Full Name <span class="required-star" style="color:#DC2626;">*</span></label>
           <div class="input-wrapper">
             <i class="fas fa-user input-icon-left"></i>
             <input class="form-input input-icon" type="text" id="regFullName"
@@ -704,7 +704,7 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="regInstId">Institutional ID</label>
+          <label class="form-label" for="regInstId">Institutional ID <span class="required-star" style="color:#DC2626;">*</span></label>
           <div class="input-wrapper">
             <i class="fas fa-id-badge input-icon-left"></i>
             <input class="form-input input-icon" type="text" id="regInstId"
@@ -714,7 +714,7 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="regEmail">Email Address <span style="color:#DC2626;">*</span></label>
+          <label class="form-label" for="regEmail">Email Address <span class="required-star" style="color:#DC2626;">*</span></label>
           <div class="input-wrapper">
             <i class="fas fa-envelope input-icon-left"></i>
             <input class="form-input input-icon" type="email" id="regEmail"
@@ -727,24 +727,10 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="regPhone">Mobile Number <span style="color:#DC2626;">*</span></label>
-          <div class="input-wrapper">
-            <i class="fas fa-mobile-screen-button input-icon-left"></i>
-            <input class="form-input input-icon" type="tel" id="regPhone"
-              placeholder="e.g. 09123456789" autocomplete="tel" oninput="clearFieldFeedback('regPhone')">
-          </div>
-          <div class="field-feedback" id="regPhoneFeedback"></div>
-          <div style="font-size:0.73rem;color:#6C7A92;margin-top:5px;display:flex;align-items:center;gap:6px;line-height:1.35;">
-            <i class="fas fa-comment-sms" style="color:#566F3E;flex-shrink:0;"></i>
-            <span>Required for SMS account recovery and emergency notifications.</span>
-          </div>
-        </div>
-
         <div class="register-row" id="deptRow">
           <!-- Student Department -->
           <div class="form-group" id="studentDeptGroup">
-            <label class="form-label" for="regDepartment">Department</label>
+            <label class="form-label" for="regDepartment">Department <span class="required-star" style="color:#DC2626;">*</span></label>
             <div class="input-wrapper">
               <i class="fas fa-building input-icon-left"></i>
               <select class="form-input form-select" id="regDepartment" onchange="clearFieldFeedback('regDepartment')">
@@ -761,7 +747,7 @@
 
           <!-- Student Year Level -->
           <div class="form-group" id="yearLevelGroup">
-            <label class="form-label" for="regYearLevel">Year Level</label>
+            <label class="form-label" for="regYearLevel">Year Level <span class="required-star" style="color:#DC2626;">*</span></label>
             <div class="input-wrapper">
               <i class="fas fa-layer-group input-icon-left"></i>
               <select class="form-input form-select" id="regYearLevel" onchange="clearFieldFeedback('regYearLevel')">
@@ -778,7 +764,7 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="regPassword">Password (min. 8 characters)</label>
+          <label class="form-label" for="regPassword">Password (min. 8 characters) <span class="required-star" style="color:#DC2626;">*</span></label>
           <div class="input-wrapper">
             <i class="fas fa-lock input-icon-left"></i>
             <input class="form-input input-icon" type="password" id="regPassword"
@@ -813,7 +799,7 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="regConfirmPassword">Confirm Password</label>
+          <label class="form-label" for="regConfirmPassword">Confirm Password <span class="required-star" style="color:#DC2626;">*</span></label>
           <div class="input-wrapper">
             <i class="fas fa-check-double input-icon-left"></i>
             <input class="form-input input-icon" type="password" id="regConfirmPassword"
@@ -1014,7 +1000,7 @@
     }
 
     function clearAllFeedbacks() {
-      ['regFullName', 'regInstId', 'regEmail', 'regPhone', 'regDepartment', 'regYearLevel', 'regPassword', 'regConfirmPassword'].forEach(id => {
+      ['regFullName', 'regInstId', 'regEmail', 'regDepartment', 'regYearLevel', 'regPassword', 'regConfirmPassword'].forEach(id => {
         clearFieldFeedback(id);
       });
       clearTermsFeedback();
@@ -1036,7 +1022,6 @@
       const fullName = document.getElementById('regFullName').value.trim();
       const instId = document.getElementById('regInstId').value.trim();
       const email = document.getElementById('regEmail').value.trim();
-      const phone = document.getElementById('regPhone').value.trim();
       const department = document.getElementById('regDepartment').value;
       const yearLevel = document.getElementById('regYearLevel').value;
       const password = document.getElementById('regPassword').value;
@@ -1067,30 +1052,19 @@
         if (!firstInvalidInput) firstInvalidInput = document.getElementById('regEmail');
       }
 
-      // 4. Mobile Number (Mandatory)
-      const cleanPhone = phone.replace(/[\s\-()]/g, '');
-      const phoneRegex = /^(09|\+639)\d{9}$/;
-      if (!phone) {
-        showFieldFeedback('regPhone', 'Please enter your mobile phone number for SMS recovery.');
-        if (!firstInvalidInput) firstInvalidInput = document.getElementById('regPhone');
-      } else if (!phoneRegex.test(cleanPhone)) {
-        showFieldFeedback('regPhone', 'Please enter a valid Philippine mobile number (e.g. 09123456789).');
-        if (!firstInvalidInput) firstInvalidInput = document.getElementById('regPhone');
-      }
-
-      // 5. Department
+      // 4. Department
       if (!department) {
         showFieldFeedback('regDepartment', 'Please select your department.');
         if (!firstInvalidInput) firstInvalidInput = document.getElementById('regDepartment');
       }
 
-      // 6. Year Level
+      // 5. Year Level
       if (!yearLevel) {
         showFieldFeedback('regYearLevel', 'Please select your year level.');
         if (!firstInvalidInput) firstInvalidInput = document.getElementById('regYearLevel');
       }
 
-      // 7. Password Complexity
+      // 6. Password Complexity
       const hasLen = password.length >= 8;
       const hasUpper = /[A-Z]/.test(password);
       const hasNum = /[0-9]/.test(password);
@@ -1114,7 +1088,7 @@
         if (!firstInvalidInput) firstInvalidInput = document.getElementById('regPassword');
       }
 
-      // 8. Confirm Password
+      // 7. Confirm Password
       if (!confirmPassword) {
         showFieldFeedback('regConfirmPassword', 'Please re-enter your password to confirm.');
         if (!firstInvalidInput) firstInvalidInput = document.getElementById('regConfirmPassword');
@@ -1123,7 +1097,7 @@
         if (!firstInvalidInput) firstInvalidInput = document.getElementById('regConfirmPassword');
       }
 
-      // 9. Terms & Conditions
+      // 8. Terms & Conditions
       let termsValid = true;
       if (!terms || !terms.checked) {
         termsValid = false;
@@ -1139,7 +1113,7 @@
       // Stop and display smooth feedback if any validation failed
       if (firstInvalidInput) {
         let errorMsg = 'Please complete the highlighted fields before proceeding.';
-        if (!termsValid && fullName && instId && email && phone && department && yearLevel && missing.length === 0 && password === confirmPassword) {
+        if (!termsValid && fullName && instId && email && department && yearLevel && missing.length === 0 && password === confirmPassword) {
           errorMsg = 'Please agree to the Terms and Conditions and Privacy Policy to create your account.';
         } else if (missing.length > 0) {
           errorMsg = 'Password rejected: does not comply with requirements. Missing: ' + missing.join(', ') + '.';
@@ -1170,7 +1144,6 @@
           institutionalId: document.getElementById('regInstId').value.trim(),
           fullName: document.getElementById('regFullName').value.trim(),
           email: document.getElementById('regEmail').value.trim(),
-          phoneNumber: cleanPhone,
           department: document.getElementById('regDepartment').value || undefined,
           yearLevel: document.getElementById('regYearLevel').value || undefined,
           role: 'STUDENT',
@@ -1234,10 +1207,6 @@
           showFieldFeedback('regEmail', msg);
           const emailEl = document.getElementById('regEmail');
           if (emailEl) emailEl.focus({ preventScroll: true });
-        } else if (msg.toLowerCase().includes('mobile') || msg.toLowerCase().includes('phone')) {
-          showFieldFeedback('regPhone', msg);
-          const phoneEl = document.getElementById('regPhone');
-          if (phoneEl) phoneEl.focus({ preventScroll: true });
         } else if (msg.toLowerCase().includes('institutional id')) {
           showFieldFeedback('regInstId', msg);
           const instEl = document.getElementById('regInstId');

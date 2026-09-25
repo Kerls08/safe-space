@@ -208,12 +208,12 @@ public class CredentialService {
             throw new IllegalArgumentException("Please provide a valid email address (e.g. name@ustp.edu.ph or gmail.com).");
         }
 
-        if (request.getPhoneNumber() == null || request.getPhoneNumber().isBlank())
-            throw new IllegalArgumentException("Mobile phone number is required.");
-
-        String cleanPhone = request.getPhoneNumber().trim().replaceAll("[\\s\\-\\(\\)]", "");
-        if (!cleanPhone.matches("^(09|\\+639)\\d{9}$")) {
-            throw new IllegalArgumentException("Please provide a valid Philippine mobile number (e.g. 09123456789).");
+        String cleanPhone = null;
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank()) {
+            String p = request.getPhoneNumber().trim().replaceAll("[\\s\\-\\(\\)]", "");
+            if (p.matches("^(09|\\+639)\\d{9}$")) {
+                cleanPhone = p;
+            }
         }
 
         if (request.getRole() == null || request.getRole().isBlank())
