@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -335,6 +336,15 @@ public class EmailService {
 
     // ── HTML Template Generators ──
 
+    private String resolveLoginPageUrl() {
+        String base = appUrl != null && !appUrl.isBlank() ? appUrl.trim() : "http://localhost:5173";
+        base = base.replaceAll("/(index|landing|login)\\.html$", "");
+        if (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base + "/login.html";
+    }
+
     private String buildProfessionalWelcomeHtml(String fullName, String institutionalId, String username, String tempPassword, String designation) {
         String cleanDept = (designation != null && !designation.isBlank()) ? designation.trim() : "Campus Mental Health Professional";
         
@@ -348,14 +358,9 @@ public class EmailService {
                 """.formatted(escapeHtml(username));
         }
 
-        String loginUrl = appUrl != null && !appUrl.isBlank() ? appUrl.trim() : "http://localhost:5173";
-        if (!loginUrl.endsWith(".html")) {
-            if (loginUrl.endsWith("/")) {
-                loginUrl += "login.html";
-            } else {
-                loginUrl += "/login.html";
-            }
-        }
+        String loginPageUrl = resolveLoginPageUrl();
+        String encodedId = URLEncoder.encode(institutionalId != null ? institutionalId.trim() : "", StandardCharsets.UTF_8);
+        String directLoginLink = loginPageUrl + "?id=" + encodedId;
 
         return """
             <!DOCTYPE html>
@@ -449,12 +454,16 @@ public class EmailService {
                 usernameHtml,
                 escapeHtml(cleanDept),
                 escapeHtml(tempPassword),
-                escapeHtml(loginUrl),
+                escapeHtml(directLoginLink),
                 escapeHtml(institutionalId)
         );
     }
 
     private String buildWelcomeHtml(String fullName, String username, String tempPassword) {
+        String loginPageUrl = resolveLoginPageUrl();
+        String encodedUser = URLEncoder.encode(username != null ? username.trim() : "", StandardCharsets.UTF_8);
+        String directLoginLink = loginPageUrl + "?id=" + encodedUser;
+
         return """
             <!DOCTYPE html>
             <html>
@@ -515,10 +524,14 @@ public class EmailService {
               </div>
             </body>
             </html>
-            """.formatted(escapeHtml(fullName), escapeHtml(username), escapeHtml(tempPassword), escapeHtml(appUrl));
+            """.formatted(escapeHtml(fullName), escapeHtml(username), escapeHtml(tempPassword), escapeHtml(directLoginLink));
     }
 
     private String buildPasswordResetHtml(String fullName, String username, String newTempPassword) {
+        String loginPageUrl = resolveLoginPageUrl();
+        String encodedUser = URLEncoder.encode(username != null ? username.trim() : "", StandardCharsets.UTF_8);
+        String directLoginLink = loginPageUrl + "?id=" + encodedUser;
+
         return """
             <!DOCTYPE html>
             <html>
@@ -579,7 +592,7 @@ public class EmailService {
               </div>
             </body>
             </html>
-            """.formatted(escapeHtml(fullName), escapeHtml(username), escapeHtml(newTempPassword), escapeHtml(appUrl));
+            """.formatted(escapeHtml(fullName), escapeHtml(username), escapeHtml(newTempPassword), escapeHtml(directLoginLink));
     }
 
     private String buildRegistrationConfirmationHtml(String fullName, String username, String department, String yearLevel) {
@@ -594,14 +607,9 @@ public class EmailService {
             deptYearDisplay = "USTP Balubal Student";
         }
 
-        String loginUrl = appUrl != null && !appUrl.isBlank() ? appUrl.trim() : "http://localhost:5173";
-        if (!loginUrl.endsWith(".html")) {
-            if (loginUrl.endsWith("/")) {
-                loginUrl += "login.html";
-            } else {
-                loginUrl += "/login.html";
-            }
-        }
+        String loginPageUrl = resolveLoginPageUrl();
+        String encodedUser = URLEncoder.encode(username != null ? username.trim() : "", StandardCharsets.UTF_8);
+        String directLoginLink = loginPageUrl + "?id=" + encodedUser;
 
         return """
             <!DOCTYPE html>
@@ -696,7 +704,7 @@ public class EmailService {
               </div>
             </body>
             </html>
-            """.formatted(escapeHtml(fullName), escapeHtml(username), escapeHtml(deptYearDisplay), escapeHtml(loginUrl));
+            """.formatted(escapeHtml(fullName), escapeHtml(username), escapeHtml(deptYearDisplay), escapeHtml(directLoginLink));
     }
 
     private String buildOtpEmailHtml(String fullName, String otpCode) {

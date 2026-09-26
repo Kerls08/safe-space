@@ -34,6 +34,8 @@
         <span id="loginErrorText"></span>
       </div>
 
+      <div id="activeSessionNotice" style="display:none;margin-bottom:1rem;"></div>
+
       <!-- Login Form -->
       <form class="auth-form" id="loginForm" onsubmit="handleLogin(event)" novalidate>
         <div class="form-group">
@@ -1095,13 +1097,64 @@
       }
     }
 
-    // Auto-focus
-    document.getElementById('loginUsername').focus();
+    // Query param handling (e.g. from credentials email: login.html?id=1111111111)
+    const urlParams = new URLSearchParams(window.location.search);
+    const prefillId = urlParams.get('id') || urlParams.get('username') || urlParams.get('instId');
 
-    // Check if already logged in
-    if (localStorage.getItem('ss_token')) {
-      const role = localStorage.getItem('ss_role');
-      if (role) redirectAfterLogin(role);
+    function clearExistingSession() {
+      localStorage.removeItem('ss_token');
+      localStorage.removeItem('ss_username');
+      localStorage.removeItem('ss_role');
+      localStorage.removeItem('ss_fullName');
+      const noticeDiv = document.getElementById('activeSessionNotice');
+      if (noticeDiv) noticeDiv.style.display = 'none';
+      const uInput = document.getElementById('loginUsername');
+      if (uInput) {
+        uInput.value = '';
+        uInput.focus();
+      }
+    }
+
+    if (prefillId) {
+      // Clear previous administrative / other session so user can cleanly sign in to new account
+      localStorage.removeItem('ss_token');
+      localStorage.removeItem('ss_username');
+      localStorage.removeItem('ss_role');
+      localStorage.removeItem('ss_fullName');
+
+      const uInput = document.getElementById('loginUsername');
+      if (uInput) {
+        uInput.value = prefillId;
+        const pInput = document.getElementById('loginPassword');
+        if (pInput) pInput.focus();
+      }
+    } else {
+      const uInput = document.getElementById('loginUsername');
+      if (uInput) uInput.focus();
+
+      // If already logged in, show non-intrusive banner but DO NOT auto-redirect away
+      const existingToken = localStorage.getItem('ss_token');
+      const existingRole = localStorage.getItem('ss_role');
+      const existingName = localStorage.getItem('ss_fullName') || localStorage.getItem('ss_username');
+      if (existingToken && existingRole) {
+        let dest = 'rant-board.html';
+        if (existingRole === 'ADMIN') dest = 'credential-manager.html';
+        else if (existingRole === 'PROFESSIONAL') dest = 'pro-dashboard.html';
+
+        const noticeDiv = document.getElementById('activeSessionNotice');
+        if (noticeDiv) {
+          noticeDiv.innerHTML = `
+            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 14px;font-size:0.78rem;color:#1e40af;display:flex;align-items:center;justify-content:space-between;line-height:1.4;gap:8px;">
+              <span><i class="fas fa-circle-user" style="color:#2563eb;margin-right:6px;"></i> Active session: <strong>${escapeHtml(existingName)}</strong> (${escapeHtml(existingRole)})</span>
+              <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+                <a href="${dest}" style="color:#1d4ed8;font-weight:700;text-decoration:underline;white-space:nowrap;">Dashboard &rarr;</a>
+                <button type="button" onclick="clearExistingSession()" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:0.75rem;font-weight:600;text-decoration:underline;padding:0;">Switch</button>
+              </div>
+            </div>
+          `;
+          noticeDiv.style.display = 'block';
+        }
+      }
     }
   </script>
 </body>
