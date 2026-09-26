@@ -351,10 +351,10 @@ public class EmailService {
         String usernameHtml = "";
         if (username != null && !username.isBlank() && !username.equalsIgnoreCase(institutionalId)) {
             usernameHtml = """
-                <div class="divider"></div>
-                <div class="field">
-                  <div class="label">System Username</div>
-                  <div class="text-value">%s</div>
+                <div style="height: 1px; background-color: #ECE6DB; margin: 10px 0;"></div>
+                <div style="padding: 4px 0;">
+                  <div style="font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px;">System Username</div>
+                  <div style="font-size: 14px; font-weight: 600; color: #161F36;">%s</div>
                 </div>
                 """.formatted(escapeHtml(username));
         }
@@ -370,86 +370,80 @@ public class EmailService {
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <style>
-                body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FAF7F2; margin: 0; padding: 28px 12px; color: #161F36; -webkit-font-smoothing: antialiased; }
-                .container { max-width: 580px; margin: 0 auto; background: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(22, 31, 54, 0.05); border: 1px solid #E2DDD5; }
-                .header { background: #161F36; color: #FFFFFF; padding: 32px 24px 26px; text-align: center; }
-                .header-logo { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FAF7F2; margin: 0; padding: 28px 12px; color: #161F36; -webkit-font-smoothing: antialiased; }
+                .container { max-width: 580px; margin: 0 auto; background-color: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(22, 31, 54, 0.05); border: 1px solid #E2DDD5; }
+                .header { background-color: #161F36; color: #FFFFFF; padding: 32px 24px 26px; text-align: center; }
+                .header-logo { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin: 0; color: #FFFFFF; }
                 .header-sub { margin: 6px 0 0 0; color: #BACBD8; font-size: 12px; font-weight: 500; letter-spacing: 0.3px; }
-                .role-badge { display: inline-block; background: rgba(186, 203, 216, 0.12); border: 1px solid rgba(186, 203, 216, 0.28); color: #BACBD8; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 4px 12px; border-radius: 20px; margin-top: 10px; }
+                .role-badge { display: inline-block; background-color: rgba(186, 203, 216, 0.12); border: 1px solid rgba(186, 203, 216, 0.28); color: #BACBD8; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 4px 12px; border-radius: 20px; margin-top: 10px; }
                 .content { padding: 32px 28px; }
                 .greeting { font-size: 18px; font-weight: 700; color: #161F36; margin: 0 0 10px 0; }
                 .intro { font-size: 14px; line-height: 1.6; color: #3D4D6E; margin: 0 0 20px 0; }
-                .card-box { background: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+                .card-box { background-color: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
                 .field { padding: 6px 0; }
-                .field:first-child { padding-top: 0; }
-                .field:last-child { padding-bottom: 0; }
-                .divider { height: 1px; background: #ECE6DB; margin: 8px 0; }
+                .divider { height: 1px; background-color: #ECE6DB; margin: 10px 0; }
                 .label { font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px; }
                 .id-value { font-family: 'Consolas', 'Courier New', monospace; font-size: 17px; font-weight: 700; color: #161F36; letter-spacing: 0.5px; }
-                .text-value { font-size: 14px; font-weight: 600; color: #161F36; }
-                .password-badge { display: inline-block; background: #FFFFFF; border: 1px solid #BACBD8; color: #161F36; padding: 7px 16px; border-radius: 6px; font-family: 'Consolas', 'Courier New', monospace; font-size: 16px; font-weight: 700; letter-spacing: 1px; margin-top: 2px; }
-                .designation-pill { display: inline-block; background: #E8EFF4; color: #161F36; border: 1px solid #BACBD8; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 6px; margin-top: 2px; }
-                .notice { background: #F4F7FA; border: 1px solid #DCE4EC; border-left: 3px solid #161F36; border-radius: 6px; padding: 12px 16px; color: #3D4D6E; font-size: 13px; line-height: 1.5; margin: 20px 0; }
+                .password-badge { display: inline-block; background-color: #FFFFFF; border: 1px solid #BACBD8; color: #161F36; padding: 7px 16px; border-radius: 6px; font-family: 'Consolas', 'Courier New', monospace; font-size: 16px; font-weight: 700; letter-spacing: 1px; margin-top: 2px; }
+                .designation-pill { display: inline-block; background-color: #E8EFF4; color: #161F36; border: 1px solid #BACBD8; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 6px; margin-top: 2px; }
+                .notice { background-color: #F4F7FA; border: 1px solid #DCE4EC; border-left: 3px solid #161F36; border-radius: 6px; padding: 13px 16px; color: #3D4D6E; font-size: 13px; line-height: 1.5; margin: 20px 0; }
                 .btn-container { text-align: center; margin: 28px 0 16px 0; }
-                .btn { display: inline-block; background: #161F36; color: #FFFFFF !important; text-decoration: none; padding: 13px 32px; border-radius: 8px; font-weight: 700; font-size: 14px; letter-spacing: 0.3px; box-shadow: 0 4px 12px rgba(22, 31, 54, 0.15); }
-                .steps-box { background: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 8px; padding: 16px 20px; margin: 22px 0 0 0; font-size: 13px; line-height: 1.6; color: #3D4D6E; }
-                .steps-box strong { color: #161F36; font-size: 13px; }
-                .steps-box ol { margin: 8px 0 0 0; padding-left: 20px; }
-                .steps-box li { margin-bottom: 5px; }
-                .footer { background: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; color: #6C7A92; border-top: 1px solid #E2DDD5; line-height: 1.5; }
+                .btn { display: inline-block; background-color: #161F36; color: #FFFFFF !important; text-decoration: none; padding: 13px 32px; border-radius: 8px; font-weight: 700; font-size: 14px; letter-spacing: 0.3px; }
+                .steps-box { background-color: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 8px; padding: 16px 20px; margin: 22px 0 0 0; font-size: 13px; line-height: 1.6; color: #3D4D6E; }
+                .footer { background-color: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; color: #6C7A92; border-top: 1px solid #E2DDD5; line-height: 1.5; }
               </style>
             </head>
-            <body>
-              <div class="container">
-                <div class="header">
-                  <div class="header-logo">Safe<span style="color: #BACBD8;">Space</span></div>
-                  <div class="header-sub">Campus Mental Health & Clinical Services Portal • USTP Balubal</div>
-                  <div class="role-badge">Authorized Mental Health Professional</div>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FAF7F2; margin: 0; padding: 28px 12px; color: #161F36;">
+              <div class="container" style="max-width: 580px; margin: 0 auto; background-color: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(22, 31, 54, 0.05); border: 1px solid #E2DDD5;">
+                <div class="header" style="background-color: #161F36; color: #FFFFFF; padding: 32px 24px 26px; text-align: center;">
+                  <div class="header-logo" style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin: 0; color: #FFFFFF;">Safe<span style="color: #BACBD8;">Space</span></div>
+                  <div class="header-sub" style="margin: 6px 0 0 0; color: #BACBD8; font-size: 12px; font-weight: 500; letter-spacing: 0.3px;">Campus Mental Health &amp; Clinical Services Portal • USTP Balubal</div>
+                  <div class="role-badge" style="display: inline-block; background-color: rgba(186, 203, 216, 0.12); border: 1px solid rgba(186, 203, 216, 0.28); color: #BACBD8; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 4px 12px; border-radius: 20px; margin-top: 10px;">Authorized Mental Health Professional</div>
                 </div>
-                <div class="content">
-                  <h2 class="greeting">Dear %s,</h2>
-                  <p class="intro">
+                <div class="content" style="padding: 32px 28px;">
+                  <h2 class="greeting" style="font-size: 18px; font-weight: 700; color: #161F36; margin: 0 0 10px 0;">Dear %s,</h2>
+                  <p class="intro" style="font-size: 14px; line-height: 1.6; color: #3D4D6E; margin: 0 0 20px 0;">
                     An authorized campus mental health professional account has been provisioned for you on the <strong>SafeSpace</strong> system. 
                     Below are your official access credentials:
                   </p>
 
-                  <div class="card-box">
-                    <div class="field">
-                      <div class="label">Institutional ID (Sign-In ID)</div>
-                      <div class="id-value">%s</div>
+                  <div class="card-box" style="background-color: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 10px; padding: 18px 20px; margin: 20px 0;">
+                    <div class="field" style="padding: 4px 0;">
+                      <div class="label" style="font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px;">Institutional ID (Sign-In ID)</div>
+                      <div class="id-value" style="font-family: 'Consolas', 'Courier New', monospace; font-size: 17px; font-weight: 700; color: #161F36; letter-spacing: 0.5px;">%s</div>
                     </div>
                     %s
-                    <div class="divider"></div>
-                    <div class="field">
-                      <div class="label">Clinical Designation / Office</div>
-                      <div class="designation-pill">%s</div>
+                    <div class="divider" style="height: 1px; background-color: #ECE6DB; margin: 10px 0;"></div>
+                    <div class="field" style="padding: 4px 0;">
+                      <div class="label" style="font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px;">Clinical Designation / Office</div>
+                      <div><span class="designation-pill" style="display: inline-block; background-color: #E8EFF4; color: #161F36; border: 1px solid #BACBD8; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 6px; margin-top: 2px;">%s</span></div>
                     </div>
-                    <div class="divider"></div>
-                    <div class="field">
-                      <div class="label">Initial Temporary Password</div>
-                      <div><span class="password-badge">%s</span></div>
+                    <div class="divider" style="height: 1px; background-color: #ECE6DB; margin: 10px 0;"></div>
+                    <div class="field" style="padding: 4px 0;">
+                      <div class="label" style="font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px;">Initial Temporary Password</div>
+                      <div><span class="password-badge" style="display: inline-block; background-color: #FFFFFF; border: 1px solid #BACBD8; color: #161F36; padding: 7px 16px; border-radius: 6px; font-family: 'Consolas', 'Courier New', monospace; font-size: 16px; font-weight: 700; letter-spacing: 1px; margin-top: 2px;">%s</span></div>
                     </div>
                   </div>
 
-                  <div class="notice">
+                  <div class="notice" style="background-color: #F4F7FA; border: 1px solid #DCE4EC; border-left: 3px solid #161F36; border-radius: 6px; padding: 13px 16px; color: #3D4D6E; font-size: 13px; line-height: 1.5; margin: 20px 0;">
                     <strong style="color: #161F36;">First-Time Sign-In Requirement:</strong> For student record privacy and institutional security, you will be prompted to replace this temporary password with your permanent password upon your first sign-in.
                   </div>
 
-                  <div class="btn-container">
-                    <a href="%s" class="btn">Sign In to Professional Portal</a>
+                  <div class="btn-container" style="text-align: center; margin: 28px 0 16px 0;">
+                    <a href="%s" class="btn" style="display: inline-block; background-color: #161F36; color: #FFFFFF !important; text-decoration: none; padding: 13px 32px; border-radius: 8px; font-weight: 700; font-size: 14px; letter-spacing: 0.3px;">Sign In to Professional Portal</a>
                   </div>
 
-                  <div class="steps-box">
-                    <strong>Quick Sign-In Instructions:</strong>
-                    <ol>
-                      <li>Open the SafeSpace sign-in portal via the button above.</li>
-                      <li>Enter your <strong>Institutional ID</strong> (<code>%s</code>) and <strong>Temporary Password</strong>.</li>
-                      <li>Set your new permanent password when prompted to access the Professional Dashboard.</li>
+                  <div class="steps-box" style="background-color: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 8px; padding: 16px 20px; margin: 22px 0 0 0; font-size: 13px; line-height: 1.6; color: #3D4D6E;">
+                    <strong style="color: #161F36; font-size: 13px;">Quick Sign-In Instructions:</strong>
+                    <ol style="margin: 8px 0 0 0; padding-left: 20px;">
+                      <li style="margin-bottom: 5px;">Open the SafeSpace sign-in portal via the button above.</li>
+                      <li style="margin-bottom: 5px;">Enter your <strong>Institutional ID</strong> (<code>%s</code>) and <strong>Temporary Password</strong>.</li>
+                      <li style="margin-bottom: 0;">Set your new permanent password when prompted to access the Professional Dashboard.</li>
                     </ol>
                   </div>
                 </div>
-                <div class="footer">
-                  <strong>Confidential Communication</strong> — SafeSpace System • USTP Balubal Guidance & Counseling Center.<br>
+                <div class="footer" style="background-color: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; color: #6C7A92; border-top: 1px solid #E2DDD5; line-height: 1.5;">
+                  <strong>Confidential Communication</strong> — SafeSpace System • USTP Balubal Guidance &amp; Counseling Center.<br>
                   If you did not anticipate this notification, please contact the campus system administrator immediately.
                 </div>
               </div>
@@ -478,61 +472,59 @@ public class EmailService {
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <style>
-                body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FAF7F2; margin: 0; padding: 28px 12px; color: #161F36; -webkit-font-smoothing: antialiased; }
-                .container { max-width: 580px; margin: 0 auto; background: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(22, 31, 54, 0.05); border: 1px solid #E2DDD5; }
-                .header { background: #161F36; color: #FFFFFF; padding: 32px 24px 26px; text-align: center; }
-                .header-logo { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FAF7F2; margin: 0; padding: 28px 12px; color: #161F36; }
+                .container { max-width: 580px; margin: 0 auto; background-color: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(22, 31, 54, 0.05); border: 1px solid #E2DDD5; }
+                .header { background-color: #161F36; color: #FFFFFF; padding: 32px 24px 26px; text-align: center; }
+                .header-logo { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin: 0; color: #FFFFFF; }
                 .header-sub { margin: 6px 0 0 0; color: #BACBD8; font-size: 12px; font-weight: 500; letter-spacing: 0.3px; }
                 .content { padding: 32px 28px; }
                 .greeting { font-size: 18px; font-weight: 700; color: #161F36; margin: 0 0 10px 0; }
                 .intro { font-size: 14px; line-height: 1.6; color: #3D4D6E; margin: 0 0 20px 0; }
-                .card-box { background: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+                .card-box { background-color: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
                 .field { padding: 6px 0; }
-                .field:first-child { padding-top: 0; }
-                .field:last-child { padding-bottom: 0; }
-                .divider { height: 1px; background: #ECE6DB; margin: 8px 0; }
+                .divider { height: 1px; background-color: #ECE6DB; margin: 10px 0; }
                 .label { font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px; }
                 .id-value { font-family: 'Consolas', 'Courier New', monospace; font-size: 17px; font-weight: 700; color: #161F36; letter-spacing: 0.5px; }
-                .password-badge { display: inline-block; background: #FFFFFF; border: 1px solid #BACBD8; color: #161F36; padding: 7px 16px; border-radius: 6px; font-family: 'Consolas', 'Courier New', monospace; font-size: 16px; font-weight: 700; letter-spacing: 1px; margin-top: 2px; }
-                .notice { background: #F4F7FA; border: 1px solid #DCE4EC; border-left: 3px solid #161F36; border-radius: 6px; padding: 12px 16px; color: #3D4D6E; font-size: 13px; line-height: 1.5; margin: 20px 0; }
+                .password-badge { display: inline-block; background-color: #FFFFFF; border: 1px solid #BACBD8; color: #161F36; padding: 7px 16px; border-radius: 6px; font-family: 'Consolas', 'Courier New', monospace; font-size: 16px; font-weight: 700; letter-spacing: 1px; margin-top: 2px; }
+                .notice { background-color: #F4F7FA; border: 1px solid #DCE4EC; border-left: 3px solid #161F36; border-radius: 6px; padding: 13px 16px; color: #3D4D6E; font-size: 13px; line-height: 1.5; margin: 20px 0; }
                 .btn-container { text-align: center; margin: 28px 0 16px 0; }
-                .btn { display: inline-block; background: #161F36; color: #FFFFFF !important; text-decoration: none; padding: 13px 32px; border-radius: 8px; font-weight: 700; font-size: 14px; letter-spacing: 0.3px; box-shadow: 0 4px 12px rgba(22, 31, 54, 0.15); }
-                .footer { background: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; color: #6C7A92; border-top: 1px solid #E2DDD5; line-height: 1.5; }
+                .btn { display: inline-block; background-color: #161F36; color: #FFFFFF !important; text-decoration: none; padding: 13px 32px; border-radius: 8px; font-weight: 700; font-size: 14px; letter-spacing: 0.3px; }
+                .footer { background-color: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; color: #6C7A92; border-top: 1px solid #E2DDD5; line-height: 1.5; }
               </style>
             </head>
-            <body>
-              <div class="container">
-                <div class="header">
-                  <div class="header-logo">Safe<span style="color: #BACBD8;">Space</span></div>
-                  <div class="header-sub">Student Wellness &amp; Support Portal • USTP Balubal</div>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FAF7F2; margin: 0; padding: 28px 12px; color: #161F36;">
+              <div class="container" style="max-width: 580px; margin: 0 auto; background-color: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(22, 31, 54, 0.05); border: 1px solid #E2DDD5;">
+                <div class="header" style="background-color: #161F36; color: #FFFFFF; padding: 32px 24px 26px; text-align: center;">
+                  <div class="header-logo" style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin: 0; color: #FFFFFF;">Safe<span style="color: #BACBD8;">Space</span></div>
+                  <div class="header-sub" style="margin: 6px 0 0 0; color: #BACBD8; font-size: 12px; font-weight: 500; letter-spacing: 0.3px;">Student Wellness &amp; Support Portal • USTP Balubal</div>
                 </div>
-                <div class="content">
-                  <h2 class="greeting">Hello, %s! 👋</h2>
-                  <p class="intro">
+                <div class="content" style="padding: 32px 28px;">
+                  <h2 class="greeting" style="font-size: 18px; font-weight: 700; color: #161F36; margin: 0 0 10px 0;">Hello, %s! 👋</h2>
+                  <p class="intro" style="font-size: 14px; line-height: 1.6; color: #3D4D6E; margin: 0 0 20px 0;">
                     An account has been created for you on the <strong>SafeSpace</strong> platform by your institution administrator. Below are your login credentials:
                   </p>
 
-                  <div class="card-box">
-                    <div class="field">
-                      <div class="label">Login ID / Username</div>
-                      <div class="id-value">%s</div>
+                  <div class="card-box" style="background-color: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 10px; padding: 18px 20px; margin: 20px 0;">
+                    <div class="field" style="padding: 4px 0;">
+                      <div class="label" style="font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px;">Login ID / Username</div>
+                      <div class="id-value" style="font-family: 'Consolas', 'Courier New', monospace; font-size: 17px; font-weight: 700; color: #161F36; letter-spacing: 0.5px;">%s</div>
                     </div>
-                    <div class="divider"></div>
-                    <div class="field">
-                      <div class="label">Default Password</div>
-                      <div><span class="password-badge">%s</span></div>
+                    <div class="divider" style="height: 1px; background-color: #ECE6DB; margin: 10px 0;"></div>
+                    <div class="field" style="padding: 4px 0;">
+                      <div class="label" style="font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px;">Default Password</div>
+                      <div><span class="password-badge" style="display: inline-block; background-color: #FFFFFF; border: 1px solid #BACBD8; color: #161F36; padding: 7px 16px; border-radius: 6px; font-family: 'Consolas', 'Courier New', monospace; font-size: 16px; font-weight: 700; letter-spacing: 1px; margin-top: 2px;">%s</span></div>
                     </div>
                   </div>
 
-                  <div class="notice">
+                  <div class="notice" style="background-color: #F4F7FA; border: 1px solid #DCE4EC; border-left: 3px solid #161F36; border-radius: 6px; padding: 13px 16px; color: #3D4D6E; font-size: 13px; line-height: 1.5; margin: 20px 0;">
                     <strong style="color: #161F36;">First-Time Sign-In Requirement:</strong> For your security, you will be prompted to change this temporary password upon your first sign-in.
                   </div>
 
-                  <div class="btn-container">
-                    <a href="%s" class="btn">Sign In to SafeSpace</a>
+                  <div class="btn-container" style="text-align: center; margin: 28px 0 16px 0;">
+                    <a href="%s" class="btn" style="display: inline-block; background-color: #161F36; color: #FFFFFF !important; text-decoration: none; padding: 13px 32px; border-radius: 8px; font-weight: 700; font-size: 14px; letter-spacing: 0.3px;">Sign In to SafeSpace</a>
                   </div>
                 </div>
-                <div class="footer">
+                <div class="footer" style="background-color: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; color: #6C7A92; border-top: 1px solid #E2DDD5; line-height: 1.5;">
                   This email was sent automatically by SafeSpace System.<br>If you did not expect this email, please contact your university administrator.
                 </div>
               </div>
@@ -553,61 +545,59 @@ public class EmailService {
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <style>
-                body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FAF7F2; margin: 0; padding: 28px 12px; color: #161F36; -webkit-font-smoothing: antialiased; }
-                .container { max-width: 580px; margin: 0 auto; background: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(22, 31, 54, 0.05); border: 1px solid #E2DDD5; }
-                .header { background: #161F36; color: #FFFFFF; padding: 32px 24px 26px; text-align: center; }
-                .header-logo { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FAF7F2; margin: 0; padding: 28px 12px; color: #161F36; }
+                .container { max-width: 580px; margin: 0 auto; background-color: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(22, 31, 54, 0.05); border: 1px solid #E2DDD5; }
+                .header { background-color: #161F36; color: #FFFFFF; padding: 32px 24px 26px; text-align: center; }
+                .header-logo { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin: 0; color: #FFFFFF; }
                 .header-sub { margin: 6px 0 0 0; color: #BACBD8; font-size: 12px; font-weight: 500; letter-spacing: 0.3px; }
                 .content { padding: 32px 28px; }
                 .greeting { font-size: 18px; font-weight: 700; color: #161F36; margin: 0 0 10px 0; }
                 .intro { font-size: 14px; line-height: 1.6; color: #3D4D6E; margin: 0 0 20px 0; }
-                .card-box { background: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+                .card-box { background-color: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
                 .field { padding: 6px 0; }
-                .field:first-child { padding-top: 0; }
-                .field:last-child { padding-bottom: 0; }
-                .divider { height: 1px; background: #ECE6DB; margin: 8px 0; }
+                .divider { height: 1px; background-color: #ECE6DB; margin: 10px 0; }
                 .label { font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px; }
                 .id-value { font-family: 'Consolas', 'Courier New', monospace; font-size: 17px; font-weight: 700; color: #161F36; letter-spacing: 0.5px; }
-                .password-badge { display: inline-block; background: #FFFFFF; border: 1px solid #BACBD8; color: #161F36; padding: 7px 16px; border-radius: 6px; font-family: 'Consolas', 'Courier New', monospace; font-size: 16px; font-weight: 700; letter-spacing: 1px; margin-top: 2px; }
-                .notice { background: #F4F7FA; border: 1px solid #DCE4EC; border-left: 3px solid #161F36; border-radius: 6px; padding: 12px 16px; color: #3D4D6E; font-size: 13px; line-height: 1.5; margin: 20px 0; }
+                .password-badge { display: inline-block; background-color: #FFFFFF; border: 1px solid #BACBD8; color: #161F36; padding: 7px 16px; border-radius: 6px; font-family: 'Consolas', 'Courier New', monospace; font-size: 16px; font-weight: 700; letter-spacing: 1px; margin-top: 2px; }
+                .notice { background-color: #F4F7FA; border: 1px solid #DCE4EC; border-left: 3px solid #161F36; border-radius: 6px; padding: 13px 16px; color: #3D4D6E; font-size: 13px; line-height: 1.5; margin: 20px 0; }
                 .btn-container { text-align: center; margin: 28px 0 16px 0; }
-                .btn { display: inline-block; background: #161F36; color: #FFFFFF !important; text-decoration: none; padding: 13px 32px; border-radius: 8px; font-weight: 700; font-size: 14px; letter-spacing: 0.3px; box-shadow: 0 4px 12px rgba(22, 31, 54, 0.15); }
-                .footer { background: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; color: #6C7A92; border-top: 1px solid #E2DDD5; line-height: 1.5; }
+                .btn { display: inline-block; background-color: #161F36; color: #FFFFFF !important; text-decoration: none; padding: 13px 32px; border-radius: 8px; font-weight: 700; font-size: 14px; letter-spacing: 0.3px; }
+                .footer { background-color: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; color: #6C7A92; border-top: 1px solid #E2DDD5; line-height: 1.5; }
               </style>
             </head>
-            <body>
-              <div class="container">
-                <div class="header">
-                  <div class="header-logo">Safe<span style="color: #BACBD8;">Space</span></div>
-                  <div class="header-sub">Password Reset Notification • USTP Balubal</div>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FAF7F2; margin: 0; padding: 28px 12px; color: #161F36;">
+              <div class="container" style="max-width: 580px; margin: 0 auto; background-color: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(22, 31, 54, 0.05); border: 1px solid #E2DDD5;">
+                <div class="header" style="background-color: #161F36; color: #FFFFFF; padding: 32px 24px 26px; text-align: center;">
+                  <div class="header-logo" style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin: 0; color: #FFFFFF;">Safe<span style="color: #BACBD8;">Space</span></div>
+                  <div class="header-sub" style="margin: 6px 0 0 0; color: #BACBD8; font-size: 12px; font-weight: 500; letter-spacing: 0.3px;">Password Reset Notification • USTP Balubal</div>
                 </div>
-                <div class="content">
-                  <h2 class="greeting">Hello, %s!</h2>
-                  <p class="intro">
+                <div class="content" style="padding: 32px 28px;">
+                  <h2 class="greeting" style="font-size: 18px; font-weight: 700; color: #161F36; margin: 0 0 10px 0;">Hello, %s!</h2>
+                  <p class="intro" style="font-size: 14px; line-height: 1.6; color: #3D4D6E; margin: 0 0 20px 0;">
                     Your password for <strong>SafeSpace</strong> has been reset by an administrator. Below are your updated temporary credentials:
                   </p>
 
-                  <div class="card-box">
-                    <div class="field">
-                      <div class="label">Username</div>
-                      <div class="id-value">%s</div>
+                  <div class="card-box" style="background-color: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 10px; padding: 18px 20px; margin: 20px 0;">
+                    <div class="field" style="padding: 4px 0;">
+                      <div class="label" style="font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px;">Username</div>
+                      <div class="id-value" style="font-family: 'Consolas', 'Courier New', monospace; font-size: 17px; font-weight: 700; color: #161F36; letter-spacing: 0.5px;">%s</div>
                     </div>
-                    <div class="divider"></div>
-                    <div class="field">
-                      <div class="label">New Temporary Password</div>
-                      <div><span class="password-badge">%s</span></div>
+                    <div class="divider" style="height: 1px; background-color: #ECE6DB; margin: 10px 0;"></div>
+                    <div class="field" style="padding: 4px 0;">
+                      <div class="label" style="font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px;">New Temporary Password</div>
+                      <div><span class="password-badge" style="display: inline-block; background-color: #FFFFFF; border: 1px solid #BACBD8; color: #161F36; padding: 7px 16px; border-radius: 6px; font-family: 'Consolas', 'Courier New', monospace; font-size: 16px; font-weight: 700; letter-spacing: 1px; margin-top: 2px;">%s</span></div>
                     </div>
                   </div>
 
-                  <div class="notice">
+                  <div class="notice" style="background-color: #F4F7FA; border: 1px solid #DCE4EC; border-left: 3px solid #161F36; border-radius: 6px; padding: 13px 16px; color: #3D4D6E; font-size: 13px; line-height: 1.5; margin: 20px 0;">
                     <strong style="color: #161F36;">Security Reminder:</strong> You must change this temporary password upon your next sign-in.
                   </div>
 
-                  <div class="btn-container">
-                    <a href="%s" class="btn">Sign In to SafeSpace</a>
+                  <div class="btn-container" style="text-align: center; margin: 28px 0 16px 0;">
+                    <a href="%s" class="btn" style="display: inline-block; background-color: #161F36; color: #FFFFFF !important; text-decoration: none; padding: 13px 32px; border-radius: 8px; font-weight: 700; font-size: 14px; letter-spacing: 0.3px;">Sign In to SafeSpace</a>
                   </div>
                 </div>
-                <div class="footer">
+                <div class="footer" style="background-color: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; color: #6C7A92; border-top: 1px solid #E2DDD5; line-height: 1.5;">
                   This is an automated security email from SafeSpace System.
                 </div>
               </div>
@@ -639,80 +629,74 @@ public class EmailService {
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <style>
-                body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FAF7F2; margin: 0; padding: 28px 12px; color: #161F36; -webkit-font-smoothing: antialiased; }
-                .container { max-width: 580px; margin: 0 auto; background: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(22, 31, 54, 0.05); border: 1px solid #E2DDD5; }
-                .header { background: #161F36; color: #FFFFFF; padding: 32px 24px 26px; text-align: center; }
-                .header-logo { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FAF7F2; margin: 0; padding: 28px 12px; color: #161F36; -webkit-font-smoothing: antialiased; }
+                .container { max-width: 580px; margin: 0 auto; background-color: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(22, 31, 54, 0.05); border: 1px solid #E2DDD5; }
+                .header { background-color: #161F36; color: #FFFFFF; padding: 32px 24px 26px; text-align: center; }
+                .header-logo { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin: 0; color: #FFFFFF; }
                 .header-sub { margin: 6px 0 0 0; color: #BACBD8; font-size: 12px; font-weight: 500; letter-spacing: 0.3px; }
                 .content { padding: 32px 28px; }
                 .greeting { font-size: 18px; font-weight: 700; color: #161F36; margin: 0 0 10px 0; }
                 .intro { font-size: 14px; line-height: 1.6; color: #3D4D6E; margin: 0 0 20px 0; }
-                .card-box { background: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+                .card-box { background-color: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
                 .field { padding: 6px 0; }
-                .field:first-child { padding-top: 0; }
-                .field:last-child { padding-bottom: 0; }
-                .divider { height: 1px; background: #ECE6DB; margin: 8px 0; }
+                .divider { height: 1px; background-color: #ECE6DB; margin: 10px 0; }
                 .label { font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px; }
                 .id-value { font-family: 'Consolas', 'Courier New', monospace; font-size: 17px; font-weight: 700; color: #161F36; letter-spacing: 0.5px; }
                 .text-value { font-size: 14px; font-weight: 600; color: #161F36; }
-                .status-badge { display: inline-block; background: #E8EFF4; color: #161F36; border: 1px solid #BACBD8; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 6px; margin-top: 2px; }
-                .notice { background: #F4F7FA; border: 1px solid #DCE4EC; border-left: 3px solid #161F36; border-radius: 6px; padding: 14px 16px; margin: 18px 0; font-size: 13px; line-height: 1.5; color: #3D4D6E; }
-                .notice-title { font-weight: 700; display: block; margin-bottom: 4px; color: #161F36; font-size: 13px; }
-                .directory-box { background: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 8px; padding: 16px 20px; margin: 20px 0; font-size: 13px; line-height: 1.6; color: #3D4D6E; }
-                .directory-title { font-weight: 700; display: block; margin-bottom: 8px; color: #161F36; font-size: 13px; }
-                .directory-item { margin-bottom: 5px; }
-                .directory-item:last-child { margin-bottom: 0; }
+                .status-badge { display: inline-block; background-color: #E8EFF4; color: #161F36; border: 1px solid #BACBD8; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 6px; margin-top: 2px; }
+                .notice { background-color: #F4F7FA; border: 1px solid #DCE4EC; border-left: 3px solid #161F36; border-radius: 6px; padding: 14px 16px; margin: 18px 0; font-size: 13px; line-height: 1.5; color: #3D4D6E; }
+                .directory-box { background-color: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 8px; padding: 16px 20px; margin: 20px 0; font-size: 13px; line-height: 1.6; color: #3D4D6E; }
                 .btn-container { text-align: center; margin: 28px 0 16px 0; }
-                .btn { display: inline-block; background: #161F36; color: #FFFFFF !important; text-decoration: none; padding: 13px 32px; border-radius: 8px; font-weight: 700; font-size: 14px; letter-spacing: 0.3px; box-shadow: 0 4px 12px rgba(22, 31, 54, 0.15); }
-                .footer { background: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; line-height: 1.5; color: #6C7A92; border-top: 1px solid #E2DDD5; }
+                .btn { display: inline-block; background-color: #161F36; color: #FFFFFF !important; text-decoration: none; padding: 13px 32px; border-radius: 8px; font-weight: 700; font-size: 14px; letter-spacing: 0.3px; }
+                .footer { background-color: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; line-height: 1.5; color: #6C7A92; border-top: 1px solid #E2DDD5; }
               </style>
             </head>
-            <body>
-              <div class="container">
-                <div class="header">
-                  <div class="header-logo">Safe<span style="color: #BACBD8;">Space</span></div>
-                  <div class="header-sub">Student Wellness &amp; Mental Health Portal • USTP Balubal</div>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FAF7F2; margin: 0; padding: 28px 12px; color: #161F36;">
+              <div class="container" style="max-width: 580px; margin: 0 auto; background-color: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(22, 31, 54, 0.05); border: 1px solid #E2DDD5;">
+                <div class="header" style="background-color: #161F36; color: #FFFFFF; padding: 32px 24px 26px; text-align: center;">
+                  <div class="header-logo" style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin: 0; color: #FFFFFF;">Safe<span style="color: #BACBD8;">Space</span></div>
+                  <div class="header-sub" style="margin: 6px 0 0 0; color: #BACBD8; font-size: 12px; font-weight: 500; letter-spacing: 0.3px;">Student Wellness &amp; Mental Health Portal • USTP Balubal</div>
                 </div>
-                <div class="content">
-                  <h2 class="greeting">Welcome to SafeSpace, %s! 👋</h2>
-                  <p class="intro">
+                <div class="content" style="padding: 32px 28px;">
+                  <h2 class="greeting" style="font-size: 18px; font-weight: 700; color: #161F36; margin: 0 0 10px 0;">Welcome to SafeSpace, %s! 👋</h2>
+                  <p class="intro" style="font-size: 14px; line-height: 1.6; color: #3D4D6E; margin: 0 0 20px 0;">
                     Your student account has been successfully registered. You now have full access to campus mental health resources, anonymous venting rooms, and confidential peer or professional counseling.
                   </p>
 
-                  <div class="card-box">
-                    <div class="field">
-                      <div class="label">Institutional ID / Username</div>
-                      <div class="id-value">%s</div>
+                  <div class="card-box" style="background-color: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 10px; padding: 18px 20px; margin: 20px 0;">
+                    <div class="field" style="padding: 4px 0;">
+                      <div class="label" style="font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px;">Institutional ID / Username</div>
+                      <div class="id-value" style="font-family: 'Consolas', 'Courier New', monospace; font-size: 17px; font-weight: 700; color: #161F36; letter-spacing: 0.5px;">%s</div>
                     </div>
-                    <div class="divider"></div>
-                    <div class="field">
-                      <div class="label">Department &amp; Year Level</div>
-                      <div class="text-value">%s</div>
+                    <div class="divider" style="height: 1px; background-color: #ECE6DB; margin: 10px 0;"></div>
+                    <div class="field" style="padding: 4px 0;">
+                      <div class="label" style="font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px;">Department &amp; Year Level</div>
+                      <div class="text-value" style="font-size: 14px; font-weight: 600; color: #161F36;">%s</div>
                     </div>
-                    <div class="divider"></div>
-                    <div class="field">
-                      <div class="label">Account Status</div>
-                      <div><span class="status-badge">Active &amp; Verified</span></div>
+                    <div class="divider" style="height: 1px; background-color: #ECE6DB; margin: 10px 0;"></div>
+                    <div class="field" style="padding: 4px 0;">
+                      <div class="label" style="font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px;">Account Status</div>
+                      <div><span class="status-badge" style="display: inline-block; background-color: #E8EFF4; color: #161F36; border: 1px solid #BACBD8; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 6px; margin-top: 2px;">Active &amp; Verified</span></div>
                     </div>
                   </div>
 
-                  <div class="notice">
-                    <span class="notice-title">🔒 Confidentiality &amp; Privacy Protected</span>
+                  <div class="notice" style="background-color: #F4F7FA; border: 1px solid #DCE4EC; border-left: 3px solid #161F36; border-radius: 6px; padding: 14px 16px; margin: 18px 0; font-size: 13px; line-height: 1.5; color: #3D4D6E;">
+                    <strong style="color: #161F36; font-size: 13px; display: block; margin-bottom: 4px;">Confidentiality &amp; Privacy Protected</strong>
                     Because you configured your private password during registration, your password is cryptographically encrypted and is never sent by email. Across public venting boards and peer chats, your real identity is completely safeguarded behind an anonymous pseudonym.
                   </div>
 
-                  <div class="directory-box">
-                    <span class="directory-title">Campus Support &amp; Emergency Directory</span>
-                    <div class="directory-item"><strong>USTP Balubal Guidance Office:</strong> guidance.balubal@ustp.edu.ph</div>
-                    <div class="directory-item"><strong>NCMH National Crisis Hotline:</strong> 1553 (Toll-Free Nationwide) | 0917-899-USAP (8727)</div>
-                    <div class="directory-item"><strong>Hopeline Philippines:</strong> 0917-558-4673 | (02) 8804-4673</div>
+                  <div class="directory-box" style="background-color: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 8px; padding: 16px 20px; margin: 20px 0; font-size: 13px; line-height: 1.6; color: #3D4D6E;">
+                    <strong style="color: #161F36; font-size: 13px; display: block; margin-bottom: 8px;">Campus Support &amp; Emergency Directory</strong>
+                    <div style="margin-bottom: 5px;"><strong style="color: #161F36;">USTP Balubal Guidance Office:</strong> guidance.balubal@ustp.edu.ph</div>
+                    <div style="margin-bottom: 5px;"><strong style="color: #161F36;">NCMH National Crisis Hotline:</strong> 1553 (Toll-Free Nationwide) | 0917-899-USAP (8727)</div>
+                    <div style="margin-bottom: 0;"><strong style="color: #161F36;">Hopeline Philippines:</strong> 0917-558-4673 | (02) 8804-4673</div>
                   </div>
 
-                  <div class="btn-container">
-                    <a href="%s" class="btn">Sign In to SafeSpace</a>
+                  <div class="btn-container" style="text-align: center; margin: 28px 0 16px 0;">
+                    <a href="%s" class="btn" style="display: inline-block; background-color: #161F36; color: #FFFFFF !important; text-decoration: none; padding: 13px 32px; border-radius: 8px; font-weight: 700; font-size: 14px; letter-spacing: 0.3px;">Sign In to SafeSpace</a>
                   </div>
                 </div>
-                <div class="footer">
+                <div class="footer" style="background-color: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; line-height: 1.5; color: #6C7A92; border-top: 1px solid #E2DDD5;">
                   This is an automated notification confirming your registration on SafeSpace USTP Balubal.<br>
                   If you did not register for this account, please immediately inform the campus guidance center.
                 </div>
@@ -730,45 +714,45 @@ public class EmailService {
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <style>
-                body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FAF7F2; margin: 0; padding: 28px 12px; color: #161F36; -webkit-font-smoothing: antialiased; }
-                .container { max-width: 560px; margin: 0 auto; background: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(22, 31, 54, 0.05); border: 1px solid #E2DDD5; }
-                .header { background: #161F36; color: #FFFFFF; padding: 32px 24px 26px; text-align: center; }
-                .header-logo { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FAF7F2; margin: 0; padding: 28px 12px; color: #161F36; -webkit-font-smoothing: antialiased; }
+                .container { max-width: 560px; margin: 0 auto; background-color: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(22, 31, 54, 0.05); border: 1px solid #E2DDD5; }
+                .header { background-color: #161F36; color: #FFFFFF; padding: 32px 24px 26px; text-align: center; }
+                .header-logo { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin: 0; color: #FFFFFF; }
                 .header-sub { margin: 6px 0 0 0; color: #BACBD8; font-size: 12px; font-weight: 500; letter-spacing: 0.3px; }
                 .content { padding: 32px 28px; text-align: center; }
                 .greeting { font-size: 18px; font-weight: 700; color: #161F36; margin: 0 0 10px 0; }
                 .desc { font-size: 14px; line-height: 1.6; color: #3D4D6E; margin: 0 0 20px 0; }
-                .otp-box { background: #FAF8F5; border: 1px solid #BACBD8; border-radius: 10px; padding: 20px; margin: 22px 0; }
+                .otp-box { background-color: #FAF8F5; border: 1px solid #BACBD8; border-radius: 10px; padding: 20px; margin: 22px 0; }
                 .otp-label { font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 1px; margin-bottom: 6px; }
                 .otp-code { font-family: 'Consolas', 'Courier New', monospace; font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #161F36; }
                 .expiry-note { font-size: 12px; color: #6C7A92; margin-top: 6px; }
-                .notice { background: #F4F7FA; border: 1px solid #DCE4EC; border-left: 3px solid #161F36; border-radius: 6px; padding: 14px 16px; margin: 20px 0; font-size: 13px; color: #3D4D6E; text-align: left; line-height: 1.5; }
-                .footer { background: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; line-height: 1.5; color: #6C7A92; border-top: 1px solid #E2DDD5; }
+                .notice { background-color: #F4F7FA; border: 1px solid #DCE4EC; border-left: 3px solid #161F36; border-radius: 6px; padding: 14px 16px; margin: 20px 0; font-size: 13px; color: #3D4D6E; text-align: left; line-height: 1.5; }
+                .footer { background-color: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; line-height: 1.5; color: #6C7A92; border-top: 1px solid #E2DDD5; }
               </style>
             </head>
-            <body>
-              <div class="container">
-                <div class="header">
-                  <div class="header-logo">Safe<span style="color: #BACBD8;">Space</span></div>
-                  <div class="header-sub">Account Recovery Verification • USTP Balubal</div>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FAF7F2; margin: 0; padding: 28px 12px; color: #161F36;">
+              <div class="container" style="max-width: 560px; margin: 0 auto; background-color: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(22, 31, 54, 0.05); border: 1px solid #E2DDD5;">
+                <div class="header" style="background-color: #161F36; color: #FFFFFF; padding: 32px 24px 26px; text-align: center;">
+                  <div class="header-logo" style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin: 0; color: #FFFFFF;">Safe<span style="color: #BACBD8;">Space</span></div>
+                  <div class="header-sub" style="margin: 6px 0 0 0; color: #BACBD8; font-size: 12px; font-weight: 500; letter-spacing: 0.3px;">Account Recovery Verification • USTP Balubal</div>
                 </div>
-                <div class="content">
-                  <h2 class="greeting">Hello, %s! 👋</h2>
-                  <div class="desc">
+                <div class="content" style="padding: 32px 28px; text-align: center;">
+                  <h2 class="greeting" style="font-size: 18px; font-weight: 700; color: #161F36; margin: 0 0 10px 0;">Hello, %s! 👋</h2>
+                  <div class="desc" style="font-size: 14px; line-height: 1.6; color: #3D4D6E; margin: 0 0 20px 0;">
                     We received a request to recover your SafeSpace account. Enter the verification code below to proceed:
                   </div>
 
-                  <div class="otp-box">
-                    <div class="otp-label">Verification Code</div>
-                    <div class="otp-code">%s</div>
-                    <div class="expiry-note">Code expires in <strong>5 minutes</strong></div>
+                  <div class="otp-box" style="background-color: #FAF8F5; border: 1px solid #BACBD8; border-radius: 10px; padding: 20px; margin: 22px 0;">
+                    <div class="otp-label" style="font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 1px; margin-bottom: 6px;">Verification Code</div>
+                    <div class="otp-code" style="font-family: 'Consolas', 'Courier New', monospace; font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #161F36;">%s</div>
+                    <div class="expiry-note" style="font-size: 12px; color: #6C7A92; margin-top: 6px;">Code expires in <strong>5 minutes</strong></div>
                   </div>
 
-                  <div class="notice">
+                  <div class="notice" style="background-color: #F4F7FA; border: 1px solid #DCE4EC; border-left: 3px solid #161F36; border-radius: 6px; padding: 14px 16px; margin: 20px 0; font-size: 13px; color: #3D4D6E; text-align: left; line-height: 1.5;">
                     <strong style="color: #161F36;">Security Reminder:</strong> Never share this verification code with anyone. SafeSpace personnel will never ask for your code. If you did not request this, you can safely ignore this email.
                   </div>
                 </div>
-                <div class="footer">
+                <div class="footer" style="background-color: #FAF8F5; padding: 20px; text-align: center; font-size: 12px; line-height: 1.5; color: #6C7A92; border-top: 1px solid #E2DDD5;">
                   SafeSpace USTP Balubal • Student Wellness &amp; Mental Health Portal<br>
                   This is an automated security message.
                 </div>
