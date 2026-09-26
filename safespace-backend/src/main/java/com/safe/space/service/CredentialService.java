@@ -157,13 +157,14 @@ public class CredentialService {
 
         String rawPassword = generateDefaultPassword(request.getFullName(), request.getInstitutionalId());
         String role = normalizeRole(request.getRole());
+        String cleanEmail = request.getEmail().trim();
 
         User user = User.builder()
-                .institutionalId(request.getInstitutionalId())
+                .institutionalId(request.getInstitutionalId().trim())
                 .username(username)
                 .passwordHash(ENCODER.encode(rawPassword))
-                .fullName(request.getFullName())
-                .email(request.getEmail())
+                .fullName(request.getFullName().trim())
+                .email(cleanEmail)
                 .phoneNumber(request.getPhoneNumber())
                 .department(request.getDepartment())
                 .yearLevel(request.getYearLevel())
@@ -175,19 +176,31 @@ public class CredentialService {
 
         userRepository.save(user);
 
-        // Send Welcome & Credential email via Brevo SMTP (async)
-        emailService.sendWelcomeEmail(user.getEmail(), user.getFullName(), user.getUsername(), rawPassword);
+        // Send Welcome & Credential email via Brevo REST API (async)
+        if ("PROFESSIONAL".equalsIgnoreCase(user.getRole())) {
+            emailService.sendProfessionalWelcomeEmail(
+                    user.getEmail(),
+                    user.getFullName(),
+                    user.getInstitutionalId(),
+                    user.getUsername(),
+                    rawPassword,
+                    user.getDepartment() != null ? user.getDepartment() : "Campus Mental Health Professional"
+            );
+        } else {
+            emailService.sendWelcomeEmail(user.getEmail(), user.getFullName(), user.getUsername(), rawPassword);
+        }
 
-        log.info("User registered: institutionalId={}, username={}, role={}",
-                user.getInstitutionalId(), user.getUsername(), user.getRole());
+        log.info("User registered: institutionalId={}, username={}, role={}, email={}",
+                user.getInstitutionalId(), user.getUsername(), user.getRole(), user.getEmail());
 
         return RegisterUserResponse.builder()
                 .institutionalId(user.getInstitutionalId())
                 .username(user.getUsername())
                 .generatedPassword(rawPassword)
                 .fullName(user.getFullName())
+                .email(user.getEmail())
                 .role(user.getRole())
-                .message("Account created. Password must be changed on first login.")
+                .message("Account created successfully. Credentials email dispatched to " + user.getEmail())
                 .build();
     }
 
@@ -399,10 +412,21 @@ public class CredentialService {
         user.setForcePasswordChange(true);
         userRepository.save(user);
 
-        emailService.sendWelcomeEmail(user.getEmail(), user.getFullName(), user.getUsername(), rawPassword);
-        log.info("Welcome email resent by admin for username={}", user.getUsername());
+        if ("PROFESSIONAL".equalsIgnoreCase(user.getRole())) {
+            emailService.sendProfessionalWelcomeEmail(
+                    user.getEmail(),
+                    user.getFullName(),
+                    user.getInstitutionalId(),
+                    user.getUsername(),
+                    rawPassword,
+                    user.getDepartment() != null ? user.getDepartment() : "Campus Mental Health Professional"
+            );
+        } else {
+            emailService.sendWelcomeEmail(user.getEmail(), user.getFullName(), user.getUsername(), rawPassword);
+        }
+        log.info("Credentials email resent by admin for username={}, email={}", user.getUsername(), user.getEmail());
 
-        return Map.of("message", "Welcome email with new credentials dispatched to " + user.getEmail(),
+        return Map.of("message", "Credentials email with Institutional ID and initial password dispatched to " + user.getEmail(),
                 "email", user.getEmail());
     }
 
@@ -549,11 +573,19 @@ public class CredentialService {
 
     private void validateRegistration(RegisterUserRequest req) {
         if (req.getInstitutionalId() == null || req.getInstitutionalId().isBlank())
-            throw new IllegalArgumentException("institutionalId is required.");
+            throw new IllegalArgumentException("Institutional ID is required.");
         if (req.getFullName() == null || req.getFullName().isBlank())
-            throw new IllegalArgumentException("fullName is required.");
+            throw new IllegalArgumentException("Full Name is required.");
         if (req.getRole() == null || req.getRole().isBlank())
-            throw new IllegalArgumentException("role is required.");
+            throw new IllegalArgumentException("Role is required.");
+
+        if (req.getEmail() == null || req.getEmail().isBlank()) {
+            throw new IllegalArgumentException("Institutional Email is required so login credentials can be delivered.");
+        }
+        String cleanEmail = req.getEmail().trim();
+        if (!cleanEmail.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            throw new IllegalArgumentException("Please provide a valid institutional email address (e.g. name@ustp.edu.ph).");
+        }
     }
 
     private String normalizeRole(String role) {

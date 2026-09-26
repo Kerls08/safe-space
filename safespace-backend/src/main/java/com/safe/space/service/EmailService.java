@@ -87,6 +87,28 @@ public class EmailService {
     }
 
     /**
+     * Send Professional Welcome & Initial Credentials (Institutional ID & Temporary Password) email asynchronously.
+     * Mental health professionals (Psychometrician, Psychologist, Guidance Counselor) are provisioned by Admin
+     * and must receive their official Institutional ID and temporary password to log in.
+     */
+    public void sendProfessionalWelcomeEmail(String toEmail, String fullName, String institutionalId, String username, String tempPassword, String designation) {
+        if (!shouldSend(toEmail)) return;
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                String subject = "SafeSpace — Mental Health Professional Account Credentials | USTP Balubal";
+                String htmlBody = buildProfessionalWelcomeHtml(fullName, institutionalId, username, tempPassword, designation);
+                sendBrevoMail(toEmail, fullName, subject, htmlBody);
+                log.info("Professional credentials email dispatched successfully to {} ({}) for Institutional ID {}",
+                        toEmail, fullName, institutionalId);
+            } catch (Exception e) {
+                log.warn("Failed to send professional credentials email to {} ({}) for ID {}: {}",
+                        username, toEmail, institutionalId, e.getMessage());
+            }
+        });
+    }
+
+    /**
      * Send Password Reset notification email asynchronously.
      */
     public void sendPasswordResetEmail(String toEmail, String fullName, String username, String newTempPassword) {
@@ -312,6 +334,125 @@ public class EmailService {
     }
 
     // ── HTML Template Generators ──
+
+    private String buildProfessionalWelcomeHtml(String fullName, String institutionalId, String username, String tempPassword, String designation) {
+        String cleanDept = (designation != null && !designation.isBlank()) ? designation.trim() : "Campus Mental Health Professional";
+        
+        String usernameHtml = "";
+        if (username != null && !username.isBlank() && !username.equalsIgnoreCase(institutionalId)) {
+            usernameHtml = """
+                <div class="field" style="margin-top: 12px;">
+                  <div class="label">System Username</div>
+                  <div class="value" style="font-size: 16px; font-weight: 700; color: #161F36;">%s</div>
+                </div>
+                """.formatted(escapeHtml(username));
+        }
+
+        String loginUrl = appUrl != null && !appUrl.isBlank() ? appUrl.trim() : "http://localhost:5173";
+        if (!loginUrl.endsWith(".html")) {
+            if (loginUrl.endsWith("/")) {
+                loginUrl += "login.html";
+            } else {
+                loginUrl += "/login.html";
+            }
+        }
+
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 24px 12px; color: #1e293b; }
+                .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
+                .header { background: linear-gradient(135deg, #161F36 0%%, #1E2B4A 55%%, #2A3B66 100%%); color: #ffffff; padding: 36px 24px 30px; text-align: center; }
+                .header-logo { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
+                .header-sub { margin: 6px 0 0 0; opacity: 0.92; font-size: 13px; font-weight: 400; letter-spacing: 0.3px; color: #BACBD8; }
+                .role-badge { display: inline-block; background: rgba(186, 203, 216, 0.2); border: 1px solid rgba(186, 203, 216, 0.4); color: #BACBD8; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 4px 12px; border-radius: 20px; margin-top: 12px; }
+                .content { padding: 32px 28px; }
+                .greeting { font-size: 19px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
+                .intro { font-size: 14px; line-height: 1.6; color: #334155; margin-bottom: 20px; }
+                .card-box { background: #f8fafc; border: 1px solid #cbd5e1; border-left: 5px solid #161F36; border-radius: 10px; padding: 20px; margin: 20px 0; }
+                .field { margin-bottom: 14px; }
+                .field:last-child { margin-bottom: 0; }
+                .label { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px; }
+                .id-value { font-family: 'Consolas', 'Courier New', monospace; font-size: 18px; font-weight: 800; color: #161F36; letter-spacing: 0.5px; }
+                .password-badge { display: inline-block; background: #e0e7ff; color: #1e1b4b; padding: 8px 16px; border-radius: 6px; font-family: 'Consolas', 'Courier New', monospace; font-size: 18px; font-weight: 800; letter-spacing: 1px; border: 1px dashed #6366f1; }
+                .designation-pill { display: inline-block; background: #f1f5f9; color: #334155; font-size: 13px; font-weight: 600; padding: 4px 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin-top: 3px; }
+                .notice { background: #fefce8; border: 1px solid #fef08a; border-left: 4px solid #eab308; border-radius: 8px; padding: 14px 16px; color: #854d0e; font-size: 13px; line-height: 1.5; margin: 22px 0; }
+                .btn-container { text-align: center; margin: 30px 0 16px 0; }
+                .btn { display: inline-block; background: #161F36; color: #ffffff !important; text-decoration: none; padding: 13px 32px; border-radius: 8px; font-weight: 700; font-size: 15px; box-shadow: 0 4px 12px rgba(22, 31, 54, 0.25); }
+                .steps-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 20px; margin: 20px 0; font-size: 13px; line-height: 1.6; color: #334155; }
+                .steps-box ol { margin: 8px 0 0 0; padding-left: 20px; }
+                .steps-box li { margin-bottom: 6px; }
+                .footer { background: #f8fafc; padding: 22px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; line-height: 1.5; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <div class="header-logo">SafeSpace</div>
+                  <div class="header-sub">Campus Mental Health & Clinical Services Portal • USTP Balubal</div>
+                  <div class="role-badge">Authorized Mental Health Professional</div>
+                </div>
+                <div class="content">
+                  <div class="greeting">Dear %s,</div>
+                  <div class="intro">
+                    An authorized campus mental health professional account has been provisioned for you on the <strong>SafeSpace</strong> system. 
+                    Below are your official access credentials:
+                  </div>
+
+                  <div class="card-box">
+                    <div class="field">
+                      <div class="label">Institutional ID (Sign-In ID)</div>
+                      <div class="id-value">%s</div>
+                    </div>
+                    %s
+                    <div class="field" style="margin-top: 12px;">
+                      <div class="label">Clinical Designation / Office</div>
+                      <div class="designation-pill">%s</div>
+                    </div>
+                    <div class="field" style="margin-top: 16px;">
+                      <div class="label">Initial Temporary Password</div>
+                      <div style="margin-top: 4px;"><span class="password-badge">%s</span></div>
+                    </div>
+                  </div>
+
+                  <div class="notice">
+                    🔒 <strong>Required Action on First Login:</strong> For institutional security and student record privacy, you will be prompted to change this temporary password to your own secure permanent password immediately upon signing in.
+                  </div>
+
+                  <div class="btn-container">
+                    <a href="%s" class="btn">Sign In to Professional Portal</a>
+                  </div>
+
+                  <div class="steps-box">
+                    <strong>Quick Sign-In Steps:</strong>
+                    <ol>
+                      <li>Open the SafeSpace sign-in portal via the button above.</li>
+                      <li>Enter your <strong>Institutional ID</strong> (<code>%s</code>) and your <strong>Temporary Password</strong>.</li>
+                      <li>Set your new permanent password when prompted to access the Professional Dashboard.</li>
+                    </ol>
+                  </div>
+                </div>
+                <div class="footer">
+                  <strong>Confidential Communication</strong> — SafeSpace System • USTP Balubal Guidance & Counseling Center.<br>
+                  If you did not anticipate this notification, please contact the campus system administrator immediately.
+                </div>
+              </div>
+            </body>
+            </html>
+            """.formatted(
+                escapeHtml(fullName),
+                escapeHtml(institutionalId),
+                usernameHtml,
+                escapeHtml(cleanDept),
+                escapeHtml(tempPassword),
+                escapeHtml(loginUrl),
+                escapeHtml(institutionalId)
+        );
+    }
 
     private String buildWelcomeHtml(String fullName, String username, String tempPassword) {
         return """
