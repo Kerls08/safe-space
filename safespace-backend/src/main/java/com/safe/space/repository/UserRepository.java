@@ -32,4 +32,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /** Search by name or institutional ID (case-insensitive). */
     @Query("SELECT u FROM User u WHERE LOWER(u.fullName) LIKE LOWER(CONCAT('%', :query, '%')) OR u.institutionalId LIKE CONCAT('%', :query, '%')")
     List<User> searchByNameOrId(String query);
+
+    /** Active professionals who have an email address (for crisis alert dispatch). */
+    List<User> findByRoleAndActiveTrueAndEmailIsNotNull(String role);
 }

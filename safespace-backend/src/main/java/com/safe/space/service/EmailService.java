@@ -162,6 +162,230 @@ public class EmailService {
     }
 
     /**
+     * Send Crisis Alert Notification email to a professional asynchronously.
+     *
+     * Dispatched when the system detects:
+     *   - Crisis keywords in a student rant/post (suicidal ideation, self-harm, etc.)
+     *   - A high-energy post (energy score >= 8)
+     *   - Repeat crisis pattern from the same pseudonym
+     *   - A crisis-flagged chat session
+     *
+     * @param toEmail        professional's email address
+     * @param professionalName  full name of the professional
+     * @param alertType      e.g. "CRISIS_POST", "HIGH_ENERGY_POST", "REPEAT_CRISIS", "CRISIS_CHAT"
+     * @param severity       e.g. "CRITICAL", "HIGH", "MODERATE"
+     * @param pseudonym      anonymous identity of the student involved
+     * @param alertTitle     short title of the alert
+     * @param alertMessage   detailed alert message / content excerpt
+     * @param emotionTag     emotion tag from the source (may be null)
+     * @param energyScore    energy score from the source (may be null)
+     * @param flaggedKeywords crisis keywords detected (may be null)
+     * @param alertId        unique alert ID for reference
+     */
+    public void sendCrisisAlertEmail(String toEmail, String professionalName,
+                                      String alertType, String severity,
+                                      String pseudonym, String alertTitle,
+                                      String alertMessage, String emotionTag,
+                                      Integer energyScore, String flaggedKeywords,
+                                      String alertId) {
+        if (!shouldSend(toEmail)) return;
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                String subject = buildCrisisEmailSubject(severity, alertType);
+                String htmlBody = buildCrisisAlertHtml(
+                        professionalName, alertType, severity, pseudonym,
+                        alertTitle, alertMessage, emotionTag, energyScore,
+                        flaggedKeywords, alertId);
+                sendBrevoMail(toEmail, professionalName, subject, htmlBody);
+                log.info("🚨 Crisis alert email dispatched to {} ({}) for alert {}",
+                        toEmail, professionalName, alertId);
+            } catch (Exception e) {
+                log.warn("Failed to send crisis alert email to {} for alert {}: {}",
+                        toEmail, alertId, e.getMessage());
+            }
+        });
+    }
+
+    private String buildCrisisEmailSubject(String severity, String alertType) {
+        String severityPrefix = switch (severity != null ? severity.toUpperCase() : "") {
+            case "CRITICAL" -> "🔴 CRITICAL";
+            case "HIGH" -> "🟠 HIGH";
+            case "MODERATE" -> "🟡 MODERATE";
+            default -> "⚠️ ALERT";
+        };
+        String typeLabel = switch (alertType != null ? alertType.toUpperCase() : "") {
+            case "CRISIS_POST" -> "Crisis Keywords Detected";
+            case "HIGH_ENERGY_POST" -> "High Energy Post Detected";
+            case "REPEAT_CRISIS" -> "Repeat Crisis Pattern";
+            case "CRISIS_CHAT" -> "Crisis Chat Session";
+            case "ENERGY_SPIKE" -> "Energy Spike Detected";
+            default -> "Crisis Alert";
+        };
+        return "SafeSpace " + severityPrefix + " — " + typeLabel;
+    }
+
+    private String buildCrisisAlertHtml(String professionalName, String alertType, String severity,
+                                         String pseudonym, String alertTitle, String alertMessage,
+                                         String emotionTag, Integer energyScore,
+                                         String flaggedKeywords, String alertId) {
+        String severityColor = switch (severity != null ? severity.toUpperCase() : "") {
+            case "CRITICAL" -> "#9B1C1C";
+            case "HIGH" -> "#B45309";
+            case "MODERATE" -> "#92400E";
+            default -> "#3D4D6E";
+        };
+        String severityBg = switch (severity != null ? severity.toUpperCase() : "") {
+            case "CRITICAL" -> "#FEE2E2";
+            case "HIGH" -> "#FEF3C7";
+            case "MODERATE" -> "#FEF9C3";
+            default -> "#F4F7FA";
+        };
+        String severityBorder = switch (severity != null ? severity.toUpperCase() : "") {
+            case "CRITICAL" -> "#FECACA";
+            case "HIGH" -> "#FDE68A";
+            case "MODERATE" -> "#FDE68A";
+            default -> "#DCE4EC";
+        };
+
+        String typeLabel = switch (alertType != null ? alertType.toUpperCase() : "") {
+            case "CRISIS_POST" -> "Crisis Keywords Detected in Post";
+            case "HIGH_ENERGY_POST" -> "High Energy Post";
+            case "REPEAT_CRISIS" -> "Repeat Crisis Pattern";
+            case "CRISIS_CHAT" -> "Crisis Chat Session Initiated";
+            case "ENERGY_SPIKE" -> "Sudden Energy Spike";
+            default -> "Crisis Alert";
+        };
+
+        // Build optional detail rows
+        StringBuilder detailRows = new StringBuilder();
+
+        if (pseudonym != null && !pseudonym.isBlank()) {
+            detailRows.append("""
+                    <div style="padding: 6px 0;">
+                      <div style="font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px;">Student Pseudonym</div>
+                      <div style="font-size: 14px; font-weight: 600; color: #161F36;">%s</div>
+                    </div>
+                    <div style="height: 1px; background-color: #ECE6DB; margin: 8px 0;"></div>
+                """.formatted(escapeHtml(pseudonym)));
+        }
+        if (emotionTag != null && !emotionTag.isBlank()) {
+            detailRows.append("""
+                    <div style="padding: 6px 0;">
+                      <div style="font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px;">Emotion Tag</div>
+                      <div style="font-size: 14px; font-weight: 600; color: #161F36;">%s</div>
+                    </div>
+                    <div style="height: 1px; background-color: #ECE6DB; margin: 8px 0;"></div>
+                """.formatted(escapeHtml(emotionTag)));
+        }
+        if (energyScore != null) {
+            detailRows.append("""
+                    <div style="padding: 6px 0;">
+                      <div style="font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px;">Energy / Distress Level</div>
+                      <div style="font-size: 14px; font-weight: 700; color: #161F36;">%d / 10</div>
+                    </div>
+                    <div style="height: 1px; background-color: #ECE6DB; margin: 8px 0;"></div>
+                """.formatted(energyScore));
+        }
+        if (flaggedKeywords != null && !flaggedKeywords.isBlank()) {
+            detailRows.append("""
+                    <div style="padding: 6px 0;">
+                      <div style="font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px;">Flagged Keywords</div>
+                      <div style="font-size: 13px; font-weight: 600; color: %s; background-color: %s; border: 1px solid %s; border-radius: 6px; padding: 6px 10px; display: inline-block;">%s</div>
+                    </div>
+                    <div style="height: 1px; background-color: #ECE6DB; margin: 8px 0;"></div>
+                """.formatted(severityColor, severityBg, severityBorder, escapeHtml(flaggedKeywords)));
+        }
+
+        // Content excerpt
+        String contentExcerpt = "";
+        if (alertMessage != null && !alertMessage.isBlank()) {
+            String truncated = alertMessage.length() > 300 ? alertMessage.substring(0, 300) + "…" : alertMessage;
+            contentExcerpt = """
+                    <div style="padding: 6px 0;">
+                      <div style="font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px;">Content Excerpt</div>
+                      <div style="font-size: 13px; line-height: 1.5; color: #3D4D6E; background-color: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 6px; padding: 10px 12px; font-style: italic;">"%s"</div>
+                    </div>
+                """.formatted(escapeHtml(truncated));
+        }
+
+        // Alert ID row
+        String alertIdRow = "";
+        if (alertId != null && !alertId.isBlank()) {
+            alertIdRow = """
+                    <div style="padding: 6px 0;">
+                      <div style="font-size: 11px; text-transform: uppercase; color: #6C7A92; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px;">Alert Reference ID</div>
+                      <div style="font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; font-weight: 600; color: #6C7A92;">%s</div>
+                    </div>
+                """.formatted(escapeHtml(alertId));
+        }
+
+        // Resolve crisis-alerts page URL
+        String crisisAlertsUrl = appUrl != null && !appUrl.isBlank() ? appUrl.trim() : "http://localhost:5173";
+        crisisAlertsUrl = crisisAlertsUrl.replaceAll("/(index|landing|login)\\.html$", "");
+        if (crisisAlertsUrl.endsWith("/")) crisisAlertsUrl = crisisAlertsUrl.substring(0, crisisAlertsUrl.length() - 1);
+        crisisAlertsUrl += "/crisis-alerts.html";
+
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FAF7F2; margin: 0; padding: 28px 12px; color: #161F36;">
+              <div style="max-width: 580px; margin: 0 auto; background-color: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(22, 31, 54, 0.05); border: 1px solid #E2DDD5;">
+                <div style="background-color: #161F36; color: #FFFFFF; padding: 32px 24px 26px; text-align: center;">
+                  <div style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin: 0; color: #FFFFFF;">Safe<span style="color: #BACBD8;">Space</span></div>
+                  <div style="margin: 6px 0 0 0; color: #BACBD8; font-size: 12px; font-weight: 500; letter-spacing: 0.3px;">Crisis Monitoring &amp; Alert System • USTP Balubal</div>
+                </div>
+
+                <div style="background-color: %s; border-bottom: 1px solid %s; padding: 14px 28px; text-align: center;">
+                  <span style="display: inline-block; background-color: #FFFFFF; color: %s; border: 1px solid %s; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 4px 14px; border-radius: 20px;">%s — %s</span>
+                </div>
+
+                <div style="padding: 28px 28px 20px;">
+                  <h2 style="font-size: 17px; font-weight: 700; color: #161F36; margin: 0 0 8px 0;">%s</h2>
+                  <p style="font-size: 14px; line-height: 1.6; color: #3D4D6E; margin: 0 0 20px 0;">
+                    Dear <strong>%s</strong>, a new crisis alert requires your immediate attention. The SafeSpace monitoring system has detected concerning activity from a student.
+                  </p>
+
+                  <div style="background-color: #FAF8F5; border: 1px solid #E2DDD5; border-radius: 10px; padding: 16px 18px; margin: 16px 0;">
+                    %s
+                    %s
+                    %s
+                  </div>
+
+                  <div style="background-color: #F4F7FA; border: 1px solid #DCE4EC; border-left: 3px solid #161F36; border-radius: 6px; padding: 13px 16px; color: #3D4D6E; font-size: 13px; line-height: 1.5; margin: 20px 0;">
+                    <strong style="color: #161F36;">Recommended Action:</strong> Please review this alert in the SafeSpace Crisis Alerts dashboard. If the student is in immediate danger, contact campus security or emergency services.
+                  </div>
+
+                  <div style="text-align: center; margin: 28px 0 16px 0;">
+                    <a href="%s" style="display: inline-block; background-color: #161F36; color: #FFFFFF !important; text-decoration: none; padding: 13px 32px; border-radius: 8px; font-weight: 700; font-size: 14px; letter-spacing: 0.3px;">View Crisis Alerts Dashboard</a>
+                  </div>
+                </div>
+                <div style="background-color: #FAF8F5; padding: 18px 20px; text-align: center; font-size: 11px; line-height: 1.5; color: #6C7A92; border-top: 1px solid #E2DDD5;">
+                  <strong>Confidential</strong> — This automated alert is sent only to authorized SafeSpace mental health professionals.<br>
+                  SafeSpace Crisis Monitoring • USTP Balubal Guidance &amp; Counseling Center
+                </div>
+              </div>
+            </body>
+            </html>
+            """.formatted(
+                severityBg, severityBorder,                     // banner bg, banner border
+                severityColor, severityBorder,                  // badge text color, badge border
+                escapeHtml(severity != null ? severity.toUpperCase() : "ALERT"),  // severity label
+                escapeHtml(typeLabel),                          // type label
+                escapeHtml(alertTitle != null ? alertTitle : typeLabel),  // h2 title
+                escapeHtml(professionalName != null ? professionalName : "Professional"), // greeting
+                detailRows.toString(),                          // detail rows
+                contentExcerpt,                                 // content excerpt
+                alertIdRow,                                     // alert ID
+                escapeHtml(crisisAlertsUrl)                     // CTA link
+        );
+    }
+
+    /**
      * Send Student Registration Welcome SMS notification asynchronously.
      */
     public void sendStudentRegistrationWelcomeSms(String rawPhoneNumber, String fullName, String username) {

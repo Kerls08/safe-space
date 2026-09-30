@@ -3,8 +3,10 @@ package com.safe.space.service;
 import com.safe.space.dto.ChatSessionRequest;
 import com.safe.space.dto.ChatSessionResponse;
 import com.safe.space.model.CrisisAlert;
+import com.safe.space.model.User;
 import com.safe.space.repository.CrisisAlertRepository;
 import com.safe.space.repository.PostRepository;
+import com.safe.space.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -42,6 +44,8 @@ public class CrisisAlertService {
     private final CrisisAlertRepository alertRepository;
     private final AnonymousChatService chatService;
     private final PostRepository postRepository;
+    private final EmailService emailService;
+    private final UserRepository userRepository;
 
     // ── 1. ALERT GENERATION ──
 
@@ -78,6 +82,9 @@ public class CrisisAlertService {
         log.warn("🚨 ALERT GENERATED [{}] type=CRISIS_POST severity={} postId={} pseudonym={}",
                 saved.getAlertId(), saved.getSeverity(), postId, pseudonym);
 
+        // Notify professionals via email
+        notifyProfessionalsByEmail(saved);
+
         // Check for repeat crisis pattern
         checkRepeatCrisis(pseudonym, postId);
 
@@ -111,6 +118,9 @@ public class CrisisAlertService {
         log.info("⚡ ALERT GENERATED [{}] type=HIGH_ENERGY severity=MODERATE postId={} energy={}",
                 saved.getAlertId(), postId, energyScore);
 
+        // Notify professionals via email
+        notifyProfessionalsByEmail(saved);
+
         return saved;
     }
 
@@ -140,6 +150,9 @@ public class CrisisAlertService {
         CrisisAlert saved = alertRepository.save(alert);
         log.warn("🚨 ALERT GENERATED [{}] type=CRISIS_CHAT severity=CRITICAL sessionId={} pseudonym={}",
                 saved.getAlertId(), sessionId, pseudonym);
+
+        // Notify professionals via email
+        notifyProfessionalsByEmail(saved);
 
         return saved;
     }
@@ -218,6 +231,11 @@ public class CrisisAlertService {
         log.warn("🛑 BLOCKED POST ALERT [{}] type={} severity={} pseudonym={}",
                 saved.getAlertId(), alertType, alertSeverity, pseudonym);
 
+        // Notify professionals via email (for crisis-related blocked posts)
+        if (hasCrisis) {
+            notifyProfessionalsByEmail(saved);
+        }
+
         // Check for repeat crisis pattern if crisis keywords were detected
         if (hasCrisis) {
             checkRepeatCrisis(pseudonym, saved.getAlertId());
@@ -253,8 +271,11 @@ public class CrisisAlertService {
                         .pseudonym(pseudonym)
                         .build();
 
-                alertRepository.save(repeat);
+                CrisisAlert savedRepeat = alertRepository.save(repeat);
                 log.error("🔴 REPEAT CRISIS PATTERN for pseudonym={} count={}", pseudonym, count);
+
+                // Notify professionals via email about repeat crisis pattern
+                notifyProfessionalsByEmail(savedRepeat);
             }
         }
     }
@@ -502,6 +523,48 @@ public class CrisisAlertService {
                 alertId, accepted.getSessionId(), professionalName, alert.getPseudonym());
 
         return accepted;
+    }
+
+    // ── EMAIL NOTIFICATION TO PROFESSIONALS ──
+
+    /**
+     * Dispatch crisis alert email to all active professionals with an email address.
+     * Runs asynchronously so it never blocks the alert creation flow.
+     */
+    private void notifyProfessionalsByEmail(CrisisAlert alert) {
+        try {
+            List<User> professionals = userRepository.findByRoleAndActiveTrueAndEmailIsNotNull("PROFESSIONAL");
+            if (professionals.isEmpty()) {
+                log.info("No active professionals with email found — crisis alert email skipped for alert {}",
+                        alert.getAlertId());
+                return;
+            }
+
+            int dispatched = 0;
+            for (User pro : professionals) {
+                if (pro.getEmail() != null && !pro.getEmail().isBlank()) {
+                    emailService.sendCrisisAlertEmail(
+                            pro.getEmail(),
+                            pro.getFullName(),
+                            alert.getAlertType(),
+                            alert.getSeverity(),
+                            alert.getPseudonym(),
+                            alert.getTitle(),
+                            alert.getMessage(),
+                            alert.getEmotionTag(),
+                            alert.getEnergyScore(),
+                            alert.getFlaggedKeywords(),
+                            alert.getAlertId()
+                    );
+                    dispatched++;
+                }
+            }
+            log.info("📧 Crisis alert email dispatched to {} professional(s) for alert {}",
+                    dispatched, alert.getAlertId());
+        } catch (Exception e) {
+            log.error("Failed to dispatch crisis alert emails for alert {}: {}",
+                    alert.getAlertId(), e.getMessage());
+        }
     }
 
     // ── HELPERS ──
