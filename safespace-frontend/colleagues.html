@@ -476,63 +476,47 @@
     </div>
   </div>
 
-  <!-- Register Colleague Modal (Easy to comprehend, non-technical) -->
+  <!-- Register Colleague Modal -->
   <div class="cred-modal-overlay" id="registerColleagueModal" style="display:none;">
-    <div class="cred-modal" style="max-width:540px;">
+    <div class="cred-modal" style="max-width:500px;">
       <div class="cred-modal-header">
         <h3><i class="fas fa-user-plus" style="color:#161F36;"></i> Register a Colleague</h3>
         <button class="cred-modal-close" onclick="closeModal('registerColleagueModal')"><i class="fas fa-xmark"></i></button>
       </div>
       <div class="cred-modal-body" id="colleagueModalBody">
-        <p style="font-size:0.86rem;color:#475569;margin-bottom:1.25rem;line-height:1.5;">
-          Add a fellow mental health professional to the campus team. They will have authorized access to assist and observe students, triage alerts, and conduct counseling.
-        </p>
-
         <div class="auth-form" id="colleagueFormFields">
           <div class="form-group">
-            <label class="form-label">Colleague's Full Name <span class="required-star" style="color:#DC2626;">*</span></label>
-            <input class="form-input" id="colleagueName" placeholder="e.g. Maria Clara Santos, RPm or Dr. Juan Dela Cruz">
-            <div class="form-hint">Enter their complete official name and any professional license title.</div>
+            <label class="form-label">Full Name <span class="required-star" style="color:#DC2626;">*</span></label>
+            <input class="form-input" id="colleagueName" placeholder="e.g. Dr. Clara Reyes, RPsy">
           </div>
 
           <div class="form-group">
-            <label class="form-label">Professional Role / Authority <span class="required-star" style="color:#DC2626;">*</span></label>
+            <label class="form-label">Professional Role <span class="required-star" style="color:#DC2626;">*</span></label>
             <select class="form-input" id="colleagueTitle">
-              <option value="Guidance Counselor" selected>Guidance Counselor — Assists, guides, and counsels students</option>
-              <option value="Psychometrician">Psychometrician — Observes student emotional trends &amp; assessments</option>
-              <option value="Psychologist">Psychologist — Specialized psychological counseling &amp; crisis support</option>
-              <option value="Campus Wellness Staff">Campus Wellness Staff — Assists in student support &amp; observation</option>
+              <option value="Guidance Counselor" selected>Guidance Counselor</option>
+              <option value="Psychometrician">Psychometrician</option>
+              <option value="Psychologist">Psychologist</option>
             </select>
-            <div class="form-hint">Select the role that best describes their duty in observing or assisting students.</div>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Campus Employee / Staff ID <span class="required-star" style="color:#DC2626;">*</span></label>
-            <input class="form-input" id="colleagueInstId" placeholder="e.g. PROF-2024-001 or faculty ID number">
-            <div class="form-hint">This ID will serve as their primary login account ID.</div>
+            <label class="form-label">Institutional ID <span class="required-star" style="color:#DC2626;">*</span></label>
+            <input class="form-input" id="colleagueInstId" placeholder="e.g. PROF-001">
           </div>
 
           <div class="form-group">
-            <label class="form-label">Work Email Address <span class="required-star" style="color:#DC2626;">*</span></label>
-            <input class="form-input" id="colleagueEmail" type="email" placeholder="e.g. maria.santos@ustp.edu.ph or gmail.com">
-            <div class="form-hint">We will send an invitation and temporary password directly to this email.</div>
+            <label class="form-label">Email Address <span class="required-star" style="color:#DC2626;">*</span></label>
+            <input class="form-input" id="colleagueEmail" type="email" placeholder="e.g. clara.reyes@ustp.edu.ph">
           </div>
 
           <div class="form-group">
-            <label class="form-label">Office or Department</label>
+            <label class="form-label">Department / Office</label>
             <input class="form-input" id="colleagueDept" value="Guidance &amp; Counseling Center" placeholder="e.g. Guidance &amp; Counseling Center">
-            <div class="form-hint">The campus department or clinic where they are assigned.</div>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Contact Phone (Optional)</label>
+            <label class="form-label">Contact Number (Optional)</label>
             <input class="form-input" id="colleaguePhone" placeholder="e.g. 0912 345 6789">
-            <div class="form-hint">Optional contact number for campus coordination.</div>
-          </div>
-
-          <div class="info-callout">
-            <i class="fas fa-shield-halved" style="margin-right:0.4rem;color:#161F36;"></i>
-            <strong>Secure &amp; Easy Setup:</strong> Safe Space will automatically generate a secure temporary password and send a welcome email to your colleague. When they sign in for the first time, they will set their own private password.
           </div>
         </div>
 
@@ -541,7 +525,7 @@
       <div class="cred-modal-footer" id="colleagueModalFooter">
         <button class="cred-btn cred-btn-outline" onclick="closeModal('registerColleagueModal')">Cancel</button>
         <button class="cred-btn cred-btn-primary" id="colleagueSubmitBtn" onclick="submitRegisterColleague()">
-          <i class="fas fa-paper-plane"></i> Register Colleague &amp; Send Email
+          <i class="fas fa-user-plus"></i> Register Colleague
         </button>
       </div>
     </div>
@@ -716,7 +700,7 @@
                 <span>Active &amp; Authorized</span>
               </div>
               <button class="btn-resend-welcome" onclick="resendColleagueEmail('${escapeHtml(c.username)}', '${escapeHtml(c.fullName)}')">
-                <i class="fas fa-paper-plane" style="color:#0284C7;"></i> Resend Email
+                <i class="fas fa-envelope" style="color:#0284C7;"></i> Resend Email
               </button>
             </div>
           </div>
@@ -752,7 +736,7 @@
 
       const btn = document.getElementById('colleagueSubmitBtn');
       btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-paper-plane"></i> Register Colleague &amp; Send Email';
+      btn.innerHTML = '<i class="fas fa-user-plus"></i> Register Colleague';
 
       document.getElementById('registerColleagueModal').style.display = 'flex';
       setTimeout(() => {
@@ -796,7 +780,7 @@
       }
 
       btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering Colleague &amp; Sending Email...';
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering Colleague...';
 
       try {
         const body = {
@@ -876,7 +860,7 @@
         loadColleagues();
       } catch (err) {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Register Colleague &amp; Send Email';
+        btn.innerHTML = '<i class="fas fa-user-plus"></i> Register Colleague';
         showCopyToast(err.message || 'Registration failed');
       }
     }
