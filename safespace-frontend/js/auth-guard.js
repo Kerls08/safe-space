@@ -129,10 +129,12 @@ const SafeSpaceAuth = (() => {
       { name: 'Chat', href: 'anon-chat.html', icon: 'fas fa-comments', id: 'anon-chat' },
       { name: 'Dashboard', href: 'pro-dashboard.html', icon: 'fas fa-chart-line', id: 'pro-dashboard' },
       { name: 'Crisis Alerts', href: 'crisis-alerts.html', icon: 'fas fa-bell', id: 'crisis-alerts' },
-      { name: 'Resources', href: 'resource-manager.html', icon: 'fas fa-hand-holding-heart', id: 'resource-manager' }
+      { name: 'Resources', href: 'resource-manager.html', icon: 'fas fa-hand-holding-heart', id: 'resource-manager' },
+      { name: 'Colleagues', href: 'colleagues.html', icon: 'fas fa-user-doctor', id: 'colleagues' }
     ],
     ADMIN: [
       { name: 'Credential Manager', href: 'credential-manager.html', icon: 'fas fa-users-gear', id: 'credential-manager' },
+      { name: 'Colleagues', href: 'colleagues.html', icon: 'fas fa-user-doctor', id: 'colleagues' },
       { name: 'Dashboard', href: 'pro-dashboard.html', icon: 'fas fa-chart-line', id: 'pro-dashboard' }
     ]
   };
@@ -187,7 +189,8 @@ const SafeSpaceAuth = (() => {
                 <a href="profile.html" class="dropdown-menu-item">
                   <i class="fas fa-user-circle"></i> My Profile
                 </a>
-                ${role === 'ADMIN' ? `<a href="credential-manager.html" class="dropdown-menu-item"><i class="fas fa-id-badge"></i> Credential Manager</a>` : ''}
+                ${role === 'PROFESSIONAL' ? `<a href="colleagues.html" class="dropdown-menu-item"><i class="fas fa-user-plus"></i> Register Colleague</a>` : ''}
+                ${role === 'ADMIN' ? `<a href="credential-manager.html" class="dropdown-menu-item"><i class="fas fa-id-badge"></i> Credential Manager</a><a href="colleagues.html" class="dropdown-menu-item"><i class="fas fa-user-doctor"></i> Campus Team</a>` : ''}
                 <div class="dropdown-divider"></div>
                 <button class="dropdown-menu-item logout-item" onclick="SafeSpaceAuth.logout()">
                   <i class="fas fa-arrow-right-from-bracket"></i> Sign Out

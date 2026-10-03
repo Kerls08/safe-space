@@ -49,6 +49,18 @@ public class AuthDTOs {
         private String role; // STUDENT, PROFESSIONAL
     }
 
+    // ── Colleague Registration (for Professionals and Admins) ──
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class RegisterColleagueRequest {
+        private String institutionalId; // Campus or Staff ID
+        private String fullName;        // Colleague's full name
+        private String email;           // Official / work email address
+        private String phoneNumber;     // Mobile phone (optional)
+        private String title;           // Professional role (Guidance Counselor, Psychometrician, Psychologist, etc.)
+        private String department;      // Campus office / department
+    }
+
     // ── Public Self-Registration ──
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor

@@ -71,16 +71,21 @@ public class RbacPermissions {
                     "/api/dashboard",               // Emotional trends dashboard
                     "/api/alerts",                  // Crisis alerts triage
                     "/api/resources",               // Manage wellness resources
-                    "/api/calm-down"                // View calm-down interventions
+                    "/api/calm-down",               // View calm-down interventions
+                    "/api/auth/register-colleague", // Register fellow counseling colleague
+                    "/api/auth/register",           // Register colleague
+                    "/api/auth/colleagues"          // View campus counseling team & resend welcome
             ),
 
             "ADMIN", List.of(
                     "/api/auth/register",           // Register single user / professional
-                    "/api/auth/batch-import",        // Batch import users (JSON)
-                    "/api/auth/file-import",         // Batch import (Excel/CSV)
-                    "/api/auth/import-template",     // Download import template
-                    "/api/auth/users",               // List/search/toggle/reset users
-                    "/api/auth/stats",               // Credential statistics
+                    "/api/auth/register-colleague", // Register colleague
+                    "/api/auth/colleagues",         // View campus counseling team & resend welcome
+                    "/api/auth/batch-import",       // Batch import users (JSON)
+                    "/api/auth/file-import",        // Batch import (Excel/CSV)
+                    "/api/auth/import-template",    // Download import template
+                    "/api/auth/users",              // List/search/toggle/reset users
+                    "/api/auth/stats",              // Credential statistics
                     "/api/dashboard"                // System & emotional analytics overview
             )
     );
@@ -107,7 +112,8 @@ public class RbacPermissions {
                     "crisis_alerts",                // Receive & triage crisis flags
                     "heartbeat_presence",           // Report online status
                     "session_management",           // Close/manage chat sessions
-                    "resource_linker_manage"        // Manage wellness resources
+                    "resource_linker_manage",       // Manage wellness resources
+                    "colleague_registration"        // Register & collaborate with campus colleagues
             ),
 
             "ADMIN", List.of(
@@ -115,7 +121,8 @@ public class RbacPermissions {
                     "user_management",              // Activate/deactivate/reset
                     "batch_import",                 // Bulk user creation
                     "credential_statistics",        // System credential stats
-                    "monitoring_overview"           // Platform monitoring overview
+                    "monitoring_overview",          // Platform monitoring overview
+                    "colleague_registration"        // Colleague registration
             )
     );
 
@@ -174,10 +181,12 @@ public class RbacPermissions {
                 pages.add(Map.of("name", "Monitoring Dashboard", "path", "pro-dashboard.html", "icon", "fas fa-chart-line"));
                 pages.add(Map.of("name", "Crisis Alerts", "path", "crisis-alerts.html", "icon", "fas fa-bell"));
                 pages.add(Map.of("name", "Resource Manager", "path", "resource-manager.html", "icon", "fas fa-hand-holding-heart"));
+                pages.add(Map.of("name", "Colleagues", "path", "colleagues.html", "icon", "fas fa-user-doctor"));
                 pages.add(Map.of("name", "My Profile", "path", "profile.html", "icon", "fas fa-user-circle"));
             }
             case "ADMIN" -> {
                 pages.add(Map.of("name", "Credential Manager", "path", "credential-manager.html", "icon", "fas fa-users-gear"));
+                pages.add(Map.of("name", "Colleagues", "path", "colleagues.html", "icon", "fas fa-user-doctor"));
                 pages.add(Map.of("name", "Monitoring Overview", "path", "pro-dashboard.html", "icon", "fas fa-chart-line"));
                 pages.add(Map.of("name", "My Profile", "path", "profile.html", "icon", "fas fa-user-circle"));
             }

@@ -89,11 +89,49 @@ public class CredentialController {
     /**
      * Register a single user from the institutional directory.
      * Returns the generated username and initial password.
+     * When called by a PROFESSIONAL, the role is restricted to PROFESSIONAL.
      */
     @PostMapping("/register")
-    public ResponseEntity<RegisterUserResponse> registerUser(@RequestBody RegisterUserRequest request) {
+    public ResponseEntity<RegisterUserResponse> registerUser(
+            HttpServletRequest servletRequest,
+            @RequestBody RegisterUserRequest request) {
+        User caller = (User) servletRequest.getAttribute("auth.user");
+        if (caller != null && "PROFESSIONAL".equalsIgnoreCase(caller.getRole())) {
+            request.setRole("PROFESSIONAL");
+        }
         RegisterUserResponse response = credentialService.registerUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * Register a campus colleague (Psychometrician, Psychologist, Guidance Counselor).
+     * Accessible to both PROFESSIONAL and ADMIN.
+     */
+    @PostMapping("/register-colleague")
+    public ResponseEntity<RegisterUserResponse> registerColleague(
+            HttpServletRequest servletRequest,
+            @RequestBody RegisterColleagueRequest request) {
+        String currentUsername = (String) servletRequest.getAttribute("auth.username");
+        RegisterUserResponse response = credentialService.registerColleague(request, currentUsername != null ? currentUsername : "system");
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * List all campus counseling colleagues.
+     * Accessible to both PROFESSIONAL and ADMIN.
+     */
+    @GetMapping("/colleagues")
+    public ResponseEntity<List<UserProfileResponse>> getColleagues() {
+        return ResponseEntity.ok(credentialService.getColleagues());
+    }
+
+    /**
+     * Resend welcome email with credentials to a colleague.
+     * Accessible to both PROFESSIONAL and ADMIN.
+     */
+    @PostMapping("/colleagues/{username}/resend-welcome")
+    public ResponseEntity<Map<String, String>> resendColleagueWelcome(@PathVariable String username) {
+        return ResponseEntity.ok(credentialService.resendColleagueWelcome(username));
     }
 
     /**

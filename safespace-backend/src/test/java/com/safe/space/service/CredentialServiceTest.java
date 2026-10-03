@@ -112,4 +112,65 @@ class CredentialServiceTest {
         assertDoesNotThrow(() -> CredentialService.validatePasswordComplexity("ValidPass123!"));
         assertDoesNotThrow(() -> CredentialService.validatePasswordComplexity("SafeSpace@2026"));
     }
+
+    @Test
+    @DisplayName("Should successfully register a colleague with role PROFESSIONAL and send welcome email")
+    void testRegisterColleagueSuccess() {
+        org.mockito.Mockito.when(userRepository.existsByInstitutionalId("PROF-2026-01")).thenReturn(false);
+        org.mockito.Mockito.when(userRepository.existsByUsername("PROF-2026-01")).thenReturn(false);
+
+        com.safe.space.dto.AuthDTOs.RegisterColleagueRequest req = com.safe.space.dto.AuthDTOs.RegisterColleagueRequest.builder()
+                .institutionalId("PROF-2026-01")
+                .fullName("Dr. Maria Santos, RPsy")
+                .email("maria.santos@ustp.edu.ph")
+                .title("Psychologist")
+                .department("Guidance & Counseling Center")
+                .phoneNumber("09123456789")
+                .build();
+
+        com.safe.space.dto.AuthDTOs.RegisterUserResponse res = credentialService.registerColleague(req, "counselor1");
+
+        assertNotNull(res);
+        assertEquals("PROF-2026-01", res.getInstitutionalId());
+        assertEquals("PROFESSIONAL", res.getRole());
+        assertTrue(res.getMessage().contains("Dr. Maria Santos, RPsy"));
+        assertNotNull(res.getGeneratedPassword());
+
+        org.mockito.Mockito.verify(userRepository).save(org.mockito.ArgumentMatchers.argThat(u ->
+                "PROFESSIONAL".equals(u.getRole()) &&
+                "PROF-2026-01".equals(u.getInstitutionalId()) &&
+                "maria.santos@ustp.edu.ph".equals(u.getEmail())
+        ));
+
+        org.mockito.Mockito.verify(emailService).sendProfessionalWelcomeEmail(
+                org.mockito.ArgumentMatchers.eq("maria.santos@ustp.edu.ph"),
+                org.mockito.ArgumentMatchers.eq("Dr. Maria Santos, RPsy"),
+                org.mockito.ArgumentMatchers.eq("PROF-2026-01"),
+                org.mockito.ArgumentMatchers.eq("PROF-2026-01"),
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.eq("Psychologist")
+        );
+    }
+
+    @Test
+    @DisplayName("Should reject colleague registration if full name or email is missing")
+    void testRegisterColleagueValidation() {
+        com.safe.space.dto.AuthDTOs.RegisterColleagueRequest noName = com.safe.space.dto.AuthDTOs.RegisterColleagueRequest.builder()
+                .institutionalId("PROF-002")
+                .fullName("")
+                .email("test@ustp.edu.ph")
+                .build();
+        IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () ->
+                credentialService.registerColleague(noName, "counselor1"));
+        assertTrue(ex1.getMessage().contains("full name"));
+
+        com.safe.space.dto.AuthDTOs.RegisterColleagueRequest noEmail = com.safe.space.dto.AuthDTOs.RegisterColleagueRequest.builder()
+                .institutionalId("PROF-002")
+                .fullName("Jane Doe")
+                .email("")
+                .build();
+        IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () ->
+                credentialService.registerColleague(noEmail, "counselor1"));
+        assertTrue(ex2.getMessage().contains("email"));
+    }
 }

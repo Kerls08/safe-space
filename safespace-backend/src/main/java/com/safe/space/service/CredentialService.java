@@ -204,6 +204,163 @@ public class CredentialService {
                 .build();
     }
 
+    // ── 3c. Colleague Registration (Mental Health Professionals) ──
+
+    /**
+     * Register a fellow campus mental health professional colleague.
+     * Easy to comprehend, human-friendly validation and messaging without overly technical jargon.
+     * Accessible by registered professionals and system administrators.
+     */
+    @Transactional
+    public RegisterUserResponse registerColleague(RegisterColleagueRequest request, String registeredByUsername) {
+        if (request == null) {
+            throw new IllegalArgumentException("Please provide your colleague's registration details.");
+        }
+
+        // 1. Validate full name
+        if (request.getFullName() == null || request.getFullName().trim().isBlank()) {
+            throw new IllegalArgumentException("Please enter your colleague's full name (e.g. Maria Santos or Dr. Clara Reyes).");
+        }
+        String cleanFullName = request.getFullName().trim();
+
+        // 2. Validate campus / staff ID
+        if (request.getInstitutionalId() == null || request.getInstitutionalId().trim().isBlank()) {
+            throw new IllegalArgumentException("Please provide your colleague's Campus or Staff ID number.");
+        }
+        String cleanId = request.getInstitutionalId().trim();
+
+        if (userRepository.existsByInstitutionalId(cleanId)) {
+            throw new IllegalArgumentException("A campus staff member or student with ID '" + cleanId + "' is already registered in the system.");
+        }
+
+        // 3. Validate work email
+        if (request.getEmail() == null || request.getEmail().trim().isBlank()) {
+            throw new IllegalArgumentException("Please provide your colleague's work email address so their login details can be delivered.");
+        }
+        String cleanEmail = request.getEmail().trim();
+        if (!cleanEmail.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            throw new IllegalArgumentException("Please check the email format (e.g. name@ustp.edu.ph or name@gmail.com).");
+        }
+
+        // 4. Clean professional role & office
+        String title = (request.getTitle() != null && !request.getTitle().trim().isBlank())
+                ? request.getTitle().trim()
+                : "Guidance Counselor";
+
+        String baseDept = (request.getDepartment() != null && !request.getDepartment().trim().isBlank())
+                ? request.getDepartment().trim()
+                : "Guidance & Counseling Center";
+
+        String finalDepartment = baseDept.contains(title) ? baseDept : baseDept + " (" + title + ")";
+
+        // 5. Clean optional phone
+        String cleanPhone = null;
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank()) {
+            String p = request.getPhoneNumber().trim().replaceAll("[\\s\\-\\(\\)]", "");
+            if (p.matches("^(09|\\+639)\\d{9}$")) {
+                cleanPhone = p;
+            }
+        }
+
+        // 6. Generate username & temporary password
+        String username = cleanId;
+        if (userRepository.existsByUsername(username)) {
+            username = cleanId + "-" + RANDOM.nextInt(1000);
+        }
+
+        String rawPassword = generateDefaultPassword(cleanFullName, cleanId);
+
+        // 7. Save user entity
+        User colleague = User.builder()
+                .institutionalId(cleanId)
+                .username(username)
+                .passwordHash(ENCODER.encode(rawPassword))
+                .fullName(cleanFullName)
+                .email(cleanEmail)
+                .phoneNumber(cleanPhone)
+                .department(finalDepartment)
+                .yearLevel(null)
+                .role("PROFESSIONAL")
+                .active(true)
+                .passwordChanged(false)
+                .forcePasswordChange(true)
+                .build();
+
+        userRepository.save(colleague);
+
+        // 8. Dispatch professional welcome email with credentials via Brevo
+        emailService.sendProfessionalWelcomeEmail(
+                colleague.getEmail(),
+                colleague.getFullName(),
+                colleague.getInstitutionalId(),
+                colleague.getUsername(),
+                rawPassword,
+                title
+        );
+
+        log.info("Colleague registered successfully: ID={}, name={}, email={}, title={}, by={}",
+                colleague.getInstitutionalId(), colleague.getFullName(), colleague.getEmail(), title, registeredByUsername);
+
+        return RegisterUserResponse.builder()
+                .institutionalId(colleague.getInstitutionalId())
+                .username(colleague.getUsername())
+                .generatedPassword(rawPassword)
+                .fullName(colleague.getFullName())
+                .email(colleague.getEmail())
+                .role(colleague.getRole())
+                .message("Your colleague " + colleague.getFullName() + " (" + title + ") was registered successfully! A welcome email with temporary sign-in instructions has been sent to " + colleague.getEmail() + ".")
+                .build();
+    }
+
+    /**
+     * Retrieve all registered campus colleagues (Mental Health Professionals).
+     */
+    @Transactional(readOnly = true)
+    public List<UserProfileResponse> getColleagues() {
+        return userRepository.findByRoleOrderByFullNameAsc("PROFESSIONAL").stream()
+                .map(this::toProfile)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Resend a welcome email with temporary login credentials to a registered colleague.
+     */
+    @Transactional
+    public Map<String, String> resendColleagueWelcome(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("Colleague not found with username: " + username));
+
+        if (!"PROFESSIONAL".equalsIgnoreCase(user.getRole())) {
+            throw new IllegalArgumentException("Specified user is not a mental health professional colleague.");
+        }
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            throw new IllegalArgumentException("Colleague '" + user.getFullName() + "' does not have a work email recorded.");
+        }
+
+        String rawPassword = generateDefaultPassword(user.getFullName(), user.getInstitutionalId());
+        user.setPasswordHash(ENCODER.encode(rawPassword));
+        user.setPasswordChanged(false);
+        user.setForcePasswordChange(true);
+        userRepository.save(user);
+
+        emailService.sendProfessionalWelcomeEmail(
+                user.getEmail(),
+                user.getFullName(),
+                user.getInstitutionalId(),
+                user.getUsername(),
+                rawPassword,
+                user.getDepartment() != null ? user.getDepartment() : "Campus Counseling Professional"
+        );
+
+        log.info("Colleague credentials email resent for {} ({})", user.getUsername(), user.getEmail());
+        return Map.of(
+                "message", "A new welcome email with sign-in instructions has been sent to " + user.getEmail() + ".",
+                "email", user.getEmail(),
+                "institutionalId", user.getInstitutionalId(),
+                "generatedPassword", rawPassword
+        );
+    }
+
     // ── 3b. Public Self-Registration ──
 
     @Transactional
