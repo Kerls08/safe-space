@@ -40,7 +40,8 @@ public class WebConfig implements WebMvcConfigurer {
                                                 "/api/auth/login", // Public — login
                                                 "/api/auth/logout", // Public — logout
                                                 "/api/auth/validate-token", // Public — token validation
-                                                "/api/auth/self-register" // Public — self-registration
+                                                "/api/auth/self-register", // Public — self-registration
+                                                "/api/admin/maintenance/status" // Public — maintenance status check
                                 );
         }
 }

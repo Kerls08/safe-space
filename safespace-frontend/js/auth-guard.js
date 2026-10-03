@@ -133,6 +133,7 @@ const SafeSpaceAuth = (() => {
       { name: 'Colleagues', href: 'colleagues.html', icon: 'fas fa-user-doctor', id: 'colleagues' }
     ],
     ADMIN: [
+      { name: 'System Maintenance', href: 'system-maintenance.html', icon: 'fas fa-server', id: 'system-maintenance' },
       { name: 'Credential Manager', href: 'credential-manager.html', icon: 'fas fa-users-gear', id: 'credential-manager' },
       { name: 'Colleagues', href: 'colleagues.html', icon: 'fas fa-user-doctor', id: 'colleagues' },
       { name: 'Dashboard', href: 'pro-dashboard.html', icon: 'fas fa-chart-line', id: 'pro-dashboard' }
@@ -161,7 +162,7 @@ const SafeSpaceAuth = (() => {
 
     nav.innerHTML = `
       <div class="navbar-inner">
-        <a href="${role === 'ADMIN' ? 'credential-manager.html' : 'rant-board.html'}" class="navbar-brand">
+        <a href="${role === 'ADMIN' ? 'system-maintenance.html' : 'rant-board.html'}" class="navbar-brand">
           <i class="fas fa-shield-heart"></i>
           <span class="brand-text">Safe<span>Space</span></span>
         </a>
@@ -190,7 +191,7 @@ const SafeSpaceAuth = (() => {
                   <i class="fas fa-user-circle"></i> My Profile
                 </a>
                 ${role === 'PROFESSIONAL' ? `<a href="colleagues.html" class="dropdown-menu-item"><i class="fas fa-user-plus"></i> Register Colleague</a>` : ''}
-                ${role === 'ADMIN' ? `<a href="credential-manager.html" class="dropdown-menu-item"><i class="fas fa-id-badge"></i> Credential Manager</a><a href="colleagues.html" class="dropdown-menu-item"><i class="fas fa-user-doctor"></i> Campus Team</a>` : ''}
+                ${role === 'ADMIN' ? `<a href="system-maintenance.html" class="dropdown-menu-item"><i class="fas fa-server"></i> System Maintenance</a><a href="credential-manager.html" class="dropdown-menu-item"><i class="fas fa-id-badge"></i> Credential Manager</a><a href="colleagues.html" class="dropdown-menu-item"><i class="fas fa-user-doctor"></i> Campus Team</a>` : ''}
                 <div class="dropdown-divider"></div>
                 <button class="dropdown-menu-item logout-item" onclick="SafeSpaceAuth.logout()">
                   <i class="fas fa-arrow-right-from-bracket"></i> Sign Out
@@ -236,9 +237,54 @@ const SafeSpaceAuth = (() => {
       });
     }
 
+    // Check for broadcast announcements and maintenance mode
+    checkSystemStatusBanner();
+
     // Start notification badge polling
     pollNavBadges();
     _badgeInterval = setInterval(pollNavBadges, 10000);
+  }
+
+  async function checkSystemStatusBanner() {
+    try {
+      const res = await fetch(API_BASE + '/admin/maintenance/status');
+      if (!res.ok) return;
+      const data = await res.json();
+      
+      const role = getRole();
+      const existing = document.getElementById('systemBroadcastBanner');
+      if (existing) existing.remove();
+
+      let bannerHtml = '';
+      if (data.maintenance && data.maintenance.active && role !== 'ADMIN') {
+        bannerHtml = `
+          <div id="systemBroadcastBanner" style="position:fixed;top:56px;left:0;right:0;z-index:999;background:#FEF3C7;color:#92400E;padding:0.65rem 1.25rem;border-bottom:1px solid #FDE68A;display:flex;align-items:center;justify-content:center;gap:0.6rem;font-size:0.85rem;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+            <i class="fas fa-triangle-exclamation" style="color:#D97706;font-size:1rem;"></i>
+            <span><strong>Maintenance Notice:</strong> ${escapeHtml(data.maintenance.message || 'Scheduled platform maintenance is currently active.')}</span>
+          </div>
+        `;
+      } else if (data.broadcast && data.broadcast.active) {
+        const type = (data.broadcast.type || 'INFO').toUpperCase();
+        let bg = '#E0F2FE', text = '#0369A1', border = '#BAE6FD', icon = 'fas fa-bullhorn';
+        if (type === 'WARNING') {
+          bg = '#FEF3C7'; text = '#92400E'; border = '#FDE68A'; icon = 'fas fa-triangle-exclamation';
+        } else if (type === 'CRITICAL') {
+          bg = '#FEE2E2'; text = '#991B1B'; border = '#FECACA'; icon = 'fas fa-circle-exclamation';
+        }
+        bannerHtml = `
+          <div id="systemBroadcastBanner" style="position:fixed;top:56px;left:0;right:0;z-index:999;background:${bg};color:${text};padding:0.6rem 1.25rem;border-bottom:1px solid ${border};display:flex;align-items:center;justify-content:center;gap:0.6rem;font-size:0.84rem;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+            <i class="${icon}" style="font-size:0.95rem;"></i>
+            <span>${escapeHtml(data.broadcast.message)}</span>
+          </div>
+        `;
+      }
+
+      if (bannerHtml) {
+        const div = document.createElement('div');
+        div.innerHTML = bannerHtml;
+        document.body.appendChild(div.firstElementChild);
+      }
+    } catch (e) { /* ignore */ }
   }
 
   let _badgeInterval = null;

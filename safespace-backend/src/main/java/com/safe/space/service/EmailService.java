@@ -70,6 +70,56 @@ public class EmailService {
         }
     }
 
+    public boolean isConfigured() {
+        return mailEnabled && apiKey != null && !apiKey.isBlank();
+    }
+
+    public String getFromAddress() {
+        return fromAddress;
+    }
+
+    public String getFromName() {
+        return fromName;
+    }
+
+    public CompletableFuture<String> sendDiagnosticTestEmail(String toEmail, String adminUsername) {
+        if (!isConfigured()) {
+            return CompletableFuture.completedFuture("Email service is disabled or BREVO_API_KEY is not configured.");
+        }
+        return CompletableFuture.supplyAsync(() -> {
+            long start = System.currentTimeMillis();
+            try {
+                String subject = "Safe Space — System Diagnostics Ping";
+                String html = """
+                    <div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto;padding:24px;border:1px solid #E0D7C6;border-radius:12px;background:#FAF7F2;">
+                      <h2 style="color:#161F36;margin-top:0;">Safe Space System Diagnostics Test</h2>
+                      <p style="color:#3D4D6E;font-size:14px;line-height:1.6;">
+                        This is an automated diagnostic test ping dispatched by <strong>%s</strong> (System Administrator) to verify Brevo transactional email delivery.
+                      </p>
+                      <div style="background:#FFFFFF;border:1px solid #E0D7C6;border-radius:8px;padding:16px;margin:20px 0;">
+                        <p style="margin:4px 0;font-size:13px;color:#161F36;"><strong>Status:</strong> Gateway Verified &amp; Operational</p>
+                        <p style="margin:4px 0;font-size:13px;color:#161F36;"><strong>Timestamp:</strong> %s</p>
+                        <p style="margin:4px 0;font-size:13px;color:#161F36;"><strong>Sender:</strong> %s &lt;%s&gt;</p>
+                      </div>
+                      <p style="color:#6C7A92;font-size:12px;">Safe Space Campus Mental Health &amp; Wellbeing Platform</p>
+                    </div>
+                """.formatted(
+                        escapeHtml(adminUsername),
+                        java.time.LocalDateTime.now().toString(),
+                        escapeHtml(fromName),
+                        escapeHtml(fromAddress)
+                );
+
+                sendBrevoMail(toEmail, adminUsername, subject, html);
+                long latency = System.currentTimeMillis() - start;
+                return "Diagnostic test email dispatched successfully in " + latency + "ms to " + toEmail;
+            } catch (Exception e) {
+                log.error("Diagnostic test email failed: {}", e.getMessage(), e);
+                return "Failed to dispatch test email: " + e.getMessage();
+            }
+        });
+    }
+
     /**
      * Send Welcome & Initial Temporary Password email asynchronously.
      */

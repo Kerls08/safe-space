@@ -36,6 +36,7 @@ public class RbacPermissions {
             "/api/auth/validate-token",
             "/api/auth/self-register",
             "/api/auth/forgot-password",
+            "/api/admin/maintenance/status",
             // Static resources are handled by Spring's ResourceHandler,
             // not by our interceptor (we only intercept /api/**)
             "/h2-console"
@@ -86,7 +87,8 @@ public class RbacPermissions {
                     "/api/auth/import-template",    // Download import template
                     "/api/auth/users",              // List/search/toggle/reset users
                     "/api/auth/stats",              // Credential statistics
-                    "/api/dashboard"                // System & emotional analytics overview
+                    "/api/dashboard",               // System & emotional analytics overview
+                    "/api/admin/maintenance"        // System maintenance, diagnostics, & audit
             )
     );
 
@@ -122,7 +124,11 @@ public class RbacPermissions {
                     "batch_import",                 // Bulk user creation
                     "credential_statistics",        // System credential stats
                     "monitoring_overview",          // Platform monitoring overview
-                    "colleague_registration"        // Colleague registration
+                    "colleague_registration",       // Colleague registration
+                    "system_maintenance",           // System health & maintenance mode
+                    "infrastructure_diagnostics",   // Hardware & runtime telemetry
+                    "audit_logs",                   // Security audit logging
+                    "broadcast_announcements"       // System-wide broadcast alerts
             )
     );
 
@@ -185,6 +191,7 @@ public class RbacPermissions {
                 pages.add(Map.of("name", "My Profile", "path", "profile.html", "icon", "fas fa-user-circle"));
             }
             case "ADMIN" -> {
+                pages.add(Map.of("name", "System Maintenance", "path", "system-maintenance.html", "icon", "fas fa-server"));
                 pages.add(Map.of("name", "Credential Manager", "path", "credential-manager.html", "icon", "fas fa-users-gear"));
                 pages.add(Map.of("name", "Colleagues", "path", "colleagues.html", "icon", "fas fa-user-doctor"));
                 pages.add(Map.of("name", "Monitoring Overview", "path", "pro-dashboard.html", "icon", "fas fa-chart-line"));

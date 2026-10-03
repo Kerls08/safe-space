@@ -3,6 +3,7 @@ package com.safe.space.config;
 import com.safe.space.model.User;
 import com.safe.space.repository.UserRepository;
 import com.safe.space.service.CredentialService;
+import com.safe.space.service.SystemMaintenanceService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     private final CredentialService credentialService;
     private final UserRepository userRepository;
+    private final SystemMaintenanceService maintenanceService;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
@@ -97,7 +99,17 @@ public class AuthInterceptor implements HandlerInterceptor {
         request.setAttribute("auth.role", role);
         request.setAttribute("auth.user", user);
 
-        // 7. Check if path is accessible to any authenticated user
+        // 7. Check maintenance mode (non-admins blocked from mutating endpoints during maintenance)
+        if (maintenanceService.isMaintenanceActive() && !"ADMIN".equalsIgnoreCase(role)) {
+            if ("POST".equalsIgnoreCase(method) || "PUT".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method)) {
+                log.warn("MAINTENANCE BLOCK: {} {} blocked for user={} role={}", method, path, username, role);
+                sendError(request, response, HttpServletResponse.SC_SERVICE_UNAVAILABLE,
+                        "System Maintenance Active: " + maintenanceService.getMaintenanceMessage());
+                return false;
+            }
+        }
+
+        // 8. Check if path is accessible to any authenticated user
         if (RbacPermissions.isAnyAuthPath(path)) {
             log.debug("RBAC: {} {} — user={} role={} — ANY_AUTH ✓", method, path, username, role);
             return true;

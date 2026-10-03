@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safe Space — System Maintenance &amp; Administration</title>
+  <meta name="description" content="Infrastructure telemetry, database health, scheduled maintenance controls, and security audit logs for Safe Space platform administrators.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <style>
+    /* ══════════════════════════════════════════════════════════
+       Safe Space — System Maintenance Console Styles
+       Enterprise-grade telemetry, control panels, and audit log
+       ══════════════════════════════════════════════════════════ */
+
+    .dash-layout {
+      margin-top: 4.5rem;
+      min-height: calc(100vh - 4.5rem);
+      background: #FAF7F2;
+      padding: 1.75rem 1.5rem 3.5rem 1.5rem;
+    }
+    .dash-container {
+      max-width: 1320px;
+      margin: 0 auto;
+    }
+
+    /* Page Header */
+    .maint-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1.75rem;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+    }
+    .maint-header-info h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #161F36;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin: 0 0 0.4rem 0;
+      letter-spacing: -0.02em;
+    }
+    .maint-header-desc {
+      font-size: 0.88rem;
+      color: #64748b;
+      margin: 0;
+      max-width: 720px;
+      line-height: 1.5;
+    }
+    .maint-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    /* Primary & Utility Buttons */
+    .btn-action-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.25rem;
+      background: #161F36;
+      color: #FFFFFF;
+      border: 1.5px solid #161F36;
+      border-radius: 0.75rem;
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: var(--font-sans);
+      box-shadow: 0 3px 10px rgba(22, 31, 54, 0.15);
+      text-decoration: none;
+    }
+    .btn-action-primary:hover {
+      background: #243356;
+      border-color: #243356;
+      transform: translateY(-1.5px);
+      box-shadow: 0 6px 18px rgba(22, 31, 54, 0.22);
+      color: #FFFFFF;
+    }
+
+    /* System Operational Banner */
+    .system-health-banner {
+      background: #FFFFFF;
+      border: 1.5px solid #E0D7C6;
+      border-radius: 1.15rem;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+      box-shadow: 0 2px 10px rgba(22, 31, 54, 0.04);
+    }
+    .health-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.45rem 1rem;
+      border-radius: 999px;
+      font-size: 0.86rem;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+    }
+    .health-status-badge.operational {
+      background: #DCFCE7;
+      color: #15803d;
+      border: 1px solid #BBF7D0;
+    }
+    .health-status-badge.maintenance {
+      background: #FEF3C7;
+      color: #B45309;
+      border: 1px solid #FDE68A;
+    }
+    .pulse-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .pulse-dot.green {
+      background: #22c55e;
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25);
+      animation: pulse-live 2s ease-in-out infinite;
+    }
+    .pulse-dot.amber {
+      background: #f59e0b;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+      animation: pulse-live 2s ease-in-out infinite;
+    }
+
+    .health-quick-pills {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+    .quick-pill {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+    .quick-pill-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #64748b;
+      letter-spacing: 0.5px;
+    }
+    .quick-pill-val {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #161F36;
+    }
+
+    /* Telemetry Stats Grid */
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.15rem;
+      margin-bottom: 2rem;
+    }
+    @media (max-width: 1024px) {
+      .telemetry-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .telemetry-grid { grid-template-columns: 1fr; }
+    }
+
+    .telemetry-card {
+      background: #FFFFFF;
+      border: 1.5px solid #E0D7C6;
+      border-radius: 1.15rem;
+      padding: 1.25rem 1.4rem;
+      box-shadow: 0 2px 8px rgba(22, 31, 54, 0.04);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .telemetry-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(22, 31, 54, 0.08);
+      border-color: #BACBD8;
+    }
+    .telemetry-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .telemetry-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.05rem;
+    }
+    .telemetry-icon.jvm { background: #E0F2FE; color: #0284C7; border: 1px solid #BAE6FD; }
+    .telemetry-icon.db { background: #DCFCE7; color: #15803d; border: 1px solid #BBF7D0; }
+    .telemetry-icon.email { background: #EDE9FE; color: #7C3AED; border: 1px solid #DDD6FE; }
+    .telemetry-icon.sec { background: #FEF3C7; color: #D97706; border: 1px solid #FDE68A; }
+
+    .telemetry-card .val {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: #161F36;
+      line-height: 1.1;
+      margin-bottom: 0.25rem;
+    }
+    .telemetry-card .lbl {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    /* Memory Meter Progress Bar */
+    .mem-meter {
+      height: 6px;
+      width: 100%;
+      background: #E8EFF4;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 0.65rem 0 0.4rem 0;
+    }
+    .mem-meter-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0284C7, #2563eb);
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+
+    /* Control Panels (Two Columns) */
+    .maint-panels-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    @media (max-width: 900px) {
+      .maint-panels-row { grid-template-columns: 1fr; }
+    }
+
+    .maint-panel {
+      background: #FFFFFF;
+      border: 1.5px solid #E0D7C6;
+      border-radius: 1.15rem;
+      padding: 1.5rem;
+      box-shadow: 0 2px 10px rgba(22, 31, 54, 0.04);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .maint-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid #F1ECE1;
+    }
+    .maint-panel-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #161F36;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Switch Component */
+    .switch-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #cbd5e1;
+      transition: 0.25s;
+      border-radius: 999px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.25s;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    input:checked + .slider { background-color: #161F36; }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    /* Form Fields in Panels */
+    .panel-field {
+      margin-bottom: 1rem;
+    }
+    .panel-field label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 0.35rem;
+    }
+    .panel-field input, .panel-field textarea, .panel-field select {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: 1.5px solid #E0D7C6;
+      border-radius: 0.65rem;
+      background: #FAF7F2;
+      font-size: 0.86rem;
+      color: #161F36;
+      font-family: var(--font-sans);
+      box-sizing: border-box;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+    .panel-field input:focus, .panel-field textarea:focus, .panel-field select:focus {
+      background: #FFFFFF;
+      border-color: #161F36;
+      box-shadow: 0 0 0 3px rgba(22, 31, 54, 0.08);
+    }
+
+    /* Housekeeping Quick Actions Row */
+    .housekeeping-section {
+      background: #FFFFFF;
+      border: 1.5px solid #E0D7C6;
+      border-radius: 1.15rem;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(22, 31, 54, 0.04);
+    }
+    .housekeeping-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+    .housekeeping-card {
+      background: #FAF7F2;
+      border: 1px solid #E0D7C6;
+      border-radius: 0.85rem;
+      padding: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+    .housekeeping-card h4 {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #161F36;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .housekeeping-card p {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin: 0;
+      line-height: 1.45;
+    }
+
+    /* Audit Logs Table */
+    .audit-section {
+      background: #FFFFFF;
+      border: 1.5px solid #E0D7C6;
+      border-radius: 1.15rem;
+      padding: 1.5rem;
+      box-shadow: 0 2px 10px rgba(22, 31, 54, 0.04);
+    }
+    .audit-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .audit-filters {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .audit-filter-btn {
+      background: #FAF7F2;
+      border: 1px solid #E0D7C6;
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      transition: all 0.15s ease;
+    }
+    .audit-filter-btn:hover { background: #F1ECE1; color: #161F36; }
+    .audit-filter-btn.active {
+      background: #161F36;
+      color: #FFFFFF;
+      border-color: #161F36;
+    }
+
+    .audit-table-wrap {
+      overflow-x: auto;
+      border-radius: 0.75rem;
+      border: 1px solid #EDE8E0;
+    }
+    .audit-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      text-align: left;
+    }
+    .audit-table th {
+      background: #F8F5EE;
+      color: #161F36;
+      font-weight: 700;
+      padding: 0.75rem 1rem;
+      border-bottom: 1.5px solid #E0D7C6;
+    }
+    .audit-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #F1ECE1;
+      color: #334155;
+      vertical-align: middle;
+    }
+    .audit-table tr:hover td {
+      background: #FAF8F5;
+    }
+
+    .badge-severity {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      letter-spacing: 0.3px;
+    }
+    .badge-severity.SUCCESS { background: #DCFCE7; color: #15803d; border: 1px solid #BBF7D0; }
+    .badge-severity.INFO { background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD; }
+    .badge-severity.WARN { background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A; }
+    .badge-severity.CRITICAL { background: #FEE2E2; color: #B91C1C; border: 1px solid #FECACA; }
+
+    /* Modal styling */
+    .copy-toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #161F36;
+      color: #FFFFFF;
+      padding: 0.8rem 1.25rem;
+      border-radius: 0.75rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      z-index: 99999;
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Auth Guard: Strictly accessible to ADMIN -->
+  <script src="js/auth-guard.js" data-page="system-maintenance" data-allowed-roles="ADMIN"></script>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar" id="navbar"></nav>
+
+  <!-- Main Layout -->
+  <div class="dash-layout">
+    <div class="dash-container">
+
+      <!-- Page Header -->
+      <div class="maint-header">
+        <div class="maint-header-info">
+          <h1><i class="fas fa-server"></i> System Maintenance &amp; Administration</h1>
+          <p class="maint-header-desc">
+            Infrastructure telemetry, database health, scheduled maintenance controls, broadcast announcements, and security audit logs.
+          </p>
+        </div>
+        <div class="maint-header-actions">
+          <button class="btn-action-primary" onclick="openTestEmailModal()">
+            <i class="fas fa-paper-plane"></i> Test Email Gateway
+          </button>
+          <button class="refresh-btn" id="dbCheckBtn" onclick="runDbCheck()">
+            <i class="fas fa-database"></i> Check Database
+          </button>
+          <button class="refresh-btn" onclick="exportTelemetry()">
+            <i class="fas fa-download"></i> Export Telemetry
+          </button>
+          <button class="refresh-btn" id="refreshBtn" onclick="loadAllDiagnostics()">
+            <i class="fas fa-rotate-right"></i> Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Operational Health Banner -->
+      <div class="system-health-banner" id="systemHealthBanner">
+        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+          <div class="health-status-badge operational" id="statusBadge">
+            <span class="pulse-dot green" id="statusDot"></span>
+            <span id="statusText">All Core Systems Operational</span>
+          </div>
+          <span style="font-size:0.84rem;color:#64748b;" id="lastCheckTime">Checked just now</span>
+        </div>
+        <div class="health-quick-pills">
+          <div class="quick-pill">
+            <span class="quick-pill-label">Server Uptime</span>
+            <span class="quick-pill-val" id="quickUptime">—</span>
+          </div>
+          <div class="quick-pill">
+            <span class="quick-pill-label">Heap Memory</span>
+            <span class="quick-pill-val" id="quickMemory">—</span>
+          </div>
+          <div class="quick-pill">
+            <span class="quick-pill-label">Database</span>
+            <span class="quick-pill-val" style="color:#15803d;"><i class="fas fa-circle-check"></i> Online</span>
+          </div>
+          <div class="quick-pill">
+            <span class="quick-pill-label">Email Gateway</span>
+            <span class="quick-pill-val" id="quickEmail">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Telemetry Metric Cards -->
+      <div class="telemetry-grid">
+        <!-- Card 1: JVM Runtime -->
+        <div class="telemetry-card">
+          <div class="telemetry-header">
+            <span class="lbl">JVM Runtime</span>
+            <div class="telemetry-icon jvm"><i class="fas fa-microchip"></i></div>
+          </div>
+          <div class="val" id="valHeapUsage">—</div>
+          <div class="lbl" id="valHeapMeta">Loading memory metrics...</div>
+          <div class="mem-meter">
+            <div class="mem-meter-fill" id="memMeterFill" style="width: 0%;"></div>
+          </div>
+          <div style="font-size:0.73rem;color:#64748b;margin-top:0.35rem;" id="valJvmMeta">Java runtime: —</div>
+        </div>
+
+        <!-- Card 2: Database Entities -->
+        <div class="telemetry-card">
+          <div class="telemetry-header">
+            <span class="lbl">Database Storage</span>
+            <div class="telemetry-icon db"><i class="fas fa-database"></i></div>
+          </div>
+          <div class="val" id="valTotalUsers">—</div>
+          <div class="lbl">Registered Accounts on Campus</div>
+          <div style="display:flex;gap:0.75rem;margin-top:0.65rem;font-size:0.75rem;font-weight:700;">
+            <span style="color:#0369a1;"><span id="valCountStudents">0</span> Students</span>
+            <span style="color:#b45309;"><span id="valCountPros">0</span> Professionals</span>
+            <span style="color:#7e22ce;"><span id="valCountAdmins">0</span> Admins</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Platform Activities -->
+        <div class="telemetry-card">
+          <div class="telemetry-header">
+            <span class="lbl">Platform Activity</span>
+            <div class="telemetry-icon sec"><i class="fas fa-chart-line"></i></div>
+          </div>
+          <div class="val" id="valTotalPosts">—</div>
+          <div class="lbl">Student Expression Rants</div>
+          <div style="display:flex;gap:0.75rem;margin-top:0.65rem;font-size:0.75rem;font-weight:700;">
+            <span style="color:#475569;"><span id="valCountChats">0</span> Chat Sessions</span>
+            <span style="color:#dc2626;"><span id="valCountAlerts">0</span> Crisis Triggers</span>
+          </div>
+        </div>
+
+        <!-- Card 4: Email Gateway & Security -->
+        <div class="telemetry-card">
+          <div class="telemetry-header">
+            <span class="lbl">Email &amp; Sessions</span>
+            <div class="telemetry-icon email"><i class="fas fa-shield-halved"></i></div>
+          </div>
+          <div class="val" id="valActiveTokens">—</div>
+          <div class="lbl">Active Session Tokens in Memory</div>
+          <div style="font-size:0.75rem;color:#161F36;margin-top:0.65rem;font-weight:700;" id="valEmailStatus">
+            <i class="fas fa-envelope"></i> Gateway checking...
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Control Panels: Maintenance & Announcements -->
+      <div class="maint-panels-row">
+
+        <!-- Panel 1: Scheduled Maintenance Mode -->
+        <div class="maint-panel">
+          <div>
+            <div class="maint-panel-header">
+              <div class="maint-panel-title">
+                <i class="fas fa-screwdriver-wrench" style="color:#D97706;"></i> Scheduled Maintenance Mode
+              </div>
+              <div class="switch-wrapper">
+                <label class="switch">
+                  <input type="checkbox" id="maintenanceSwitch" onchange="toggleMaintenanceSwitch(this)">
+                  <span class="slider"></span>
+                </label>
+                <span style="font-size:0.8rem;font-weight:800;" id="maintSwitchLabel">INACTIVE</span>
+              </div>
+            </div>
+
+            <p style="font-size:0.83rem;color:#64748b;margin:0 0 1rem 0;line-height:1.45;">
+              When maintenance mode is active, non-administrator students are gently notified that platform updates are taking place, while administrators retain full access to configure and test the system.
+            </p>
+
+            <div class="panel-field">
+              <label>Maintenance Announcement Notice</label>
+              <textarea id="maintMessageInput" rows="3" placeholder="Enter message displayed to students..."></textarea>
+            </div>
+
+            <div class="panel-field">
+              <label>Estimated Completion Window (Optional)</label>
+              <input type="text" id="maintEstimateInput" placeholder="e.g. 30 minutes (until 10:30 PM)">
+            </div>
+
+            <div style="font-size:0.75rem;color:#64748b;margin-bottom:1rem;" id="maintAuditMeta">
+              Maintenance mode currently inactive.
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;">
+            <button class="btn-action-primary" onclick="saveMaintenanceSettings()">
+              <i class="fas fa-floppy-disk"></i> Apply Maintenance Settings
+            </button>
+          </div>
+        </div>
+
+        <!-- Panel 2: Campus Broadcast Announcement Banner -->
+        <div class="maint-panel">
+          <div>
+            <div class="maint-panel-header">
+              <div class="maint-panel-title">
+                <i class="fas fa-bullhorn" style="color:#0284C7;"></i> Campus Broadcast Announcement
+              </div>
+              <div class="switch-wrapper">
+                <label class="switch">
+                  <input type="checkbox" id="broadcastSwitch" onchange="toggleBroadcastSwitch(this)">
+                  <span class="slider"></span>
+                </label>
+                <span style="font-size:0.8rem;font-weight:800;" id="broadcastSwitchLabel">OFF</span>
+              </div>
+            </div>
+
+            <p style="font-size:0.83rem;color:#64748b;margin:0 0 1rem 0;line-height:1.45;">
+              Broadcast a persistent announcement banner across all Safe Space pages (Rant Board, Monitoring Dashboard, Crisis Alerts). Ideal for campus advisories, wellness weeks, or scheduled downtime notices.
+            </p>
+
+            <div class="panel-field">
+              <label>Banner Severity Level</label>
+              <select id="broadcastTypeSelect">
+                <option value="INFO">Informational (Calm Blue)</option>
+                <option value="WARNING">Important Notice (Warm Amber)</option>
+                <option value="CRITICAL">Urgent Advisory (Clinical Red)</option>
+              </select>
+            </div>
+
+            <div class="panel-field">
+              <label>Broadcast Message Text</label>
+              <textarea id="broadcastMessageInput" rows="3" placeholder="e.g. Notice: Campus Counseling Center will conduct midterms wellness workshops this Thursday."></textarea>
+            </div>
+
+            <div style="font-size:0.75rem;color:#64748b;margin-bottom:1rem;" id="broadcastAuditMeta">
+              No active broadcast banner.
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;">
+            <button class="btn-action-primary" onclick="saveBroadcastSettings()">
+              <i class="fas fa-bullhorn"></i> Publish Broadcast Banner
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Housekeeping Utilities -->
+      <div class="housekeeping-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+          <div>
+            <h3 style="font-size:1.1rem;font-weight:800;color:#161F36;margin:0 0 0.25rem 0;">
+              <i class="fas fa-broom" style="color:#161F36;"></i> System Maintenance Utilities
+            </h3>
+            <p style="font-size:0.84rem;color:#64748b;margin:0;">
+              Execute administrative housekeeping routines to maintain platform speed, database hygiene, and session security.
+            </p>
+          </div>
+        </div>
+
+        <div class="housekeeping-grid">
+          <!-- Action 1: Purge Inactive Sessions -->
+          <div class="housekeeping-card">
+            <div>
+              <h4><i class="fas fa-user-lock" style="color:#0284C7;"></i> Invalidate Inactive Sessions</h4>
+              <p>Purges stale session tokens from memory while preserving your active administrator login.</p>
+            </div>
+            <button class="cred-btn cred-btn-outline" onclick="purgeSessions()">
+              <i class="fas fa-trash-can"></i> Purge Stale Sessions
+            </button>
+          </div>
+
+          <!-- Action 2: Database Integrity Check -->
+          <div class="housekeeping-card">
+            <div>
+              <h4><i class="fas fa-stethoscope" style="color:#15803d;"></i> Database Diagnostics</h4>
+              <p>Verifies relation constraints, queries core tables, and calculates database response latency.</p>
+            </div>
+            <button class="cred-btn cred-btn-outline" onclick="runDbCheck()">
+              <i class="fas fa-vial"></i> Test Database Latency
+            </button>
+          </div>
+
+          <!-- Action 3: Email Gateway Ping -->
+          <div class="housekeeping-card">
+            <div>
+              <h4><i class="fas fa-paper-plane" style="color:#7C3AED;"></i> Email Delivery Test</h4>
+              <p>Dispatches a diagnostic ping through the Brevo REST API to verify API key validity and SMTP deliverability.</p>
+            </div>
+            <button class="cred-btn cred-btn-outline" onclick="openTestEmailModal()">
+              <i class="fas fa-envelope-circle-check"></i> Ping Email Gateway
+            </button>
+          </div>
+
+          <!-- Action 4: Export Telemetry -->
+          <div class="housekeeping-card">
+            <div>
+              <h4><i class="fas fa-file-code" style="color:#D97706;"></i> Telemetry Snapshot</h4>
+              <p>Generates an audit-ready JSON snapshot of hardware memory, storage counts, and security logs.</p>
+            </div>
+            <button class="cred-btn cred-btn-outline" onclick="exportTelemetry()">
+              <i class="fas fa-download"></i> Download Telemetry JSON
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security & Administrative Audit Trail -->
+      <div class="audit-section">
+        <div class="audit-header">
+          <div>
+            <h3 style="font-size:1.15rem;font-weight:800;color:#161F36;margin:0 0 0.25rem 0;">
+              <i class="fas fa-clock-rotate-left" style="color:#161F36;"></i> Security &amp; Administrative Audit Trail
+            </h3>
+            <p style="font-size:0.84rem;color:#64748b;margin:0;">
+              Immutable ledger of recent administrator actions, credentials provisioning, maintenance mode transitions, and security checks.
+            </p>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.75rem;">
+            <div class="audit-filters">
+              <button class="audit-filter-btn active" onclick="filterAudit('ALL', this)">All Events</button>
+              <button class="audit-filter-btn" onclick="filterAudit('SUCCESS', this)">Success</button>
+              <button class="audit-filter-btn" onclick="filterAudit('WARN', this)">Warnings</button>
+              <button class="audit-filter-btn" onclick="filterAudit('INFO', this)">Info</button>
+            </div>
+            <button class="refresh-btn" onclick="loadAuditLogs()"><i class="fas fa-rotate-right"></i> Refresh</button>
+          </div>
+        </div>
+
+        <div class="audit-table-wrap">
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th style="width:140px;">Timestamp</th>
+                <th style="width:100px;">Severity</th>
+                <th style="width:180px;">Action</th>
+                <th style="width:120px;">Actor</th>
+                <th>Event Details</th>
+                <th style="width:120px;">Target</th>
+              </tr>
+            </thead>
+            <tbody id="auditTableBody">
+              <tr>
+                <td colspan="6" style="text-align:center;padding:2rem;color:#64748b;">
+                  <i class="fas fa-spinner fa-spin" style="margin-right:0.5rem;"></i> Loading audit logs...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Test Email Modal -->
+  <div class="cred-modal-overlay" id="testEmailModal" style="display:none;">
+    <div class="cred-modal" style="max-width:480px;">
+      <div class="cred-modal-header">
+        <h3><i class="fas fa-paper-plane" style="color:#161F36;"></i> Test Email Gateway</h3>
+        <button class="cred-modal-close" onclick="closeModal('testEmailModal')"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="cred-modal-body">
+        <p style="font-size:0.85rem;color:#64748b;margin:0 0 1rem 0;line-height:1.5;">
+          Send a live transactional ping via Brevo REST API to confirm deliverability, SSL handshake, and template rendering.
+        </p>
+
+        <div class="panel-field">
+          <label>Target Recipient Email <span class="required-star">*</span></label>
+          <input type="email" id="testEmailTarget" placeholder="e.g. admin@safespace.edu or your personal email">
+        </div>
+
+        <div id="testEmailResult" style="display:none;margin-top:1rem;padding:0.85rem;border-radius:0.65rem;font-size:0.83rem;"></div>
+      </div>
+      <div class="cred-modal-footer">
+        <button class="cred-btn cred-btn-outline" onclick="closeModal('testEmailModal')">Close</button>
+        <button class="btn-action-primary" id="btnSendTestEmail" onclick="submitTestEmail()">
+          <i class="fas fa-paper-plane"></i> Send Test Ping
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="copy-toast" id="copyToast">
+    <i class="fas fa-circle-check" style="color:#22c55e;"></i>
+    <span id="copyToastMsg">Action completed successfully!</span>
+  </div>
+
+  <script>
+    const API_BASE = window.SAFE_SPACE_API_URL || (window.location.protocol === 'file:' || window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:8080/api' : 'https://safespace-backend-ws0m.onrender.com/api');
+    const API = API_BASE + '/admin/maintenance';
+
+    let allAuditLogs = [];
+    let currentAuditFilter = 'ALL';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAllDiagnostics();
+    });
+
+    async function loadAllDiagnostics() {
+      const refreshBtn = document.getElementById('refreshBtn');
+      if (refreshBtn) refreshBtn.classList.add('spinning');
+
+      try {
+        await Promise.all([
+          loadSystemHealth(),
+          loadAuditLogs()
+        ]);
+        document.getElementById('lastCheckTime').textContent = 'Updated ' + new Date().toLocaleTimeString();
+      } catch (err) {
+        showCopyToast('Failed to load system diagnostics: ' + err.message);
+      } finally {
+        if (refreshBtn) {
+          setTimeout(() => refreshBtn.classList.remove('spinning'), 400);
+        }
+      }
+    }
+
+    async function loadSystemHealth() {
+      const res = await SafeSpaceAuth.authFetch(`${API}/health`);
+      if (!res.ok) throw new Error('Could not fetch infrastructure health');
+      const data = await res.json();
+
+      // 1. Maintenance Status & Banner
+      const isMaint = data.maintenance && data.maintenance.active;
+      const statusBadge = document.getElementById('statusBadge');
+      const statusDot = document.getElementById('statusDot');
+      const statusText = document.getElementById('statusText');
+
+      if (isMaint) {
+        statusBadge.className = 'health-status-badge maintenance';
+        statusDot.className = 'pulse-dot amber';
+        statusText.textContent = 'Maintenance Mode Active';
+      } else {
+        statusBadge.className = 'health-status-badge operational';
+        statusDot.className = 'pulse-dot green';
+        statusText.textContent = 'All Core Systems Operational';
+      }
+
+      // Quick Banner Pills
+      document.getElementById('quickUptime').textContent = data.jvm.uptimeFormatted || '—';
+      document.getElementById('quickMemory').textContent = `${data.jvm.usedMemoryMb} MB / ${data.jvm.maxMemoryMb} MB`;
+
+      const emailReady = data.emailGateway && data.emailGateway.configured;
+      const quickEmail = document.getElementById('quickEmail');
+      quickEmail.textContent = emailReady ? 'Ready (Brevo API)' : 'Key Missing';
+      quickEmail.style.color = emailReady ? '#15803d' : '#b45309';
+
+      // 2. Telemetry Cards
+      document.getElementById('valHeapUsage').textContent = `${data.jvm.usedMemoryMb} MB`;
+      document.getElementById('valHeapMeta').textContent = `${data.jvm.memoryPercent}% of ${data.jvm.maxMemoryMb} MB Allocated`;
+      document.getElementById('memMeterFill').style.width = Math.min(100, Math.max(5, data.jvm.memoryPercent)) + '%';
+      document.getElementById('valJvmMeta').textContent = `Java ${data.jvm.javaVersion} (${data.jvm.osName}, ${data.jvm.availableProcessors} cores)`;
+
+      document.getElementById('valTotalUsers').textContent = data.database.totalUsers;
+      document.getElementById('valCountStudents').textContent = data.database.students;
+      document.getElementById('valCountPros').textContent = data.database.professionals;
+      document.getElementById('valCountAdmins').textContent = data.database.admins;
+
+      document.getElementById('valTotalPosts').textContent = data.database.totalPosts;
+      document.getElementById('valCountChats').textContent = data.database.totalChatSessions;
+      document.getElementById('valCountAlerts').textContent = data.database.totalCrisisAlerts;
+
+      document.getElementById('valActiveTokens').textContent = data.database.activeSessionsCount;
+      const valEmailStatus = document.getElementById('valEmailStatus');
+      valEmailStatus.innerHTML = emailReady
+        ? `<i class="fas fa-circle-check" style="color:#22c55e;"></i> Brevo REST Connected (${escapeHtml(data.emailGateway.senderEmail)})`
+        : `<i class="fas fa-triangle-exclamation" style="color:#d97706;"></i> BREVO_API_KEY Not Configured`;
+
+      // 3. Maintenance Panel Form
+      const maintSwitch = document.getElementById('maintenanceSwitch');
+      maintSwitch.checked = isMaint;
+      document.getElementById('maintSwitchLabel').textContent = isMaint ? 'ACTIVE' : 'INACTIVE';
+      document.getElementById('maintSwitchLabel').style.color = isMaint ? '#d97706' : '#64748b';
+
+      if (data.maintenance.message) {
+        document.getElementById('maintMessageInput').value = data.maintenance.message;
+      }
+      if (data.maintenance.estimatedEnd) {
+        document.getElementById('maintEstimateInput').value = data.maintenance.estimatedEnd;
+      }
+      const maintAuditMeta = document.getElementById('maintAuditMeta');
+      if (isMaint && data.maintenance.enabledBy) {
+        maintAuditMeta.textContent = `Activated by ${data.maintenance.enabledBy} on ${data.maintenance.enabledAt || 'today'}.`;
+      } else {
+        maintAuditMeta.textContent = 'Maintenance mode currently inactive.';
+      }
+
+      // 4. Broadcast Panel Form
+      const isBroad = data.broadcast && data.broadcast.active;
+      const broadSwitch = document.getElementById('broadcastSwitch');
+      broadSwitch.checked = isBroad;
+      document.getElementById('broadcastSwitchLabel').textContent = isBroad ? 'ACTIVE' : 'OFF';
+      document.getElementById('broadcastSwitchLabel').style.color = isBroad ? '#0284c7' : '#64748b';
+
+      if (data.broadcast.message) {
+        document.getElementById('broadcastMessageInput').value = data.broadcast.message;
+      }
+      if (data.broadcast.type) {
+        document.getElementById('broadcastTypeSelect').value = data.broadcast.type;
+      }
+      const broadAuditMeta = document.getElementById('broadcastAuditMeta');
+      if (isBroad && data.broadcast.updatedBy) {
+        broadAuditMeta.textContent = `Published by ${data.broadcast.updatedBy} (${data.broadcast.type}) on ${data.broadcast.updatedAt || 'today'}.`;
+      } else {
+        broadAuditMeta.textContent = 'No active broadcast banner.';
+      }
+    }
+
+    async function loadAuditLogs() {
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/audit-logs`);
+        if (!res.ok) throw new Error('Could not load audit logs');
+        allAuditLogs = await res.json();
+        renderAuditTable();
+      } catch (err) {
+        document.getElementById('auditTableBody').innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align:center;padding:1.5rem;color:#dc2626;">
+              <i class="fas fa-triangle-exclamation"></i> ${escapeHtml(err.message)}
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    function renderAuditTable() {
+      const tbody = document.getElementById('auditTableBody');
+      let list = allAuditLogs;
+
+      if (currentAuditFilter !== 'ALL') {
+        list = list.filter(l => (l.severity || '').toUpperCase() === currentAuditFilter);
+      }
+
+      if (list.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align:center;padding:2rem;color:#64748b;">
+              No audit logs found for filter "${escapeHtml(currentAuditFilter)}".
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = list.map(l => {
+        const sev = (l.severity || 'INFO').toUpperCase();
+        return `
+          <tr>
+            <td style="font-family:monospace;font-size:0.75rem;color:#475569;">${escapeHtml(l.timestamp)}</td>
+            <td><span class="badge-severity ${sev}">${sev}</span></td>
+            <td><strong style="color:#161F36;">${escapeHtml(l.action)}</strong></td>
+            <td><span style="font-weight:600;color:#0369a1;">${escapeHtml(l.actor || 'system')}</span></td>
+            <td style="word-break:break-word;">${escapeHtml(l.details)}</td>
+            <td style="font-family:monospace;font-size:0.75rem;color:#64748b;">${escapeHtml(l.target || '—')}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterAudit(sev, btn) {
+      currentAuditFilter = sev;
+      document.querySelectorAll('.audit-filter-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      renderAuditTable();
+    }
+
+    function toggleMaintenanceSwitch(el) {
+      document.getElementById('maintSwitchLabel').textContent = el.checked ? 'ACTIVE' : 'INACTIVE';
+      document.getElementById('maintSwitchLabel').style.color = el.checked ? '#d97706' : '#64748b';
+    }
+
+    function toggleBroadcastSwitch(el) {
+      document.getElementById('broadcastSwitchLabel').textContent = el.checked ? 'ACTIVE' : 'OFF';
+      document.getElementById('broadcastSwitchLabel').style.color = el.checked ? '#0284c7' : '#64748b';
+    }
+
+    async function saveMaintenanceSettings() {
+      const active = document.getElementById('maintenanceSwitch').checked;
+      const message = document.getElementById('maintMessageInput').value.trim();
+      const estimate = document.getElementById('maintEstimateInput').value.trim();
+
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/mode`, {
+          method: 'POST',
+          body: JSON.stringify({ active, message, estimatedEnd: estimate })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to update maintenance mode');
+        showCopyToast(data.message || 'Maintenance mode updated.');
+        loadAllDiagnostics();
+      } catch (err) {
+        showCopyToast(err.message);
+      }
+    }
+
+    async function saveBroadcastSettings() {
+      const active = document.getElementById('broadcastSwitch').checked;
+      const type = document.getElementById('broadcastTypeSelect').value;
+      const message = document.getElementById('broadcastMessageInput').value.trim();
+
+      if (active && !message) {
+        showCopyToast('Please enter an announcement message before publishing.');
+        document.getElementById('broadcastMessageInput').focus();
+        return;
+      }
+
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/banner`, {
+          method: 'POST',
+          body: JSON.stringify({ active, type, message })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to update broadcast banner');
+        showCopyToast(data.message || 'Broadcast announcement updated.');
+        loadAllDiagnostics();
+      } catch (err) {
+        showCopyToast(err.message);
+      }
+    }
+
+    async function purgeSessions() {
+      if (!confirm('Purge all inactive session tokens from memory? (Your current admin session will be preserved)')) {
+        return;
+      }
+
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/purge-sessions`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to purge sessions');
+        showCopyToast(data.message);
+        loadAllDiagnostics();
+      } catch (err) {
+        showCopyToast(err.message);
+      }
+    }
+
+    async function runDbCheck() {
+      const btn = document.getElementById('dbCheckBtn');
+      if (btn) btn.classList.add('spinning');
+
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/db-check`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Database check failed');
+        showCopyToast(`Database verified: ${data.message} (${data.latencyMs}ms roundtrip)`);
+        loadAllDiagnostics();
+      } catch (err) {
+        showCopyToast(err.message);
+      } finally {
+        if (btn) btn.classList.remove('spinning');
+      }
+    }
+
+    function openTestEmailModal() {
+      document.getElementById('testEmailTarget').value = localStorage.getItem('ss_username') || '';
+      document.getElementById('testEmailResult').style.display = 'none';
+      document.getElementById('testEmailModal').style.display = 'flex';
+      setTimeout(() => document.getElementById('testEmailTarget').focus(), 50);
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    async function submitTestEmail() {
+      const email = document.getElementById('testEmailTarget').value.trim();
+      if (!email) {
+        showCopyToast('Please enter a target recipient email address.');
+        return;
+      }
+
+      const btn = document.getElementById('btnSendTestEmail');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending Ping...';
+
+      const resultEl = document.getElementById('testEmailResult');
+      resultEl.style.display = 'none';
+
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/test-email`, {
+          method: 'POST',
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        resultEl.style.display = 'block';
+        if (data.success) {
+          resultEl.style.background = '#DCFCE7';
+          resultEl.style.color = '#15803d';
+          resultEl.style.border = '1px solid #BBF7D0';
+          resultEl.innerHTML = `<i class="fas fa-circle-check"></i> ${escapeHtml(data.message)} (${data.latencyMs}ms)`;
+        } else {
+          resultEl.style.background = '#FEF3C7';
+          resultEl.style.color = '#B45309';
+          resultEl.style.border = '1px solid #FDE68A';
+          resultEl.innerHTML = `<i class="fas fa-triangle-exclamation"></i> ${escapeHtml(data.message)}`;
+        }
+        loadAuditLogs();
+      } catch (err) {
+        resultEl.style.display = 'block';
+        resultEl.style.background = '#FEE2E2';
+        resultEl.style.color = '#B91C1C';
+        resultEl.style.border = '1px solid #FECACA';
+        resultEl.innerHTML = `<i class="fas fa-circle-xmark"></i> ${escapeHtml(err.message)}`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Test Ping';
+      }
+    }
+
+    async function exportTelemetry() {
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/export-telemetry`);
+        if (!res.ok) throw new Error('Could not export telemetry');
+        const data = await res.json();
+
+        const jsonStr = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `safespace-telemetry-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showCopyToast('Telemetry report downloaded.');
+        loadAuditLogs();
+      } catch (err) {
+        showCopyToast(err.message);
+      }
+    }
+
+    function showCopyToast(msg) {
+      const toast = document.getElementById('copyToast');
+      document.getElementById('copyToastMsg').textContent = msg;
+      toast.style.display = 'flex';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 3500);
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

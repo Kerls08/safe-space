@@ -707,6 +707,16 @@ public class CredentialService {
         activeTokens.remove(token);
     }
 
+    public int getActiveTokenCount() {
+        return activeTokens.size();
+    }
+
+    public int purgeTokensExcept(String keepUsername) {
+        int initial = activeTokens.size();
+        activeTokens.entrySet().removeIf(entry -> keepUsername != null && !entry.getValue().equalsIgnoreCase(keepUsername));
+        return initial - activeTokens.size();
+    }
+
     // ── Helpers ──
 
     public static void validatePasswordComplexity(String password) {
