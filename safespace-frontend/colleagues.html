@@ -7,228 +7,283 @@
   <meta name="description" content="Register and collaborate with campus mental health professionals, guidance counselors, psychologists, and psychometricians.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/dashboard.css">
   <link rel="stylesheet" href="css/auth.css">
   <style>
-    /* ── Colleagues Page Specific Styling ── */
-    .colleagues-hero {
-      background: linear-gradient(135deg, #161F36 0%, #1e2c4f 100%);
-      color: #FFFFFF;
-      border-radius: 1.25rem;
-      padding: 2.25rem 2.5rem;
-      margin-bottom: 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1.5rem;
-      flex-wrap: wrap;
-      box-shadow: 0 10px 30px rgba(22, 31, 54, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+    /* ══════════════════════════════════════════════════════════
+       Safe Space — Campus Counseling Team & Directory Styles
+       Senior Frontend Architecture & Trauma-Informed Aesthetics
+       ══════════════════════════════════════════════════════════ */
+
+    /* Layout & Page Header */
+    .dash-layout {
+      margin-top: 4.5rem;
+      min-height: calc(100vh - 4.5rem);
+      background: #FAF7F2;
+      padding: 1.75rem 1.5rem 3rem 1.5rem;
     }
-    .colleagues-hero-content h1 {
-      font-size: 1.65rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      margin: 0 0 0.5rem 0;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      color: #FFFFFF;
-    }
-    .colleagues-hero-content h1 i {
-      color: #BACBD8;
-    }
-    .colleagues-hero-content p {
-      font-size: 0.92rem;
-      color: #BACBD8;
-      margin: 0;
-      max-width: 620px;
-      line-height: 1.55;
-    }
-    .colleagues-hero-actions {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
-    }
-    .btn-register-colleague {
-      background: #FFFFFF;
-      color: #161F36;
-      border: none;
-      padding: 0.85rem 1.6rem;
-      border-radius: 0.85rem;
-      font-size: 0.92rem;
-      font-weight: 700;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.6rem;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-      font-family: 'Inter', sans-serif;
-    }
-    .btn-register-colleague:hover {
-      background: #FDFBF7;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-    }
-    .btn-register-colleague i {
-      color: #3b82f6;
+    .dash-container {
+      max-width: 1320px;
+      margin: 0 auto;
     }
 
-    /* ── Team Stats Cards ── */
-    .team-stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    .colleagues-page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1.75rem;
+      flex-wrap: wrap;
       gap: 1.25rem;
-      margin-bottom: 2rem;
     }
-    .team-stat-card {
-      background: #FFFFFF;
-      border: 1px solid #E2DDD5;
-      border-radius: 1rem;
-      padding: 1.25rem 1.5rem;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      box-shadow: 0 2px 8px rgba(22, 31, 54, 0.04);
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-    .team-stat-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(22, 31, 54, 0.08);
-    }
-    .team-stat-icon {
-      width: 3rem;
-      height: 3rem;
-      border-radius: 0.75rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.25rem;
-      flex-shrink: 0;
-    }
-    .team-stat-icon.total { background: #EEF2F6; color: #161F36; }
-    .team-stat-icon.counselor { background: #E0F2FE; color: #0284C7; }
-    .team-stat-icon.psychometrician { background: #EDE9FE; color: #7C3AED; }
-    .team-stat-icon.psychologist { background: #FEF3C7; color: #D97706; }
-    .team-stat-info .val {
+    .colleagues-header-info h1 {
       font-size: 1.6rem;
       font-weight: 800;
       color: #161F36;
-      line-height: 1.1;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin: 0 0 0.4rem 0;
+      letter-spacing: -0.02em;
     }
-    .team-stat-info .lbl {
-      font-size: 0.8rem;
-      font-weight: 600;
+    .colleagues-header-info h1 i {
+      color: #161F36;
+    }
+    .colleagues-header-desc {
+      font-size: 0.88rem;
       color: #64748b;
-      margin-top: 0.2rem;
+      margin: 0;
+      max-width: 680px;
+      line-height: 1.5;
+    }
+    .colleagues-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
     }
 
-    /* ── Directory Toolbar ── */
+    .dash-btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.25rem;
+      background: #161F36;
+      color: #FFFFFF;
+      border: 1.5px solid #161F36;
+      border-radius: 0.75rem;
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: var(--font-sans);
+      box-shadow: 0 3px 10px rgba(22, 31, 54, 0.15);
+      text-decoration: none;
+    }
+    .dash-btn-primary:hover {
+      background: #243356;
+      border-color: #243356;
+      transform: translateY(-1.5px);
+      box-shadow: 0 6px 18px rgba(22, 31, 54, 0.22);
+      color: #FFFFFF;
+    }
+    .dash-btn-primary i {
+      color: #BACBD8;
+      font-size: 0.88rem;
+    }
+
+    /* Stat Cards Row */
+    .colleagues-stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.15rem;
+      margin-bottom: 1.75rem;
+    }
+    @media (max-width: 1024px) {
+      .colleagues-stats-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 640px) {
+      .colleagues-stats-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .stat-card.interactive {
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .stat-card.interactive:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(22, 31, 54, 0.08);
+      border-color: #BACBD8;
+    }
+    .stat-card.interactive.active-filter {
+      border-color: #161F36;
+      box-shadow: 0 0 0 2px #161F36, 0 6px 20px rgba(22, 31, 54, 0.1);
+      background: #FFFFFF;
+    }
+
+    /* Directory Toolbar */
     .directory-toolbar {
       background: #FFFFFF;
-      border: 1px solid #E2DDD5;
+      border: 1.5px solid #E0D7C6;
       border-radius: 1rem;
-      padding: 1rem 1.25rem;
-      margin-bottom: 1.5rem;
+      padding: 0.85rem 1.25rem;
+      margin-bottom: 1.75rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 1rem;
+      gap: 1.25rem;
       flex-wrap: wrap;
+      box-shadow: 0 2px 8px rgba(22, 31, 54, 0.04);
     }
     .directory-search {
       position: relative;
       flex: 1;
-      min-width: 260px;
+      min-width: 280px;
     }
-    .directory-search i {
+    .directory-search i.search-icon {
       position: absolute;
-      left: 1rem;
+      left: 1.1rem;
       top: 50%;
       transform: translateY(-50%);
       color: #94a3b8;
-      font-size: 0.9rem;
+      font-size: 0.92rem;
+      pointer-events: none;
     }
     .directory-search input {
       width: 100%;
-      padding: 0.65rem 1rem 0.65rem 2.5rem;
-      border-radius: 0.65rem;
-      border: 1px solid #E2DDD5;
-      background: #FAF8F5;
-      font-size: 0.88rem;
+      padding: 0.65rem 2.6rem 0.65rem 2.75rem;
+      border-radius: 0.75rem;
+      border: 1.5px solid #E0D7C6;
+      background: #FAF7F2;
+      font-size: 0.86rem;
       color: #161F36;
-      font-family: 'Inter', sans-serif;
+      font-family: var(--font-sans);
       box-sizing: border-box;
       outline: none;
-      transition: all 0.15s ease;
+      transition: all 0.2s ease;
     }
     .directory-search input:focus {
       background: #FFFFFF;
       border-color: #161F36;
       box-shadow: 0 0 0 3px rgba(22, 31, 54, 0.08);
     }
+    .clear-search-btn {
+      position: absolute;
+      right: 0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #E8EFF4;
+      border: none;
+      color: #475569;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .clear-search-btn:hover {
+      background: #161F36;
+      color: #FFFFFF;
+    }
+
     .directory-filters {
       display: flex;
-      gap: 0.4rem;
+      gap: 0.45rem;
       flex-wrap: wrap;
     }
     .directory-filter-btn {
-      background: #FAF8F5;
-      border: 1px solid #E2DDD5;
+      background: #FAF7F2;
+      border: 1.5px solid #E0D7C6;
       color: #475569;
       font-size: 0.82rem;
       font-weight: 600;
       padding: 0.5rem 0.9rem;
-      border-radius: 0.6rem;
+      border-radius: 0.75rem;
       cursor: pointer;
-      transition: all 0.15s ease;
-      font-family: 'Inter', sans-serif;
+      transition: all 0.18s ease;
+      font-family: var(--font-sans);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
     }
     .directory-filter-btn:hover {
-      background: #F1ECE1;
+      background: #F2EDE2;
+      border-color: #BACBD8;
       color: #161F36;
     }
     .directory-filter-btn.active {
       background: #161F36;
       color: #FFFFFF;
       border-color: #161F36;
+      box-shadow: 0 2px 8px rgba(22, 31, 54, 0.15);
+    }
+    .filter-count {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      background: #E8EFF4;
+      color: #161F36;
+      line-height: 1;
+    }
+    .directory-filter-btn.active .filter-count {
+      background: rgba(255, 255, 255, 0.22);
+      color: #FFFFFF;
     }
 
-    /* ── Colleagues Grid ── */
+    /* Colleagues Grid */
     .colleagues-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 1.25rem;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
     }
+    @media (max-width: 480px) {
+      .colleagues-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .colleague-card {
       background: #FFFFFF;
-      border: 1px solid #E2DDD5;
+      border: 1.5px solid #E0D7C6;
       border-radius: 1.15rem;
       padding: 1.5rem;
-      box-shadow: 0 2px 8px rgba(22, 31, 54, 0.04);
+      box-shadow: 0 2px 10px rgba(22, 31, 54, 0.04);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      position: relative;
     }
     .colleague-card:hover {
       transform: translateY(-3px);
-      box-shadow: 0 10px 24px rgba(22, 31, 54, 0.08);
+      box-shadow: 0 12px 28px rgba(22, 31, 54, 0.08);
+      border-color: #BACBD8;
     }
-    .colleague-header {
+
+    .colleague-card-header {
       display: flex;
       align-items: flex-start;
       gap: 1rem;
-      margin-bottom: 1rem;
+      margin-bottom: 1.15rem;
     }
     .colleague-avatar {
       width: 3.25rem;
       height: 3.25rem;
       border-radius: 50%;
-      background: linear-gradient(135deg, #161F36 0%, #2A3B66 100%);
+      background: linear-gradient(135deg, #161F36 0%, #243356 100%);
       color: #FFFFFF;
       display: flex;
       align-items: center;
@@ -237,25 +292,50 @@
       font-weight: 800;
       flex-shrink: 0;
       box-shadow: 0 4px 10px rgba(22, 31, 54, 0.15);
+      letter-spacing: 0.5px;
+    }
+    .colleague-avatar.self {
+      box-shadow: 0 0 0 2.5px #FFFFFF, 0 0 0 4.5px #BACBD8;
     }
     .colleague-meta {
       flex: 1;
       min-width: 0;
     }
+    .colleague-name-row {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.35rem;
+    }
     .colleague-name {
-      font-size: 1.05rem;
-      font-weight: 700;
+      font-size: 1.08rem;
+      font-weight: 800;
       color: #161F36;
-      margin-bottom: 0.25rem;
+      line-height: 1.3;
       word-break: break-word;
     }
+    .colleague-you-pill {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #161F36;
+      background: #E8EFF4;
+      border: 1px solid #BACBD8;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      line-height: 1.2;
+    }
+
     .colleague-role-badge {
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
-      padding: 0.25rem 0.65rem;
+      gap: 0.4rem;
+      padding: 0.25rem 0.75rem;
       border-radius: 999px;
-      font-size: 0.75rem;
+      font-size: 0.76rem;
       font-weight: 700;
       letter-spacing: 0.2px;
     }
@@ -274,108 +354,186 @@
       color: #B45309;
       border: 1px solid #FDE68A;
     }
-    .colleague-role-badge.general {
-      background: #F1F5F9;
-      color: #475569;
-      border: 1px solid #E2E8F0;
-    }
 
-    .colleague-details {
-      background: #FAF8F5;
-      border-radius: 0.75rem;
+    /* Colleague Details Card Box */
+    .colleague-details-box {
+      background: #FAF7F2;
+      border: 1px solid #E0D7C6;
+      border-radius: 0.85rem;
       padding: 0.85rem 1rem;
       margin-bottom: 1.25rem;
-      font-size: 0.83rem;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
-      border: 1px solid #EDE8E0;
+      gap: 0.6rem;
     }
     .colleague-detail-row {
       display: flex;
-      align-items: center;
-      gap: 0.6rem;
+      align-items: flex-start;
+      gap: 0.75rem;
+      font-size: 0.83rem;
+      line-height: 1.45;
       color: #475569;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
     }
-    .colleague-detail-row i {
-      width: 1rem;
-      text-align: center;
+    .colleague-detail-icon {
+      width: 1.1rem;
       color: #64748b;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
+      margin-top: 0.15rem;
+      flex-shrink: 0;
+      text-align: center;
     }
-    .colleague-detail-row strong {
+    .colleague-detail-content {
+      flex: 1;
+      min-width: 0;
+      word-break: break-word;
+      white-space: normal; /* CRITICAL FIX: allow natural multi-line wrapping so department names are never sliced mid-word! */
+    }
+    .colleague-detail-content strong {
       color: #161F36;
-      font-weight: 600;
+      font-weight: 700;
+    }
+    .colleague-detail-content a {
+      color: #0369A1;
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .colleague-detail-content a:hover {
+      text-decoration: underline;
+      color: #0284C7;
     }
 
+    /* Quick Copy Staff ID Pill */
+    .staff-id-pill {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 700;
+      font-size: 0.82rem;
+      color: #161F36;
+    }
+    .btn-copy-id {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 0.1rem 0.35rem;
+      margin-left: 0.35rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      transition: all 0.15s ease;
+    }
+    .btn-copy-id:hover {
+      color: #161F36;
+      background: #E8EFF4;
+    }
+
+    /* Colleague Card Footer */
     .colleague-footer {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-top: 0.75rem;
-      border-top: 1px solid #F1ECE1;
-      gap: 0.5rem;
+      padding-top: 0.9rem;
+      border-top: 1px solid #EFEAE1;
+      gap: 0.75rem;
+      margin-top: auto;
     }
     .colleague-status {
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      font-size: 0.75rem;
-      font-weight: 600;
+      gap: 0.45rem;
+      font-size: 0.76rem;
+      font-weight: 700;
       color: #15803d;
     }
     .colleague-status-dot {
-      width: 7px;
-      height: 7px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: #22c55e;
-      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+      box-shadow: 0 0 0 2.5px rgba(34, 197, 94, 0.25);
+      animation: pulse-live 2.5s ease-in-out infinite;
     }
+
     .btn-resend-welcome {
-      background: transparent;
-      border: 1px solid #D5CBB9;
+      background: #FAF7F2;
+      border: 1.5px solid #E0D7C6;
       color: #161F36;
       font-size: 0.78rem;
-      font-weight: 600;
+      font-weight: 700;
       padding: 0.45rem 0.85rem;
-      border-radius: 0.55rem;
+      border-radius: 0.65rem;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      transition: all 0.15s ease;
-      font-family: 'Inter', sans-serif;
+      gap: 0.45rem;
+      transition: all 0.18s ease;
+      font-family: var(--font-sans);
     }
     .btn-resend-welcome:hover {
       background: #161F36;
       color: #FFFFFF;
       border-color: #161F36;
+      transform: translateY(-1px);
+    }
+    .btn-resend-welcome i {
+      color: #0284C7;
+      transition: color 0.18s ease;
+    }
+    .btn-resend-welcome:hover i {
+      color: #BACBD8;
     }
 
-    /* ── Friendly Modal Customization ── */
-    .form-hint {
-      font-size: 0.75rem;
-      color: #64748b;
-      margin-top: 0.3rem;
-      line-height: 1.4;
+    /* Quick Add Invitation Card (Gracefully fills space when 1 colleague exists) */
+    .colleague-add-card {
+      border: 2px dashed #BACBD8;
+      border-radius: 1.15rem;
+      background: rgba(255, 255, 255, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2.25rem 1.75rem;
+      transition: all 0.2s ease;
+      min-height: 290px;
     }
-    .info-callout {
-      background: #F4F7FA;
-      border-left: 3px solid #161F36;
-      padding: 0.85rem 1rem;
-      border-radius: 0.5rem;
-      font-size: 0.82rem;
-      color: #3D4D6E;
-      line-height: 1.5;
-      margin-top: 1rem;
-      margin-bottom: 0.5rem;
+    .colleague-add-card:hover {
+      border-color: #161F36;
+      background: #FFFFFF;
+      box-shadow: 0 8px 24px rgba(22, 31, 54, 0.06);
+      transform: translateY(-2px);
     }
-    .info-callout strong {
+    .colleague-add-icon {
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 50%;
+      background: #E8EFF4;
       color: #161F36;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      margin-bottom: 1rem;
+      transition: transform 0.2s ease;
     }
+    .colleague-add-card:hover .colleague-add-icon {
+      transform: scale(1.08);
+      background: #161F36;
+      color: #FFFFFF;
+    }
+    .colleague-add-card h4 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #161F36;
+      margin: 0 0 0.4rem 0;
+    }
+    .colleague-add-card p {
+      font-size: 0.84rem;
+      color: #64748b;
+      margin: 0 0 1.25rem 0;
+      max-width: 280px;
+      line-height: 1.45;
+    }
+
+    /* Toast Notification */
     .copy-toast {
       position: fixed;
       bottom: 2rem;
@@ -393,6 +551,10 @@
       gap: 0.5rem;
       animation: fadeIn 0.2s ease;
     }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
@@ -402,83 +564,111 @@
   <!-- Navigation Bar -->
   <nav class="navbar" id="navbar"></nav>
 
-  <div class="cred-layout" style="max-width:1200px;margin:2rem auto;padding:0 1.25rem;">
-    <!-- Hero Banner -->
-    <div class="colleagues-hero">
-      <div class="colleagues-hero-content">
-        <h1><i class="fas fa-user-doctor"></i> Campus Counseling Team &amp; Colleagues</h1>
-        <p>
-          Welcome and register fellow campus professionals (Psychometricians, Psychologists, or Guidance Counselors) who have the authority to assist and observe students.
-        </p>
-      </div>
-      <div class="colleagues-hero-actions">
-        <button class="btn-register-colleague" onclick="openRegisterColleagueModal()">
-          <i class="fas fa-user-plus"></i> Register Colleague
-        </button>
-        <button class="cred-btn cred-btn-outline" style="color:#FFFFFF;border-color:rgba(255,255,255,0.25);" onclick="loadColleagues()">
-          <i class="fas fa-rotate-right"></i> Refresh
-        </button>
-      </div>
-    </div>
+  <!-- Main Layout -->
+  <div class="dash-layout">
+    <div class="dash-container">
 
-    <!-- Team Metrics -->
-    <div class="team-stats">
-      <div class="team-stat-card">
-        <div class="team-stat-icon total"><i class="fas fa-users"></i></div>
-        <div class="team-stat-info">
-          <div class="val" id="statTotalColleagues">—</div>
-          <div class="lbl">Total Campus Professionals</div>
+      <!-- Cohesive Page Header -->
+      <div class="colleagues-page-header">
+        <div class="colleagues-header-info">
+          <h1><i class="fas fa-user-doctor"></i> Campus Counseling Team &amp; Colleagues</h1>
+          <p class="colleagues-header-desc">
+            Collaborate and manage verified campus professionals (Guidance Counselors, Psychometricians, and Psychologists) authorized to assist and observe students.
+          </p>
+        </div>
+        <div class="colleagues-header-actions">
+          <button class="dash-btn-primary" onclick="openRegisterColleagueModal()">
+            <i class="fas fa-user-plus"></i> Register Colleague
+          </button>
+          <button class="refresh-btn" id="refreshBtn" onclick="loadColleagues()">
+            <i class="fas fa-rotate-right"></i> Refresh
+          </button>
+          <a href="pro-dashboard.html" class="refresh-btn" id="dashShortcutBtn" style="text-decoration:none;">
+            <i class="fas fa-chart-line"></i> Dashboard
+          </a>
         </div>
       </div>
-      <div class="team-stat-card">
-        <div class="team-stat-icon counselor"><i class="fas fa-hand-holding-heart"></i></div>
-        <div class="team-stat-info">
-          <div class="val" id="statCounselors">—</div>
-          <div class="lbl">Guidance Counselors</div>
-        </div>
-      </div>
-      <div class="team-stat-card">
-        <div class="team-stat-icon psychometrician"><i class="fas fa-chart-line"></i></div>
-        <div class="team-stat-info">
-          <div class="val" id="statPsychometricians">—</div>
-          <div class="lbl">Psychometricians</div>
-        </div>
-      </div>
-      <div class="team-stat-card">
-        <div class="team-stat-icon psychologist"><i class="fas fa-brain"></i></div>
-        <div class="team-stat-info">
-          <div class="val" id="statPsychologists">—</div>
-          <div class="lbl">Psychologists</div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Directory Toolbar -->
-    <div class="directory-toolbar">
-      <div class="directory-search">
-        <i class="fas fa-search"></i>
-        <input type="text" id="colleagueSearchInput" placeholder="Search colleague by name, staff ID, or office..." oninput="filterColleagues()">
-      </div>
-      <div class="directory-filters">
-        <button class="directory-filter-btn active" onclick="setRoleFilter('ALL', this)">All Roles</button>
-        <button class="directory-filter-btn" onclick="setRoleFilter('COUNSELOR', this)">Guidance Counselors</button>
-        <button class="directory-filter-btn" onclick="setRoleFilter('PSYCHOMETRICIAN', this)">Psychometricians</button>
-        <button class="directory-filter-btn" onclick="setRoleFilter('PSYCHOLOGIST', this)">Psychologists</button>
-      </div>
-    </div>
+      <!-- Stat Cards Row (Native Safe Space Design System) -->
+      <div class="colleagues-stats-row">
+        <!-- Total Professionals -->
+        <div class="stat-card interactive" id="cardTotal" onclick="setRoleFilter('ALL', document.getElementById('filterBtnAll'))">
+          <div class="stat-card-icon"><i class="fas fa-users"></i></div>
+          <div class="stat-card-value" id="statTotalColleagues">—</div>
+          <div class="stat-card-label">Total Campus Professionals</div>
+          <div class="stat-card-sub neutral"><i class="fas fa-shield-halved"></i> Verified Staff</div>
+        </div>
 
-    <!-- Colleagues Grid -->
-    <div class="colleagues-grid" id="colleaguesGrid">
-      <div style="grid-column:1/-1;text-align:center;padding:3rem;background:#fff;border-radius:1rem;border:1px solid #E2DDD5;">
-        <i class="fas fa-spinner fa-spin" style="font-size:1.8rem;color:#161F36;margin-bottom:0.75rem;"></i>
-        <p style="color:#64748b;font-size:0.9rem;margin:0;">Loading campus counseling colleagues...</p>
+        <!-- Guidance Counselors -->
+        <div class="stat-card blue interactive" id="cardCounselor" onclick="setRoleFilter('COUNSELOR', document.getElementById('filterBtnCounselor'))">
+          <div class="stat-card-icon"><i class="fas fa-hand-holding-heart"></i></div>
+          <div class="stat-card-value" id="statCounselors">—</div>
+          <div class="stat-card-label">Guidance Counselors</div>
+          <div class="stat-card-sub" style="background:#eff6ff;color:#0284c7;border:1px solid #bfdbfe;">
+            <i class="fas fa-user-graduate"></i> Student Counseling
+          </div>
+        </div>
+
+        <!-- Psychometricians -->
+        <div class="stat-card purple interactive" id="cardPsychometrician" onclick="setRoleFilter('PSYCHOMETRICIAN', document.getElementById('filterBtnPsychometrician'))">
+          <div class="stat-card-icon"><i class="fas fa-chart-line"></i></div>
+          <div class="stat-card-value" id="statPsychometricians">—</div>
+          <div class="stat-card-label">Psychometricians</div>
+          <div class="stat-card-sub" style="background:#ede9fe;color:#7c3aed;border:1px solid #ddd6fe;">
+            <i class="fas fa-square-poll-vertical"></i> Mental Health Metrics
+          </div>
+        </div>
+
+        <!-- Psychologists -->
+        <div class="stat-card amber interactive" id="cardPsychologist" onclick="setRoleFilter('PSYCHOLOGIST', document.getElementById('filterBtnPsychologist'))">
+          <div class="stat-card-icon"><i class="fas fa-brain"></i></div>
+          <div class="stat-card-value" id="statPsychologists">—</div>
+          <div class="stat-card-label">Psychologists</div>
+          <div class="stat-card-sub" style="background:#fffbeb;color:#d97706;border:1px solid #fde68a;">
+            <i class="fas fa-stethoscope"></i> Clinical Assessment
+          </div>
+        </div>
       </div>
+
+      <!-- Directory Toolbar -->
+      <div class="directory-toolbar">
+        <div class="directory-search">
+          <i class="fas fa-search search-icon"></i>
+          <input type="text" id="colleagueSearchInput" placeholder="Search colleague by name, staff ID, or office..." oninput="handleSearchInput()">
+          <button class="clear-search-btn" id="clearSearchBtn" onclick="clearSearch()" title="Clear search">
+            <i class="fas fa-xmark"></i>
+          </button>
+        </div>
+        <div class="directory-filters">
+          <button class="directory-filter-btn active" id="filterBtnAll" onclick="setRoleFilter('ALL', this)">
+            All Roles <span class="filter-count" id="countAll">0</span>
+          </button>
+          <button class="directory-filter-btn" id="filterBtnCounselor" onclick="setRoleFilter('COUNSELOR', this)">
+            Guidance Counselors <span class="filter-count" id="countCounselor">0</span>
+          </button>
+          <button class="directory-filter-btn" id="filterBtnPsychometrician" onclick="setRoleFilter('PSYCHOMETRICIAN', this)">
+            Psychometricians <span class="filter-count" id="countPsychometrician">0</span>
+          </button>
+          <button class="directory-filter-btn" id="filterBtnPsychologist" onclick="setRoleFilter('PSYCHOLOGIST', this)">
+            Psychologists <span class="filter-count" id="countPsychologist">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Colleagues Grid -->
+      <div class="colleagues-grid" id="colleaguesGrid">
+        <div style="grid-column:1/-1;text-align:center;padding:3.5rem 1.5rem;background:#FFFFFF;border-radius:1rem;border:1.5px solid #E0D7C6;">
+          <i class="fas fa-spinner fa-spin" style="font-size:2rem;color:#161F36;margin-bottom:0.75rem;"></i>
+          <p style="color:#64748b;font-size:0.92rem;margin:0;font-weight:600;">Loading campus counseling colleagues...</p>
+        </div>
+      </div>
+
     </div>
   </div>
 
   <!-- Register Colleague Modal -->
   <div class="cred-modal-overlay" id="registerColleagueModal" style="display:none;">
-    <div class="cred-modal" style="max-width:500px;">
+    <div class="cred-modal" style="max-width:520px;">
       <div class="cred-modal-header">
         <h3><i class="fas fa-user-plus" style="color:#161F36;"></i> Register a Colleague</h3>
         <button class="cred-modal-close" onclick="closeModal('registerColleagueModal')"><i class="fas fa-xmark"></i></button>
@@ -486,12 +676,12 @@
       <div class="cred-modal-body" id="colleagueModalBody">
         <div class="auth-form" id="colleagueFormFields">
           <div class="form-group">
-            <label class="form-label">Full Name <span class="required-star" style="color:#DC2626;">*</span></label>
+            <label class="form-label">Full Name <span class="required-star">*</span></label>
             <input class="form-input" id="colleagueName" placeholder="e.g. Dr. Clara Reyes, RPsy">
           </div>
 
           <div class="form-group">
-            <label class="form-label">Professional Role <span class="required-star" style="color:#DC2626;">*</span></label>
+            <label class="form-label">Professional Role <span class="required-star">*</span></label>
             <select class="form-input" id="colleagueTitle">
               <option value="Guidance Counselor" selected>Guidance Counselor</option>
               <option value="Psychometrician">Psychometrician</option>
@@ -500,12 +690,12 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Institutional ID <span class="required-star" style="color:#DC2626;">*</span></label>
-            <input class="form-input" id="colleagueInstId" placeholder="e.g. PROF-001">
+            <label class="form-label">Campus Staff ID <span class="required-star">*</span></label>
+            <input class="form-input" id="colleagueInstId" placeholder="e.g. PROF-001 or 2023304523">
           </div>
 
           <div class="form-group">
-            <label class="form-label">Email Address <span class="required-star" style="color:#DC2626;">*</span></label>
+            <label class="form-label">Work Email Address <span class="required-star">*</span></label>
             <input class="form-input" id="colleagueEmail" type="email" placeholder="e.g. clara.reyes@ustp.edu.ph">
           </div>
 
@@ -524,7 +714,7 @@
       </div>
       <div class="cred-modal-footer" id="colleagueModalFooter">
         <button class="cred-btn cred-btn-outline" onclick="closeModal('registerColleagueModal')">Cancel</button>
-        <button class="cred-btn cred-btn-primary" id="colleagueSubmitBtn" onclick="submitRegisterColleague()">
+        <button class="dash-btn-primary" id="colleagueSubmitBtn" onclick="submitRegisterColleague()" style="padding:0.65rem 1.3rem;">
           <i class="fas fa-user-plus"></i> Register Colleague
         </button>
       </div>
@@ -533,7 +723,7 @@
 
   <!-- Toast Notification -->
   <div class="copy-toast" id="copyToast">
-    <i class="fas fa-check-circle" style="color:#22c55e;"></i>
+    <i class="fas fa-circle-check" style="color:#22c55e;"></i>
     <span id="copyToastMsg">Copied to clipboard!</span>
   </div>
 
@@ -545,57 +735,77 @@
     let currentFilter = 'ALL';
 
     document.addEventListener('DOMContentLoaded', () => {
+      // Adjust dashboard shortcut button if admin
+      if (SafeSpaceAuth.getRole() === 'ADMIN') {
+        const btn = document.getElementById('dashShortcutBtn');
+        if (btn) {
+          btn.href = 'credential-manager.html';
+          btn.innerHTML = '<i class="fas fa-users-gear"></i> Credential Manager';
+        }
+      }
       loadColleagues();
     });
 
     async function loadColleagues() {
+      const refreshBtn = document.getElementById('refreshBtn');
+      if (refreshBtn) refreshBtn.classList.add('spinning');
+
       const grid = document.getElementById('colleaguesGrid');
       grid.innerHTML = `
-        <div style="grid-column:1/-1;text-align:center;padding:3rem;background:#fff;border-radius:1rem;border:1px solid #E2DDD5;">
-          <i class="fas fa-spinner fa-spin" style="font-size:1.8rem;color:#161F36;margin-bottom:0.75rem;"></i>
-          <p style="color:#64748b;font-size:0.9rem;margin:0;">Loading campus counseling colleagues...</p>
+        <div style="grid-column:1/-1;text-align:center;padding:3.5rem 1.5rem;background:#FFFFFF;border-radius:1rem;border:1.5px solid #E0D7C6;">
+          <i class="fas fa-spinner fa-spin" style="font-size:2rem;color:#161F36;margin-bottom:0.75rem;"></i>
+          <p style="color:#64748b;font-size:0.92rem;margin:0;font-weight:600;">Loading campus counseling colleagues...</p>
         </div>
       `;
 
       try {
         const res = await SafeSpaceAuth.authFetch(`${API}/colleagues`);
-        if (!res.ok) throw new Error('Failed to load colleagues');
+        if (!res.ok) throw new Error('Failed to load colleagues directory');
         allColleagues = await res.json();
         renderMetrics();
         renderColleagues();
       } catch (err) {
         grid.innerHTML = `
-          <div style="grid-column:1/-1;text-align:center;padding:3rem;background:#fff;border-radius:1rem;border:1px solid #E2DDD5;">
-            <i class="fas fa-triangle-exclamation" style="font-size:2rem;color:#dc2626;margin-bottom:0.75rem;"></i>
-            <p style="color:#1e293b;font-weight:600;margin-bottom:0.5rem;">Could not load colleagues directory</p>
-            <p style="color:#64748b;font-size:0.85rem;margin-bottom:1.25rem;">${escapeHtml(err.message)}</p>
-            <button class="cred-btn cred-btn-outline" onclick="loadColleagues()"><i class="fas fa-rotate-right"></i> Try Again</button>
+          <div style="grid-column:1/-1;text-align:center;padding:3.5rem 1.5rem;background:#FFFFFF;border-radius:1rem;border:1.5px solid #E0D7C6;">
+            <div style="width:3.5rem;height:3.5rem;border-radius:50%;background:#fee2e2;color:#dc2626;display:inline-flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:1rem;">
+              <i class="fas fa-triangle-exclamation"></i>
+            </div>
+            <h3 style="font-size:1.15rem;font-weight:800;color:#161F36;margin:0 0 0.4rem 0;">Could not load colleagues directory</h3>
+            <p style="color:#64748b;font-size:0.86rem;margin:0 0 1.25rem 0;">${escapeHtml(err.message)}</p>
+            <button class="dash-btn-primary" onclick="loadColleagues()"><i class="fas fa-rotate-right"></i> Try Again</button>
           </div>
         `;
+      } finally {
+        if (refreshBtn) {
+          setTimeout(() => refreshBtn.classList.remove('spinning'), 400);
+        }
       }
     }
 
     function renderMetrics() {
-      document.getElementById('statTotalColleagues').textContent = allColleagues.length;
-      
+      const total = allColleagues.length;
       let counselors = 0;
       let psychometricians = 0;
       let psychologists = 0;
 
       allColleagues.forEach(c => {
-        const text = ((c.department || '') + ' ' + (c.fullName || '')).toLowerCase();
-        if (text.includes('psychologist')) {
-          psychologists++;
-        } else if (text.includes('psychometrician') || text.includes('rpm')) {
-          psychometricians++;
-        } else {
-          counselors++;
-        }
+        const cat = getColleagueCategory(c);
+        if (cat === 'PSYCHOLOGIST') psychologists++;
+        else if (cat === 'PSYCHOMETRICIAN') psychometricians++;
+        else counselors++;
       });
 
+      // Update stat cards numbers
+      document.getElementById('statTotalColleagues').textContent = total;
       document.getElementById('statCounselors').textContent = counselors;
       document.getElementById('statPsychometricians').textContent = psychometricians;
       document.getElementById('statPsychologists').textContent = psychologists;
+
+      // Update filter pills count badges
+      document.getElementById('countAll').textContent = total;
+      document.getElementById('countCounselor').textContent = counselors;
+      document.getElementById('countPsychometrician').textContent = psychometricians;
+      document.getElementById('countPsychologist').textContent = psychologists;
     }
 
     function getColleagueCategory(c) {
@@ -635,87 +845,153 @@
         );
       }
 
+      // No results found
       if (list.length === 0) {
         grid.innerHTML = `
-          <div style="grid-column:1/-1;text-align:center;padding:3.5rem 1.5rem;background:#fff;border-radius:1rem;border:1px dashed #D5CBB9;">
+          <div style="grid-column:1/-1;text-align:center;padding:3.5rem 1.5rem;background:#FFFFFF;border-radius:1.15rem;border:1.5px dashed #BACBD8;">
             <div style="width:3.5rem;height:3.5rem;border-radius:50%;background:#F2EDE2;display:inline-flex;align-items:center;justify-content:center;font-size:1.5rem;color:#161F36;margin-bottom:1rem;">
               <i class="fas fa-user-doctor"></i>
             </div>
-            <h3 style="font-size:1.15rem;font-weight:700;color:#161F36;margin:0 0 0.4rem 0;">No Colleagues Found</h3>
-            <p style="font-size:0.86rem;color:#64748b;margin:0 0 1.25rem 0;max-width:400px;margin-left:auto;margin-right:auto;">
-              ${query ? 'No registered colleague matches your search filter.' : 'No colleagues registered yet. You can register your colleagues to assist and observe students together.'}
+            <h3 style="font-size:1.15rem;font-weight:800;color:#161F36;margin:0 0 0.4rem 0;">No Colleagues Found</h3>
+            <p style="font-size:0.86rem;color:#64748b;margin:0 0 1.25rem 0;max-width:420px;margin-left:auto;margin-right:auto;line-height:1.5;">
+              ${query ? `No registered colleagues match "${escapeHtml(query)}". Try clearing your search or checking role filters.` : 'No colleagues are currently registered under this category.'}
             </p>
-            <button class="btn-register-colleague" onclick="openRegisterColleagueModal()">
-              <i class="fas fa-user-plus"></i> Register a Colleague
-            </button>
+            ${query ? `
+              <button class="dash-btn-primary" onclick="clearSearch()"><i class="fas fa-xmark"></i> Clear Search</button>
+            ` : `
+              <button class="dash-btn-primary" onclick="openRegisterColleagueModal()"><i class="fas fa-user-plus"></i> Register a Colleague</button>
+            `}
           </div>
         `;
         return;
       }
 
-      grid.innerHTML = list.map(c => {
+      // Render cards
+      let html = list.map(c => {
         const initials = getInitials(c.fullName);
         const badge = getCategoryBadge(c);
         const deptText = c.department || 'Guidance & Counseling Center';
-        const isSelf = (c.username === SafeSpaceAuth.getUsername());
+        const isSelf = (c.username === SafeSpaceAuth.getUsername() || c.institutionalId === SafeSpaceAuth.getUsername());
+        const staffId = c.institutionalId || c.username;
 
         return `
           <div class="colleague-card">
             <div>
-              <div class="colleague-header">
-                <div class="colleague-avatar">${escapeHtml(initials)}</div>
+              <div class="colleague-card-header">
+                <div class="colleague-avatar ${isSelf ? 'self' : ''}">${escapeHtml(initials)}</div>
                 <div class="colleague-meta">
-                  <div class="colleague-name">
-                    ${escapeHtml(c.fullName)}
-                    ${isSelf ? '<span style="font-size:0.7rem;font-weight:700;color:#161F36;background:#E8EFF4;padding:2px 6px;border-radius:4px;margin-left:4px;">You</span>' : ''}
+                  <div class="colleague-name-row">
+                    <span class="colleague-name">${escapeHtml(c.fullName)}</span>
+                    ${isSelf ? '<span class="colleague-you-pill"><i class="fas fa-user-check"></i> You</span>' : ''}
                   </div>
                   <div>${badge}</div>
                 </div>
               </div>
 
-              <div class="colleague-details">
-                <div class="colleague-detail-row" title="Campus Staff ID">
-                  <i class="fas fa-id-badge"></i>
-                  <span>ID: <strong>${escapeHtml(c.institutionalId || c.username)}</strong></span>
+              <!-- Information Details (No text truncation bug!) -->
+              <div class="colleague-details-box">
+                <div class="colleague-detail-row">
+                  <i class="fas fa-id-badge colleague-detail-icon" title="Staff ID"></i>
+                  <div class="colleague-detail-content">
+                    <span style="color:#64748b;font-size:0.75rem;font-weight:600;display:block;margin-bottom:0.1rem;">Staff ID</span>
+                    <span class="staff-id-pill">${escapeHtml(staffId)}</span>
+                    <button class="btn-copy-id" onclick="copyText('${escapeHtml(staffId)}')" title="Copy Staff ID">
+                      <i class="fas fa-copy"></i>
+                    </button>
+                  </div>
                 </div>
-                <div class="colleague-detail-row" title="Work Email Address">
-                  <i class="fas fa-envelope"></i>
-                  <span>${c.email ? `<a href="mailto:${escapeHtml(c.email)}" style="color:#0284C7;text-decoration:none;">${escapeHtml(c.email)}</a>` : '<span style="color:#94a3b8;">No email on file</span>'}</span>
+
+                <div class="colleague-detail-row">
+                  <i class="fas fa-envelope colleague-detail-icon" title="Work Email"></i>
+                  <div class="colleague-detail-content">
+                    <span style="color:#64748b;font-size:0.75rem;font-weight:600;display:block;margin-bottom:0.1rem;">Work Email</span>
+                    ${c.email ? `<a href="mailto:${escapeHtml(c.email)}">${escapeHtml(c.email)}</a>` : '<span style="color:#94a3b8;">No email on file</span>'}
+                  </div>
                 </div>
-                <div class="colleague-detail-row" title="Campus Department / Center">
-                  <i class="fas fa-building"></i>
-                  <span>${escapeHtml(deptText)}</span>
+
+                <div class="colleague-detail-row">
+                  <i class="fas fa-building colleague-detail-icon" title="Department / Office"></i>
+                  <div class="colleague-detail-content">
+                    <span style="color:#64748b;font-size:0.75rem;font-weight:600;display:block;margin-bottom:0.1rem;">Department / Office</span>
+                    <strong style="color:#161F36;">${escapeHtml(deptText)}</strong>
+                  </div>
                 </div>
+
                 ${c.phoneNumber ? `
-                <div class="colleague-detail-row" title="Contact Number">
-                  <i class="fas fa-phone"></i>
-                  <span>${escapeHtml(c.phoneNumber)}</span>
+                <div class="colleague-detail-row">
+                  <i class="fas fa-phone colleague-detail-icon" title="Contact Number"></i>
+                  <div class="colleague-detail-content">
+                    <span style="color:#64748b;font-size:0.75rem;font-weight:600;display:block;margin-bottom:0.1rem;">Contact</span>
+                    <a href="tel:${escapeHtml(c.phoneNumber)}">${escapeHtml(c.phoneNumber)}</a>
+                  </div>
                 </div>` : ''}
               </div>
             </div>
 
+            <!-- Card Footer -->
             <div class="colleague-footer">
               <div class="colleague-status">
                 <span class="colleague-status-dot"></span>
                 <span>Active &amp; Authorized</span>
               </div>
-              <button class="btn-resend-welcome" onclick="resendColleagueEmail('${escapeHtml(c.username)}', '${escapeHtml(c.fullName)}')">
-                <i class="fas fa-envelope" style="color:#0284C7;"></i> Resend Email
+              <button class="btn-resend-welcome" id="resendBtn_${escapeHtml(staffId)}" onclick="resendColleagueEmail('${escapeHtml(c.username)}', '${escapeHtml(c.fullName)}', '${escapeHtml(staffId)}')">
+                <i class="fas fa-paper-plane"></i> Resend Email
               </button>
             </div>
           </div>
         `;
       }).join('');
+
+      // Senior UX Polish: When only 1 colleague is registered (e.g. newly onboarded team),
+      // render an inviting "Register Colleague" card right next to it instead of leaving 75% empty void!
+      if (list.length === 1 && currentFilter === 'ALL' && !query) {
+        html += `
+          <div class="colleague-add-card">
+            <div class="colleague-add-icon"><i class="fas fa-user-plus"></i></div>
+            <h4>Register a Colleague</h4>
+            <p>Add fellow campus counselors, psychologists, or psychometricians to collaborate on student wellbeing.</p>
+            <button class="dash-btn-primary" onclick="openRegisterColleagueModal()">
+              <i class="fas fa-user-plus"></i> Register Colleague
+            </button>
+          </div>
+        `;
+      }
+
+      grid.innerHTML = html;
     }
 
     function setRoleFilter(role, btn) {
       currentFilter = role;
+
+      // Update filter pills active state
       document.querySelectorAll('.directory-filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+      if (btn) btn.classList.add('active');
+
+      // Update stat cards active filter styling
+      document.querySelectorAll('.stat-card.interactive').forEach(c => c.classList.remove('active-filter'));
+      if (role === 'ALL') document.getElementById('cardTotal').classList.add('active-filter');
+      else if (role === 'COUNSELOR') document.getElementById('cardCounselor').classList.add('active-filter');
+      else if (role === 'PSYCHOMETRICIAN') document.getElementById('cardPsychometrician').classList.add('active-filter');
+      else if (role === 'PSYCHOLOGIST') document.getElementById('cardPsychologist').classList.add('active-filter');
+
       renderColleagues();
     }
 
-    function filterColleagues() {
+    function handleSearchInput() {
+      const val = document.getElementById('colleagueSearchInput').value.trim();
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (clearBtn) {
+        clearBtn.style.display = val.length > 0 ? 'inline-flex' : 'none';
+      }
+      renderColleagues();
+    }
+
+    function clearSearch() {
+      const input = document.getElementById('colleagueSearchInput');
+      input.value = '';
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (clearBtn) clearBtn.style.display = 'none';
+      input.focus();
       renderColleagues();
     }
 
@@ -763,18 +1039,18 @@
         return;
       }
       if (!instId) {
-        showCopyToast('Please enter their Campus or Staff ID number.');
+        showCopyToast('Please enter their Campus Staff ID number.');
         document.getElementById('colleagueInstId').focus();
         return;
       }
       if (!email) {
-        showCopyToast('Please enter their work email address so their login details can be sent.');
+        showCopyToast('Please enter their work email address.');
         document.getElementById('colleagueEmail').focus();
         return;
       }
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        showCopyToast('Please enter a valid work email address (e.g. name@ustp.edu.ph or gmail.com).');
+        showCopyToast('Please enter a valid work email address (e.g. name@ustp.edu.ph).');
         document.getElementById('colleagueEmail').focus();
         return;
       }
@@ -809,7 +1085,7 @@
         const resultEl = document.getElementById('colleagueRegResult');
         resultEl.style.display = 'block';
         resultEl.innerHTML = `
-          <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:1rem;padding:1.5rem;text-align:center;margin-bottom:1rem;">
+          <div style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:1rem;padding:1.5rem;text-align:center;margin-bottom:1.25rem;">
             <div style="width:3.5rem;height:3.5rem;border-radius:50%;background:#DCFCE7;color:#15803d;display:inline-flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:0.75rem;">
               <i class="fas fa-circle-check"></i>
             </div>
@@ -819,44 +1095,47 @@
             </p>
           </div>
 
-          <div style="background:#FAF8F5;border:1px solid #E2DDD5;border-radius:0.85rem;padding:1.25rem;margin-bottom:1.5rem;">
-            <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:0.75rem;">
-              Colleague Access Credentials (Shareable)
+          <div style="background:#FAF7F2;border:1.5px solid #E0D7C6;border-radius:0.85rem;padding:1.25rem;margin-bottom:1.5rem;">
+            <div style="font-size:0.75rem;font-weight:800;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:0.75rem;">
+              Colleague Sign-In Details (Shareable)
             </div>
 
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid #EDE8E0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid #EDE8E0;">
               <span style="font-size:0.85rem;color:#475569;">Colleague Name:</span>
-              <span style="font-weight:700;color:#161F36;">${escapeHtml(data.fullName || name)}</span>
+              <strong style="color:#161F36;">${escapeHtml(data.fullName || name)}</strong>
             </div>
 
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid #EDE8E0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid #EDE8E0;">
               <span style="font-size:0.85rem;color:#475569;">Staff Sign-In ID:</span>
               <div style="display:flex;align-items:center;gap:0.4rem;">
                 <span style="font-family:monospace;font-weight:700;font-size:0.95rem;color:#161F36;">${escapeHtml(data.institutionalId || instId)}</span>
-                <button class="cred-btn cred-btn-outline" style="padding:0.2rem 0.5rem;font-size:0.72rem;" onclick="copyText('${escapeHtml(data.institutionalId || instId)}')">Copy</button>
+                <button class="cred-btn cred-btn-outline" style="padding:0.25rem 0.6rem;font-size:0.72rem;" onclick="copyText('${escapeHtml(data.institutionalId || instId)}')">
+                  <i class="fas fa-copy"></i> Copy
+                </button>
               </div>
             </div>
 
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;">
               <span style="font-size:0.85rem;color:#475569;">Temporary Password:</span>
               <div style="display:flex;align-items:center;gap:0.4rem;">
                 <span style="font-family:monospace;font-weight:700;font-size:0.95rem;color:#0284C7;background:#E0F2FE;padding:2px 8px;border-radius:4px;">${escapeHtml(data.generatedPassword || '')}</span>
-                <button class="cred-btn cred-btn-outline" style="padding:0.2rem 0.5rem;font-size:0.72rem;" onclick="copyText('${escapeHtml(data.generatedPassword || '')}')">Copy</button>
+                <button class="cred-btn cred-btn-outline" style="padding:0.25rem 0.6rem;font-size:0.72rem;" onclick="copyText('${escapeHtml(data.generatedPassword || '')}')">
+                  <i class="fas fa-copy"></i> Copy
+                </button>
               </div>
             </div>
           </div>
 
           <div style="display:flex;gap:0.75rem;">
             <button class="cred-btn cred-btn-outline" style="flex:1;" onclick="copyAllDetails('${escapeHtml(data.fullName || name)}', '${escapeHtml(data.institutionalId || instId)}', '${escapeHtml(data.generatedPassword || '')}')">
-              <i class="fas fa-copy"></i> Copy All Details
+              <i class="fas fa-copy"></i> Copy Details
             </button>
-            <button class="cred-btn cred-btn-primary" style="flex:1;" onclick="finishColleagueRegistration()">
+            <button class="dash-btn-primary" style="flex:1;justify-content:center;" onclick="finishColleagueRegistration()">
               <i class="fas fa-check"></i> Done
             </button>
           </div>
         `;
 
-        // Refresh list in background
         loadColleagues();
       } catch (err) {
         btn.disabled = false;
@@ -870,9 +1149,15 @@
       loadColleagues();
     }
 
-    async function resendColleagueEmail(username, fullName) {
-      if (!confirm(`Resend a welcome email with new temporary credentials to ${fullName}?`)) {
+    async function resendColleagueEmail(username, fullName, staffId) {
+      if (!confirm(`Resend a welcome email with new temporary login credentials to ${fullName}?`)) {
         return;
+      }
+
+      const btn = document.getElementById(`resendBtn_${staffId}`);
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
       }
 
       showCopyToast('Sending welcome email...');
@@ -885,6 +1170,11 @@
         showCopyToast(`Welcome email resent to ${data.email || 'colleague'}`);
       } catch (err) {
         showCopyToast(err.message || 'Failed to resend email');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-paper-plane"></i> Resend Email';
+        }
       }
     }
 
@@ -897,7 +1187,7 @@
     }
 
     function copyAllDetails(name, id, pw) {
-      const text = `Safe Space Colleague Login Details:\nName: ${name}\nStaff ID / Login ID: ${id}\nTemporary Password: ${pw}\nSign In: ${window.location.origin}/login.html`;
+      const text = `Safe Space Campus Counseling Team Account:\nName: ${name}\nStaff ID / Login ID: ${id}\nTemporary Password: ${pw}\nSign In: ${window.location.origin}/login.html`;
       copyText(text);
     }
 
