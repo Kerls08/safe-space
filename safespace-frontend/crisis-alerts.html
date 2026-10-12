@@ -487,9 +487,21 @@
       const m = { Sad:'😢', Angry:'😤', Anxious:'😰', Lonely:'🥺', Frustrated:'😩', Neutral:'😐', Relieved:'😌', Happy:'😊' };
       return m[e] || '💭';
     }
+    function parseDateString(ds) {
+      if (!ds) return null;
+      if (ds instanceof Date) return ds;
+      let str = String(ds).trim();
+      if (!str.endsWith('Z') && !str.includes('+') && !/[-+]\d{2}:\d{2}$/.test(str)) {
+        str += 'Z';
+      }
+      const d = new Date(str);
+      return isNaN(d.getTime()) ? new Date(ds) : d;
+    }
     function timeAgo(ds) {
       if (!ds) return '';
-      const d = new Date(ds), n = new Date(), s = Math.floor((n - d) / 1000);
+      const d = parseDateString(ds);
+      if (!d || isNaN(d.getTime())) return '';
+      const n = new Date(), s = Math.floor((n - d) / 1000);
       if (s < 60) return 'just now';
       if (s < 3600) return Math.floor(s / 60) + 'm ago';
       if (s < 86400) return Math.floor(s / 3600) + 'h ago';

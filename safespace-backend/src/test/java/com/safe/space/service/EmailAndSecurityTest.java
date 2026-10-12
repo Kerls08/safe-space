@@ -170,4 +170,86 @@ class EmailAndSecurityTest {
                 any()
         );
     }
+
+    @Test
+    @DisplayName("CrisisAlertService: alertHighEnergyPost dynamically triages severity based on energy score")
+    void testAlertHighEnergyPostDynamicSeverityTriage() {
+        User psychologist = User.builder()
+                .institutionalId("RPSY-001")
+                .username("psychologist")
+                .fullName("Dr. Clara Reyes")
+                .email("dr.clara@gmail.com")
+                .role("PROFESSIONAL")
+                .active(true)
+                .build();
+
+        when(userRepository.findByRoleInAndActiveTrueAndEmailIsNotNull(List.of("PROFESSIONAL", "SUPER_ADMIN")))
+                .thenReturn(List.of(psychologist));
+
+        when(alertRepository.existsByReferenceIdAndReferenceTypeAndStatusIn(anyString(), anyString(), anyList()))
+                .thenReturn(false);
+
+        when(alertRepository.save(any(CrisisAlert.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CrisisAlertService crisisAlertService = new CrisisAlertService(
+                alertRepository,
+                null,
+                null,
+                null,
+                emailService,
+                userRepository
+        );
+
+        // Test Energy 10 -> CRITICAL
+        CrisisAlert alert10 = crisisAlertService.alertHighEnergyPost("post-10", "StressedStudent", "I can't take this anymore", "Despair", 10);
+        assertNotNull(alert10);
+        assertEquals("HIGH_ENERGY_POST", alert10.getAlertType());
+        assertEquals("CRITICAL", alert10.getSeverity());
+        assertEquals(10, alert10.getEnergyScore());
+
+        // Test Energy 9 -> HIGH
+        CrisisAlert alert9 = crisisAlertService.alertHighEnergyPost("post-9", "AnxiousStudent", "So overwhelmed with finals", "Anxious", 9);
+        assertNotNull(alert9);
+        assertEquals("HIGH_ENERGY_POST", alert9.getAlertType());
+        assertEquals("HIGH", alert9.getSeverity());
+        assertEquals(9, alert9.getEnergyScore());
+
+        // Test Energy 8 -> MODERATE
+        CrisisAlert alert8 = crisisAlertService.alertHighEnergyPost("post-8", "FrustratedStudent", "Everything is piling up", "Frustrated", 8);
+        assertNotNull(alert8);
+        assertEquals("HIGH_ENERGY_POST", alert8.getAlertType());
+        assertEquals("MODERATE", alert8.getSeverity());
+        assertEquals(8, alert8.getEnergyScore());
+
+        // Verify email dispatched for energy 10 with CRITICAL severity
+        verify(emailService, times(1)).sendCrisisAlertEmail(
+                eq("dr.clara@gmail.com"),
+                eq("Dr. Clara Reyes"),
+                eq("HIGH_ENERGY_POST"),
+                eq("CRITICAL"),
+                eq("StressedStudent"),
+                anyString(),
+                anyString(),
+                eq("Despair"),
+                eq(10),
+                isNull(),
+                anyString()
+        );
+
+        // Verify email dispatched for energy 9 with HIGH severity
+        verify(emailService, times(1)).sendCrisisAlertEmail(
+                eq("dr.clara@gmail.com"),
+                eq("Dr. Clara Reyes"),
+                eq("HIGH_ENERGY_POST"),
+                eq("HIGH"),
+                eq("AnxiousStudent"),
+                anyString(),
+                anyString(),
+                eq("Anxious"),
+                eq(9),
+                isNull(),
+                anyString()
+        );
+    }
 }
+

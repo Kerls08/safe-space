@@ -103,10 +103,12 @@ public class CrisisAlertService {
         if (alertExists(postId, "POST"))
             return null;
 
+        String severity = mapEnergySeverity(energyScore);
+
         CrisisAlert alert = CrisisAlert.builder()
                 .alertId(generateAlertId())
                 .alertType("HIGH_ENERGY_POST")
-                .severity("MODERATE")
+                .severity(severity)
                 .status("ACTIVE")
                 .referenceId(postId)
                 .referenceType("POST")
@@ -118,13 +120,19 @@ public class CrisisAlertService {
                 .build();
 
         CrisisAlert saved = alertRepository.save(alert);
-        log.info("⚡ ALERT GENERATED [{}] type=HIGH_ENERGY severity=MODERATE postId={} energy={}",
-                saved.getAlertId(), postId, energyScore);
+        log.info("⚡ ALERT GENERATED [{}] type=HIGH_ENERGY severity={} postId={} energy={}",
+                saved.getAlertId(), severity, postId, energyScore);
 
         // Notify professionals via email
         notifyProfessionalsByEmail(saved);
 
         return saved;
+    }
+
+    private String mapEnergySeverity(int energyScore) {
+        if (energyScore >= 10) return "CRITICAL";
+        if (energyScore >= 9) return "HIGH";
+        return "MODERATE";
     }
 
     /**
@@ -628,6 +636,8 @@ public class CrisisAlertService {
                             alert.getAlertId()
                     );
                     dispatched++;
+                    log.info("📧 Dispatched crisis alert {} to {} ({}, role={})",
+                            alert.getAlertId(), pro.getEmail(), pro.getFullName(), pro.getRole());
                 }
             }
             log.info("📧 Crisis alert email dispatched to {} professional(s) for alert {}",

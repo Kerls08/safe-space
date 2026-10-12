@@ -1,18 +1,26 @@
 package com.safe.space;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.TimeZone;
 
 @SpringBootApplication
 public class SpaceApplication {
 
 	public static void main(String[] args) {
+		TimeZone.setDefault(TimeZone.getTimeZone("Asia/Manila"));
 		loadDotenv();
 		SpringApplication.run(SpaceApplication.class, args);
+	}
+
+	@PostConstruct
+	public void initTimeZone() {
+		TimeZone.setDefault(TimeZone.getTimeZone("Asia/Manila"));
 	}
 
 	private static void loadDotenv() {

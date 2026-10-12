@@ -370,8 +370,21 @@
       return d.innerHTML;
     }
 
+    function parseDateString(ds) {
+      if (!ds) return null;
+      if (ds instanceof Date) return ds;
+      let str = String(ds).trim();
+      if (!str.endsWith('Z') && !str.includes('+') && !/[-+]\d{2}:\d{2}$/.test(str)) {
+        str += 'Z';
+      }
+      const d = new Date(str);
+      return isNaN(d.getTime()) ? new Date(ds) : d;
+    }
+
     function timeAgo(ts) {
-      const diff = Date.now() - new Date(ts).getTime();
+      const parsed = parseDateString(ts);
+      if (!parsed || isNaN(parsed.getTime())) return '';
+      const diff = Date.now() - parsed.getTime();
       const m = Math.floor(diff / 60000);
       if (m < 1) return 'just now';
       if (m < 60) return m + 'm ago';

@@ -1923,9 +1923,21 @@
       return str.length > len ? str.substring(0, len) + '…' : str;
     }
 
+    function parseDateString(ds) {
+      if (!ds) return null;
+      if (ds instanceof Date) return ds;
+      let str = String(ds).trim();
+      if (!str.endsWith('Z') && !str.includes('+') && !/[-+]\d{2}:\d{2}$/.test(str)) {
+        str += 'Z';
+      }
+      const d = new Date(str);
+      return isNaN(d.getTime()) ? new Date(ds) : d;
+    }
+
     function formatTime(dateStr) {
       if (!dateStr) return '';
-      const d = new Date(dateStr);
+      const d = parseDateString(dateStr);
+      if (!d || isNaN(d.getTime())) return '';
       const now = new Date();
       const diffMs = now - d;
       const diffMins = Math.floor(diffMs / 60000);
@@ -1938,7 +1950,9 @@
 
     function formatDate(dateStr) {
       if (!dateStr) return '';
-      return new Date(dateStr).toLocaleString('en-US', {
+      const d = parseDateString(dateStr);
+      if (!d || isNaN(d.getTime())) return '';
+      return d.toLocaleString('en-US', {
         month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
       });
     }
