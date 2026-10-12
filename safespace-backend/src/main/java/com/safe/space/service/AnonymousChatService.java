@@ -219,6 +219,16 @@ public class AnonymousChatService {
         messageRepository.save(sysMsg);
 
         log.info("Outreach invite declined: sessionId={}, student={}", sessionId, studentUserId);
+
+        try {
+            CrisisAlertService alertSvc = crisisAlertServiceProvider.getIfAvailable();
+            if (alertSvc != null) {
+                alertSvc.updateAlertOutreachStatus(sessionId, "DECLINED", "Student declined counseling outreach (prefers to vent only).");
+            }
+        } catch (Exception e) {
+            log.warn("Could not update linked alert on decline: {}", e.getMessage());
+        }
+
         return toSessionResponse(session, 0);
     }
 
@@ -242,6 +252,15 @@ public class AnonymousChatService {
 
         log.info("Chat session accepted: sessionId={}, professional={}", sessionId, professionalName);
 
+        try {
+            CrisisAlertService alertSvc = crisisAlertServiceProvider.getIfAvailable();
+            if (alertSvc != null) {
+                alertSvc.updateAlertOutreachStatus(sessionId, "ACTIVE", null);
+            }
+        } catch (Exception e) {
+            log.warn("Could not update linked alert on accept: {}", e.getMessage());
+        }
+
         return toSessionResponse(session, 0);
     }
 
@@ -262,6 +281,15 @@ public class AnonymousChatService {
         sessionRepository.save(session);
 
         log.info("Chat session closed: sessionId={}, closedBy={}", sessionId, closedBy);
+
+        try {
+            CrisisAlertService alertSvc = crisisAlertServiceProvider.getIfAvailable();
+            if (alertSvc != null) {
+                alertSvc.updateAlertOutreachStatus(sessionId, "CONCLUDED", "Session closed by " + closedBy + ".");
+            }
+        } catch (Exception e) {
+            log.warn("Could not update linked alert on close: {}", e.getMessage());
+        }
 
         return toSessionResponse(session, 0);
     }

@@ -128,4 +128,31 @@ class AnonymousChatServiceDeleteTest {
         assertTrue(ex.getMessage().contains("permission"));
         verify(sessionRepository, never()).delete(session);
     }
+
+    @Test
+    @DisplayName("Decline invite updates linked crisis alert with DECLINED outreachStatus")
+    void testDeclineInviteUpdatesLinkedAlert() {
+        CrisisAlertService mockAlertService = mock(CrisisAlertService.class);
+        when(crisisAlertServiceProvider.getIfAvailable()).thenReturn(mockAlertService);
+
+        ChatSession session = ChatSession.builder()
+                .sessionId("chat-inv-1")
+                .studentUserId("student-1")
+                .studentPseudonym("SoftSparrow-99")
+                .professionalId("counselor")
+                .status("INVITED")
+                .build();
+
+        when(sessionRepository.findBySessionId("chat-inv-1")).thenReturn(Optional.of(session));
+
+        chatService.declineInvite("chat-inv-1", "student-1");
+
+        assertEquals("DECLINED", session.getStatus());
+        verify(mockAlertService, times(1)).updateAlertOutreachStatus(
+                eq("chat-inv-1"),
+                eq("DECLINED"),
+                contains("vent only")
+        );
+    }
 }
+

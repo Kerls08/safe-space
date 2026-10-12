@@ -28,31 +28,32 @@
           </div>
         </div>
         <div class="stats-chips" id="statsChips">
-          <div class="stat-chip"><span class="stat-num" id="statActive">—</span>Active</div>
-          <div class="stat-chip"><span class="stat-num" id="statCritical">—</span>Critical</div>
-          <div class="stat-chip"><span class="stat-num" id="statToday">—</span>Today</div>
+          <div class="stat-chip"><span class="stat-num" id="statNeedsAction">—</span>Needs Action</div>
+          <div class="stat-chip"><span class="stat-num" id="statInProgress">—</span>In Progress</div>
+          <div class="stat-chip"><span class="stat-num" id="statCritical">—</span>Critical Today</div>
         </div>
       </div>
     </header>
 
-    <!-- Tabs -->
+    <!-- Tabs (Option B: Direct & Simple) -->
     <div class="alerts-tabs" id="alertTabs">
-      <button class="alert-tab active" data-tab="active" id="tabActive">
-        <i class="fas fa-circle-exclamation"></i> Active
-        <span class="tab-count" id="activeCount" style="display:none;">0</span>
+      <button class="alert-tab active" data-tab="needsAction" id="tabNeedsAction">
+        <i class="fas fa-bell"></i> Needs Action
+        <span class="tab-count" id="needsActionCount" style="display:none;">0</span>
       </button>
-      <button class="alert-tab" data-tab="unresolved" id="tabUnresolved">
-        <i class="fas fa-clock"></i> Unresolved
+      <button class="alert-tab" data-tab="inProgress" id="tabInProgress">
+        <i class="fas fa-spinner"></i> In Progress
+        <span class="tab-count" id="inProgressCount" style="display:none;">0</span>
       </button>
       <button class="alert-tab" data-tab="history" id="tabHistory">
-        <i class="fas fa-clock-rotate-left"></i> History
+        <i class="fas fa-archive"></i> Resolved History
       </button>
     </div>
 
     <!-- Content -->
     <div class="alerts-content">
-      <!-- Active Panel -->
-      <div class="alert-panel active" id="panelActive">
+      <!-- Needs Action Panel -->
+      <div class="alert-panel active" id="panelNeedsAction">
         <div class="severity-filters" id="sevFilters">
           <button class="sev-pill active" data-sev="ALL">All</button>
           <button class="sev-pill" data-sev="CRITICAL">🔴 Critical</button>
@@ -60,21 +61,20 @@
           <button class="sev-pill" data-sev="MODERATE">🟡 Moderate</button>
           <button class="sev-pill" data-sev="LOW">🟢 Low</button>
         </div>
-        <div id="activeContainer"></div>
+        <div id="needsActionContainer"></div>
       </div>
 
-      <!-- Unresolved Panel -->
-      <div class="alert-panel" id="panelUnresolved">
-        <div id="unresolvedContainer"></div>
+      <!-- In Progress Panel -->
+      <div class="alert-panel" id="panelInProgress">
+        <div id="inProgressContainer"></div>
       </div>
 
-      <!-- History Panel -->
+      <!-- Resolved History Panel -->
       <div class="alert-panel" id="panelHistory">
         <div class="severity-filters" id="historyFilters">
           <button class="sev-pill active" data-status="ALL">All</button>
           <button class="sev-pill" data-status="RESOLVED">✅ Resolved</button>
           <button class="sev-pill" data-status="ESCALATED">⬆ Escalated</button>
-          <button class="sev-pill" data-status="ACKNOWLEDGED">👁 Acknowledged</button>
         </div>
         <div id="historyContainer"></div>
       </div>
@@ -148,80 +148,105 @@
 
       loadColleagueDirectory();
       loadStats();
-      loadActiveAlerts();
+      loadNeedsActionAlerts();
 
       // Auto-refresh every 15 seconds (silent background refresh)
       setInterval(() => {
         loadStats(true);
         const activePanel = document.querySelector('.alert-panel.active');
-        if (activePanel && activePanel.id === 'panelActive') loadActiveAlerts(true);
+        if (activePanel && activePanel.id === 'panelNeedsAction') loadNeedsActionAlerts(true);
+        if (activePanel && activePanel.id === 'panelInProgress') loadInProgressAlerts(true);
       }, 15000);
     });
 
-    // ── Tab Switching ──
+    // ── Tab Switching (Option B: Direct & Simple) ──
     function switchTab(tabId) {
       document.querySelectorAll('.alert-tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.alert-panel').forEach(p => p.classList.remove('active'));
       document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
-      const panelMap = { active: 'panelActive', unresolved: 'panelUnresolved', history: 'panelHistory' };
-      document.getElementById(panelMap[tabId]).classList.add('active');
+      const panelMap = { needsAction: 'panelNeedsAction', inProgress: 'panelInProgress', history: 'panelHistory' };
+      const targetPanel = document.getElementById(panelMap[tabId]);
+      if (targetPanel) targetPanel.classList.add('active');
 
-      if (tabId === 'active') loadActiveAlerts();
-      if (tabId === 'unresolved') loadUnresolved();
+      if (tabId === 'needsAction') loadNeedsActionAlerts();
+      if (tabId === 'inProgress') loadInProgressAlerts();
       if (tabId === 'history') loadHistory();
     }
 
     // ── Load Stats ──
-    let cachedActiveAlerts = [];
+    let cachedNeedsActionAlerts = [];
     async function loadStats(silent = false) {
       try {
         const res = await SafeSpaceAuth.authFetch(`${API}/stats`, { silent });
         const s = await res.json();
-        document.getElementById('statActive').textContent = s.active || 0;
-        document.getElementById('statCritical').textContent = s.todayCritical || 0;
-        document.getElementById('statToday').textContent = s.todayTotal || 0;
+        const needsActionNum = s.active || 0;
+        const inProgressNum = (s.inProgress !== undefined ? s.inProgress : s.acknowledged) || 0;
+
+        const statNeedsAction = document.getElementById('statNeedsAction');
+        if (statNeedsAction) statNeedsAction.textContent = needsActionNum;
+
+        const statInProgress = document.getElementById('statInProgress');
+        if (statInProgress) statInProgress.textContent = inProgressNum;
+
+        const statCritical = document.getElementById('statCritical');
+        if (statCritical) statCritical.textContent = s.todayCritical || 0;
+
+        const needsActionBadge = document.getElementById('needsActionCount');
+        if (needsActionBadge) {
+          needsActionBadge.textContent = needsActionNum;
+          needsActionBadge.style.display = needsActionNum > 0 ? '' : 'none';
+        }
+
+        const inProgressBadge = document.getElementById('inProgressCount');
+        if (inProgressBadge) {
+          inProgressBadge.textContent = inProgressNum;
+          inProgressBadge.style.display = inProgressNum > 0 ? '' : 'none';
+        }
       } catch (e) { console.warn('Stats error:', e); }
     }
 
-    // ── Load Active Alerts ──
-    async function loadActiveAlerts(silent = false) {
+    // ── Load Needs Action Alerts ──
+    async function loadNeedsActionAlerts(silent = false) {
       try {
         const res = await SafeSpaceAuth.authFetch(API, { silent });
-        cachedActiveAlerts = await res.json();
-        if (Array.isArray(cachedActiveAlerts)) {
-          cachedActiveAlerts.sort((a, b) => {
+        cachedNeedsActionAlerts = await res.json();
+        if (Array.isArray(cachedNeedsActionAlerts)) {
+          cachedNeedsActionAlerts.sort((a, b) => {
             const tA = parseDateString(a.createdAt)?.getTime() || 0;
             const tB = parseDateString(b.createdAt)?.getTime() || 0;
             return tB - tA;
           });
         }
 
-        const badge = document.getElementById('activeCount');
-        badge.textContent = cachedActiveAlerts.length;
-        badge.style.display = cachedActiveAlerts.length > 0 ? '' : 'none';
+        const badge = document.getElementById('needsActionCount');
+        if (badge) {
+          badge.textContent = cachedNeedsActionAlerts.length;
+          badge.style.display = cachedNeedsActionAlerts.length > 0 ? '' : 'none';
+        }
 
-        renderActiveAlerts();
-      } catch (e) { console.warn('Active error:', e); }
+        renderNeedsActionAlerts();
+      } catch (e) { console.warn('Needs Action error:', e); }
     }
 
-    function renderActiveAlerts() {
-      const container = document.getElementById('activeContainer');
-      let filtered = cachedActiveAlerts;
+    function renderNeedsActionAlerts() {
+      const container = document.getElementById('needsActionContainer');
+      if (!container) return;
+      let filtered = cachedNeedsActionAlerts;
       if (currentSevFilter !== 'ALL') {
         filtered = filtered.filter(a => a.severity === currentSevFilter);
       }
 
       if (filtered.length === 0) {
-        container.innerHTML = `<div class="alerts-empty"><i class="fas fa-check-circle" style="color:#10b981;"></i><p>${currentSevFilter !== 'ALL' ? 'No ' + currentSevFilter.toLowerCase() + ' alerts' : 'All clear — no active alerts'}</p></div>`;
+        container.innerHTML = `<div class="alerts-empty"><i class="fas fa-check-circle" style="color:#10b981;"></i><p>${currentSevFilter !== 'ALL' ? 'No ' + currentSevFilter.toLowerCase() + ' alerts' : 'All clear — no incoming alerts needing action'}</p></div>`;
         return;
       }
       container.innerHTML = filtered.map(a => buildAlertCard(a, true)).join('');
     }
 
-    // ── Load Unresolved ──
-    async function loadUnresolved() {
+    // ── Load In Progress Alerts ──
+    async function loadInProgressAlerts(silent = false) {
       try {
-        const res = await SafeSpaceAuth.authFetch(`${API}/unresolved`);
+        const res = await SafeSpaceAuth.authFetch(`${API}/in-progress`, { silent });
         const alerts = await res.json();
         if (Array.isArray(alerts)) {
           alerts.sort((a, b) => {
@@ -230,16 +255,24 @@
             return tB - tA;
           });
         }
-        const container = document.getElementById('unresolvedContainer');
+
+        const badge = document.getElementById('inProgressCount');
+        if (badge) {
+          badge.textContent = alerts.length;
+          badge.style.display = alerts.length > 0 ? '' : 'none';
+        }
+
+        const container = document.getElementById('inProgressContainer');
+        if (!container) return;
         if (alerts.length === 0) {
-          container.innerHTML = '<div class="alerts-empty"><i class="fas fa-check-double" style="color:#10b981;"></i><p>No unresolved alerts</p></div>';
+          container.innerHTML = '<div class="alerts-empty"><i class="fas fa-check-double" style="color:#10b981;"></i><p>No alerts currently in progress</p></div>';
           return;
         }
         container.innerHTML = alerts.map(a => buildAlertCard(a, true)).join('');
-      } catch (e) { console.warn('Unresolved error:', e); }
+      } catch (e) { console.warn('In Progress error:', e); }
     }
 
-    // ── Load History ──
+    // ── Load Resolved History ──
     async function loadHistory() {
       try {
         const statusParam = currentHistoryFilter !== 'ALL' ? `?status=${currentHistoryFilter}` : '';
@@ -253,8 +286,9 @@
           });
         }
         const container = document.getElementById('historyContainer');
+        if (!container) return;
         if (alerts.length === 0) {
-          container.innerHTML = '<div class="alerts-empty"><i class="fas fa-clock-rotate-left" style="color:#6366f1;"></i><p>No alert history found</p></div>';
+          container.innerHTML = '<div class="alerts-empty"><i class="fas fa-archive" style="color:#6366f1;"></i><p>No alert history found</p></div>';
           return;
         }
         container.innerHTML = alerts.map(a => buildAlertCard(a, false)).join('');
@@ -291,6 +325,28 @@
         return colleagueDirectory[username];
       }
       return username ? (username.charAt(0).toUpperCase() + username.slice(1)) : 'Assigned Clinician';
+    }
+
+    function renderOutreachStatusTag(a) {
+      if (a.status === 'RESOLVED') {
+        return '<span class="alert-tag status-resolved"><i class="fas fa-check"></i> RESOLVED</span>';
+      }
+      if (a.status === 'ESCALATED') {
+        return '<span class="alert-tag status-escalated"><i class="fas fa-arrow-up"></i> ESCALATED</span>';
+      }
+      if (a.outreachStatus === 'DECLINED') {
+        return '<span class="alert-tag status-declined"><i class="fas fa-hand-holding-heart"></i> ⚠️ Outreach Declined (Venting Only)</span>';
+      }
+      if (a.outreachStatus === 'INVITED') {
+        return '<span class="alert-tag status-invited"><i class="fas fa-paper-plane"></i> ⏳ Outreach Sent (Awaiting Student)</span>';
+      }
+      if (a.outreachStatus === 'ACTIVE') {
+        return '<span class="alert-tag status-chat-active"><i class="fas fa-comments"></i> 💬 In Active Counseling</span>';
+      }
+      if (a.outreachStatus === 'CONCLUDED') {
+        return '<span class="alert-tag status-concluded"><i class="fas fa-check-circle"></i> ✓ Session Concluded</span>';
+      }
+      return `<span class="alert-tag status-${a.status?.toLowerCase()}">${a.status}</span>`;
     }
 
     // ── Alert Card ──
@@ -344,8 +400,18 @@
               <span class="alert-tag sev-${a.severity?.toLowerCase()}">${a.severity}</span>
               ${a.emotionTag ? `<span class="alert-tag emotion">${getEmoji(a.emotionTag)} ${a.emotionTag}</span>` : ''}
               ${a.energyScore ? `<span class="alert-tag type">⚡ ${a.energyScore}/10 Energy</span>` : ''}
-              <span class="alert-tag status-${a.status?.toLowerCase()}">${a.status}</span>
+              ${renderOutreachStatusTag(a)}
             </div>
+
+            ${a.outreachStatus === 'DECLINED' ? `
+            <!-- Dedicated Outreach Declined Callout -->
+            <div class="alert-declined-callout">
+              <div class="declined-callout-icon"><i class="fas fa-hand-holding-heart"></i></div>
+              <div class="declined-callout-text">
+                <strong>Student declined counseling reach-out (prefers to vent only).</strong>
+                <span>Clinical oversight: Student opted out of chat. Review this post to confirm it is safe to monitor, or escalate if acute danger is present.</span>
+              </div>
+            </div>` : ''}
 
             <!-- Dedicated Bottom Report Details: Student + Assigned Clinician -->
             <div class="alert-assigned-banner ${bannerClass}">
@@ -367,12 +433,16 @@
             </div>` : ''}
           </div>
 
-          ${(canAck || canResolve) ? `
+          ${showActions ? `
           <div class="alert-actions">
             ${canAck ? `<button class="btn-alert ack" onclick="acknowledgeAlert('${a.alertId}')"><i class="fas fa-eye"></i> Ack</button>` : ''}
-            ${canResolve ? `<button class="btn-alert resolve" onclick="openResolve('${a.alertId}','resolve')"><i class="fas fa-check"></i> Resolve</button>` : ''}
+            ${a.outreachStatus === 'DECLINED' ? `
+              <button class="btn-alert resolve" onclick="quickResolveDeclined('${a.alertId}')" title="Student chose to vent only. Close case safely as monitored."><i class="fas fa-check-double"></i> Mark Resolved (Monitored)</button>
+              <button class="btn-alert resolve" onclick="openResolve('${a.alertId}','resolve')" title="Add custom notes"><i class="fas fa-clipboard"></i> Notes</button>
+            ` : (canResolve ? `<button class="btn-alert resolve" onclick="openResolve('${a.alertId}','resolve')"><i class="fas fa-check"></i> Resolve</button>` : '')}
             ${canResolve ? `<button class="btn-alert escalate" onclick="openResolve('${a.alertId}','escalate')"><i class="fas fa-arrow-up"></i> Escalate</button>` : ''}
-            ${(canResolve && a.pseudonym) ? `<button class="btn-alert chat" onclick="initiateChatFromAlert('${a.alertId}')"><i class="fas fa-hand-holding-heart"></i> Reach Out</button>` : ''}
+            ${(canResolve && a.pseudonym && a.outreachStatus !== 'DECLINED' && a.outreachStatus !== 'INVITED' && a.outreachStatus !== 'ACTIVE') ? `<button class="btn-alert chat" onclick="initiateChatFromAlert('${a.alertId}')"><i class="fas fa-hand-holding-heart"></i> Reach Out</button>` : ''}
+            ${(a.outreachStatus === 'INVITED' || a.outreachStatus === 'ACTIVE') ? `<button class="btn-alert chat" onclick="window.location.href='anon-chat.html'"><i class="fas fa-comments"></i> Open Chat</button>` : ''}
           </div>` : ''}
         </div>
       `;
@@ -383,10 +453,29 @@
       try {
         await SafeSpaceAuth.authFetch(`${API}/${alertId}/acknowledge`, { method: 'PUT', body: '{}' });
         showToast('Alert acknowledged ✓');
-        loadActiveAlerts();
+        loadNeedsActionAlerts();
+        loadInProgressAlerts();
         loadStats();
         SafeSpaceAuth.refreshBadges?.();
       } catch (e) { console.warn('Ack error:', e); }
+    }
+
+    async function quickResolveDeclined(alertId) {
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/${alertId}/quick-resolve-declined`, { method: 'PUT' });
+        if (res.ok) {
+          showToast('Marked as resolved (Monitored) ✓');
+          loadNeedsActionAlerts();
+          loadInProgressAlerts();
+          loadStats();
+          SafeSpaceAuth.refreshBadges?.();
+        } else {
+          showToast('Failed to resolve alert.');
+        }
+      } catch (e) {
+        console.warn('Quick resolve error:', e);
+        showToast('Error resolving alert.');
+      }
     }
 
     function openResolve(alertId, action) {
@@ -425,7 +514,8 @@
         await SafeSpaceAuth.authFetch(endpoint, { method: 'PUT', body: JSON.stringify({ notes }) });
         showToast(pendingAction.action === 'resolve' ? 'Alert resolved ✓' : 'Alert escalated ⬆');
         closeModal();
-        loadActiveAlerts();
+        loadNeedsActionAlerts();
+        loadInProgressAlerts();
         loadStats();
         SafeSpaceAuth.refreshBadges?.();
       } catch (e) {
@@ -466,7 +556,8 @@
 
         if (data.status === 'invite_sent') {
           showToast('Outreach invitation sent to student ✓ (Waiting for student to accept)');
-          loadActiveAlerts();
+          loadNeedsActionAlerts();
+          loadInProgressAlerts();
           loadStats();
           SafeSpaceAuth.refreshBadges?.();
           return;

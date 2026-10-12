@@ -27,7 +27,8 @@ import java.time.LocalDateTime;
         @Index(name = "idx_alert_status", columnList = "status"),
         @Index(name = "idx_alert_severity", columnList = "severity"),
         @Index(name = "idx_alert_created", columnList = "createdAt"),
-        @Index(name = "idx_alert_type", columnList = "alertType")
+        @Index(name = "idx_alert_type", columnList = "alertType"),
+        @Index(name = "idx_alert_session", columnList = "chatSessionId")
 })
 @Getter
 @Setter
@@ -72,6 +73,17 @@ public class CrisisAlert {
     /** Source type for the reference: POST, CHAT, USER */
     @Column(length = 20)
     private String referenceType;
+
+    /** Linked chat session ID created from outreach (if applicable). */
+    @Column(length = 100)
+    private String chatSessionId;
+
+    /**
+     * Outreach status: NONE, INVITED, DECLINED, ACTIVE, CONCLUDED
+     */
+    @Column(length = 30)
+    @Builder.Default
+    private String outreachStatus = "NONE";
 
     /** Short title for the alert. */
     @Column(nullable = false, length = 200)

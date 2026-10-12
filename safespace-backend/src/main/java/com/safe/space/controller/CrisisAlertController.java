@@ -48,6 +48,18 @@ public class CrisisAlertController {
     }
 
     /**
+     * Get all in-progress alerts (ACKNOWLEDGED status).
+     */
+    @GetMapping("/in-progress")
+    public ResponseEntity<?> getInProgressAlerts(HttpServletRequest request) {
+        String role = (String) request.getAttribute("auth.role");
+        if (!isProfessionalOrAdmin(role))
+            return forbidden("Access denied.");
+
+        return ResponseEntity.ok(alertService.getInProgressAlerts());
+    }
+
+    /**
      * Get all unresolved alerts (ACTIVE + ACKNOWLEDGED).
      */
     @GetMapping("/unresolved")
@@ -162,6 +174,22 @@ public class CrisisAlertController {
 
         String notes = body != null ? body.getOrDefault("notes", "") : "";
         return ResponseEntity.ok(toMap(alertService.escalateAlert(alertId, username, notes)));
+    }
+
+    /**
+     * Quick-resolve an alert where the student declined outreach (vent only).
+     */
+    @PutMapping("/{alertId}/quick-resolve-declined")
+    public ResponseEntity<?> quickResolveDeclined(
+            @PathVariable String alertId,
+            HttpServletRequest request) {
+        String role = (String) request.getAttribute("auth.role");
+        String username = (String) request.getAttribute("auth.username");
+        if (!isProfessionalOrAdmin(role))
+            return forbidden("Access denied.");
+
+        String notes = "Student exercised autonomy to vent only (outreach declined). Verified safe to monitor, no acute escalation required.";
+        return ResponseEntity.ok(toMap(alertService.resolveAlert(alertId, username, notes)));
     }
 
     /**

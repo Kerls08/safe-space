@@ -371,6 +371,16 @@ public class CrisisAlertService {
     }
 
     /**
+     * Get all in-progress alerts (ACKNOWLEDGED status), sorted newest first.
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getInProgressAlerts() {
+        return alertRepository.findInProgressAlertsPrioritized().stream()
+                .map(this::toMap)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Get all unresolved alerts (ACTIVE + ACKNOWLEDGED).
      */
     @Transactional(readOnly = true)
@@ -440,6 +450,7 @@ public class CrisisAlertService {
                 "totalAlerts", total,
                 "active", active,
                 "acknowledged", acknowledged,
+                "inProgress", acknowledged,
                 "resolved", resolved,
                 "escalated", escalated,
                 "severityBreakdown", severityBreakdown,
@@ -517,6 +528,8 @@ public class CrisisAlertService {
                 ChatSessionResponse accepted = chatService.acceptSession(
                         existing.getSessionId(), professionalId, professionalName);
 
+                alert.setChatSessionId(accepted.getSessionId());
+                alert.setOutreachStatus("ACTIVE");
                 autoAcknowledgeAlert(alert, professionalId);
 
                 return Map.of(
@@ -529,6 +542,8 @@ public class CrisisAlertService {
 
             // Case 2: Session is ACTIVE with THIS professional
             if ("ACTIVE".equals(existing.getStatus()) && professionalId.equals(existing.getProfessionalId())) {
+                alert.setChatSessionId(existing.getSessionId());
+                alert.setOutreachStatus("ACTIVE");
                 autoAcknowledgeAlert(alert, professionalId);
                 return Map.of(
                         "status", "resumed_active",
@@ -560,6 +575,9 @@ public class CrisisAlertService {
 
             // Case 5: Session is INVITED by THIS professional
             if ("INVITED".equals(existing.getStatus()) && professionalId.equals(existing.getProfessionalId())) {
+                alert.setChatSessionId(existing.getSessionId());
+                alert.setOutreachStatus("INVITED");
+                alertRepository.save(alert);
                 return Map.of(
                         "status", "invite_sent",
                         "sessionId", existing.getSessionId(),
@@ -580,6 +598,8 @@ public class CrisisAlertService {
                 professionalId,
                 professionalName);
 
+        alert.setChatSessionId(inviteSession.getSessionId());
+        alert.setOutreachStatus("INVITED");
         autoAcknowledgeAlert(alert, professionalId);
 
         log.info("Crisis outreach invitation created: alertId={}, sessionId={}, professional={}, pseudonym={}",
@@ -598,8 +618,26 @@ public class CrisisAlertService {
             alert.setStatus("ACKNOWLEDGED");
             alert.setAcknowledgedBy(professionalId);
             alert.setAcknowledgedAt(LocalDateTime.now());
-            alertRepository.save(alert);
         }
+        alertRepository.save(alert);
+    }
+
+    /**
+     * Update outreach status for an alert linked to a chat session.
+     * Called when student declines or closes the outreach session.
+     */
+    @Transactional
+    public void updateAlertOutreachStatus(String sessionId, String outreachStatus, String notes) {
+        alertRepository.findFirstByChatSessionIdOrderByCreatedAtDesc(sessionId).ifPresent(alert -> {
+            alert.setOutreachStatus(outreachStatus);
+            if (notes != null && !notes.isBlank()) {
+                String existing = alert.getResolutionNotes();
+                alert.setResolutionNotes(existing != null ? existing + "\n" + notes : notes);
+            }
+            alertRepository.save(alert);
+            log.info("Crisis alert outreachStatus updated: alertId={}, sessionId={}, outreachStatus={}",
+                    alert.getAlertId(), sessionId, outreachStatus);
+        });
     }
 
     // ── EMAIL NOTIFICATION TO PROFESSIONALS ──
@@ -661,6 +699,8 @@ public class CrisisAlertService {
         map.put("alertType", a.getAlertType());
         map.put("severity", a.getSeverity());
         map.put("status", a.getStatus());
+        map.put("outreachStatus", a.getOutreachStatus() != null ? a.getOutreachStatus() : "NONE");
+        map.put("chatSessionId", a.getChatSessionId());
         map.put("referenceId", a.getReferenceId());
         map.put("referenceType", a.getReferenceType());
         map.put("title", a.getTitle());

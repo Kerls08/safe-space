@@ -318,6 +318,46 @@
 .alert-tag.status-acknowledged { background: #fffbeb; color: #ca8a04; border: 1px solid #fde68a; }
 .alert-tag.status-resolved { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
 .alert-tag.status-escalated { background: #ede9fe; color: #7c3aed; border: 1px solid #ddd6fe; }
+.alert-tag.status-declined { background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5; font-weight: 700; box-shadow: 0 1px 4px rgba(194,65,12,0.12); }
+.alert-tag.status-invited { background: #F0F9FF; color: #0369A1; border: 1px solid #BAE6FD; font-weight: 600; }
+.alert-tag.status-chat-active { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-weight: 600; }
+.alert-tag.status-concluded { background: #F3F4F6; color: #374151; border: 1px solid #E5E7EB; }
+
+/* ── Dedicated Outreach Declined Callout Banner ── */
+.alert-declined-callout {
+  margin-top: 0.65rem;
+  padding: 0.65rem 0.85rem;
+  background: #FFF7ED;
+  border: 1px solid #FFEDD5;
+  border-left: 4px solid #EA580C;
+  border-radius: 0.55rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #9A3412;
+}
+
+.alert-declined-callout .declined-callout-icon {
+  font-size: 1.05rem;
+  color: #EA580C;
+  margin-top: 0.05rem;
+  flex-shrink: 0;
+}
+
+.alert-declined-callout .declined-callout-text strong {
+  display: block;
+  font-size: 0.82rem;
+  color: #7C2D12;
+  margin-bottom: 0.15rem;
+}
+
+.alert-declined-callout .declined-callout-text span {
+  font-size: 0.75rem;
+  color: #9A3412;
+  opacity: 0.95;
+}
 
 /* ── Dedicated Caseworker & Assignment Banner (Bottom) ── */
 .alert-assigned-banner {

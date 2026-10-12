@@ -12,6 +12,12 @@ public interface CrisisAlertRepository extends JpaRepository<CrisisAlert, Long> 
 
        Optional<CrisisAlert> findByAlertId(String alertId);
 
+       Optional<CrisisAlert> findFirstByChatSessionIdOrderByCreatedAtDesc(String chatSessionId);
+
+       /** In-progress alerts (ACKNOWLEDGED / active casework) sorted newest first. */
+       @Query("SELECT a FROM CrisisAlert a WHERE a.status = 'ACKNOWLEDGED' ORDER BY a.createdAt DESC")
+       List<CrisisAlert> findInProgressAlertsPrioritized();
+
        // ── Status-based queries ──
 
        List<CrisisAlert> findByStatusOrderByCreatedAtDesc(String status);
