@@ -7,6 +7,7 @@ import com.safe.space.repository.ChatMessageRepository;
 import com.safe.space.repository.ChatSessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +37,7 @@ public class AnonymousChatService {
     private final ChatMessageRepository messageRepository;
     private final CrisisKeywordService crisisKeywordService;
     private final FallbackResponseService fallbackResponseService;
+    private final ObjectProvider<CrisisAlertService> crisisAlertServiceProvider;
 
     private static final List<String> PSEUDONYM_SEEDS = List.of(
             "Willow", "Nova", "Echo", "Sol", "River",
@@ -89,6 +91,16 @@ public class AnonymousChatService {
                 .build();
 
         sessionRepository.save(session);
+
+        if (crisisFlag) {
+            triggerCrisisChatAlert(
+                    sessionId,
+                    pseudonym,
+                    request.getTopic(),
+                    request.getEmotionTag(),
+                    request.getEnergyScore()
+            );
+        }
 
         log.info("Chat session created: sessionId={}, pseudonym={}, crisis={}, topic={}",
                 sessionId, pseudonym, crisisFlag,
@@ -538,6 +550,13 @@ public class AnonymousChatService {
         if (fallback.crisisDetected() && !session.isCrisisFlag()) {
             session.setCrisisFlag(true);
             sessionRepository.save(session);
+            triggerCrisisChatAlert(
+                    session.getSessionId(),
+                    session.getStudentPseudonym(),
+                    session.getTopic(),
+                    session.getEmotionTag(),
+                    session.getEnergyScore()
+            );
             log.warn("Crisis escalation via fallback: sessionId={}", session.getSessionId());
         }
 
@@ -546,6 +565,13 @@ public class AnonymousChatService {
     }
 
     // ── Private helpers ──
+
+    private void triggerCrisisChatAlert(String sessionId, String pseudonym, String topic, String emotionTag, Integer energyScore) {
+        CrisisAlertService alertService = crisisAlertServiceProvider.getIfAvailable();
+        if (alertService != null) {
+            alertService.alertCrisisChat(sessionId, pseudonym, topic, emotionTag, energyScore);
+        }
+    }
 
     private ChatSession findSession(String sessionId) {
         return sessionRepository.findBySessionId(sessionId)

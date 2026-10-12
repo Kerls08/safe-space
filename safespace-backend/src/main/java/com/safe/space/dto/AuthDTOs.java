@@ -192,7 +192,6 @@ public class AuthDTOs {
         private String destinationMasked;
         private String message;
         private long expiresInSeconds;
-        private String devOtp; // Populated for local development & fallback audit
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor

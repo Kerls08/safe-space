@@ -39,7 +39,7 @@ public class EmailService {
     @Value("${safespace.mail.from-name:SafeSpace System}")
     private String fromName;
 
-    @Value("${safespace.mail.app-url:http://localhost:5173}")
+    @Value("${safespace.mail.app-url:http://localhost:5500}")
     private String appUrl;
 
     @Value("${safespace.mail.enabled:true}")
@@ -201,7 +201,7 @@ public class EmailService {
 
         CompletableFuture.runAsync(() -> {
             try {
-                String subject = "SafeSpace — Password Recovery Code: " + otpCode;
+                String subject = "SafeSpace — Account Recovery Verification Code";
                 String htmlBody = buildOtpEmailHtml(fullName, otpCode);
                 sendBrevoMail(toEmail, fullName, subject, htmlBody);
             } catch (Exception e) {
@@ -370,7 +370,7 @@ public class EmailService {
         }
 
         // Resolve crisis-alerts page URL
-        String crisisAlertsUrl = appUrl != null && !appUrl.isBlank() ? appUrl.trim() : "http://localhost:5173";
+        String crisisAlertsUrl = appUrl != null && !appUrl.isBlank() ? appUrl.trim() : "http://localhost:5500";
         crisisAlertsUrl = crisisAlertsUrl.replaceAll("/(index|landing|login)\\.html$", "");
         if (crisisAlertsUrl.endsWith("/")) crisisAlertsUrl = crisisAlertsUrl.substring(0, crisisAlertsUrl.length() - 1);
         crisisAlertsUrl += "/crisis-alerts.html";
@@ -451,6 +451,11 @@ public class EmailService {
             log.warn("Email service skipped for {}: Brevo API key not configured (BREVO_API_KEY missing).", toEmail);
             return false;
         }
+        // Protect Brevo sender reputation and quota: skip simulated seed domains lacking real mail exchange (MX)
+        if (toEmail.trim().toLowerCase().endsWith("@safespace.edu")) {
+            log.info("Email skipped for mock seed recipient '{}': @safespace.edu is a simulated placeholder domain.", toEmail.trim());
+            return false;
+        }
         return true;
     }
 
@@ -497,13 +502,14 @@ public class EmailService {
         } else {
             log.error("Failed to dispatch email to {} via Brevo REST API. HTTP status: {}, response body: {}",
                     toEmail, response.statusCode(), response.body());
+            throw new RuntimeException("Brevo API rejected email (HTTP " + response.statusCode() + "): " + response.body());
         }
     }
 
     // ── HTML Template Generators ──
 
     private String resolveLoginPageUrl() {
-        String base = appUrl != null && !appUrl.isBlank() ? appUrl.trim() : "http://localhost:5173";
+        String base = appUrl != null && !appUrl.isBlank() ? appUrl.trim() : "http://localhost:5500";
         base = base.replaceAll("/(index|landing|login)\\.html$", "");
         if (base.endsWith("/")) {
             base = base.substring(0, base.length() - 1);

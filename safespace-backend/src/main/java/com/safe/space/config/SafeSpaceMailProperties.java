@@ -22,7 +22,7 @@ public class SafeSpaceMailProperties {
     private String fromName = "SafeSpace System";
 
     /** Frontend application base URL for links in emails. */
-    private String appUrl = "http://localhost:5173";
+    private String appUrl = "http://localhost:5500";
 
     /** Whether mail sending is enabled. */
     private boolean enabled = true;

@@ -854,10 +854,6 @@
 
         document.getElementById('otpTargetText').textContent = data.destinationMasked || recoveryState.maskedEmail;
 
-        if (data.devOtp) {
-          console.info(`%c🔑 [SafeSpace Dev OTP Code]: ${data.devOtp}`, 'background: #1e5e3a; color: #fff; font-size: 14px; font-weight: bold; padding: 4px 8px; border-radius: 4px;');
-        }
-
         // Reset and start countdown timer
         startOtpCountdown(data.expiresInSeconds || 300);
 

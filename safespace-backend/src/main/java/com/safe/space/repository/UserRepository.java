@@ -38,4 +38,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     /** Active professionals who have an email address (for crisis alert dispatch). */
     List<User> findByRoleAndActiveTrueAndEmailIsNotNull(String role);
+
+    /** Active staff matching any specified roles who have an email address (for crisis alert dispatch). */
+    List<User> findByRoleInAndActiveTrueAndEmailIsNotNull(List<String> roles);
 }

@@ -42,7 +42,7 @@ public class PasswordResetService {
     // In-memory Reset Token storage: resetToken -> ResetTokenEntry
     private final Map<String, ResetTokenEntry> activeResetTokens = new ConcurrentHashMap<>();
 
-    private record OtpEntry(String code, String method, LocalDateTime expiresAt, int attempts) {}
+    private record OtpEntry(String code, String method, LocalDateTime expiresAt, int attempts, LocalDateTime requestedAt) {}
     private record ResetTokenEntry(String institutionalId, LocalDateTime expiresAt) {}
 
     /**
@@ -89,12 +89,22 @@ public class PasswordResetService {
             throw new IllegalArgumentException("No registered recovery email found for this account.");
         }
 
+        // Rate limiting: 60-second cooldown between OTP requests for the same account
+        OtpEntry existing = activeOtps.get(user.getInstitutionalId());
+        if (existing != null && existing.requestedAt() != null) {
+            long secondsSince = java.time.Duration.between(existing.requestedAt(), LocalDateTime.now()).getSeconds();
+            if (secondsSince < 60) {
+                long waitTime = 60 - secondsSince;
+                throw new IllegalArgumentException("Please wait " + waitTime + " second" + (waitTime > 1 ? "s" : "") + " before requesting another verification code.");
+            }
+        }
+
         // Generate 6-digit numeric OTP
         int codeInt = 100000 + RANDOM.nextInt(900000);
         String code = String.valueOf(codeInt);
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(5);
 
-        activeOtps.put(user.getInstitutionalId(), new OtpEntry(code, "EMAIL", expiresAt, 0));
+        activeOtps.put(user.getInstitutionalId(), new OtpEntry(code, "EMAIL", expiresAt, 0, LocalDateTime.now()));
 
         String destinationMasked = EmailService.maskEmail(user.getEmail());
         String message = "A 6-digit verification code has been dispatched to " + destinationMasked;
@@ -109,7 +119,6 @@ public class PasswordResetService {
                 .destinationMasked(destinationMasked)
                 .message(message)
                 .expiresInSeconds(300)
-                .devOtp(code)
                 .build();
     }
 
@@ -143,7 +152,7 @@ public class PasswordResetService {
         String submittedCode = request.getOtpCode().trim();
         if (!entry.code().equals(submittedCode)) {
             activeOtps.put(user.getInstitutionalId(),
-                    new OtpEntry(entry.code(), entry.method(), entry.expiresAt(), entry.attempts() + 1));
+                    new OtpEntry(entry.code(), entry.method(), entry.expiresAt(), entry.attempts() + 1, entry.requestedAt()));
             throw new IllegalArgumentException("Incorrect verification code. Please check and try again.");
         }
 

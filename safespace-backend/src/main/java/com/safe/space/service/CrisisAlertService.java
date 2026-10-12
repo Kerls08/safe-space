@@ -602,7 +602,9 @@ public class CrisisAlertService {
      */
     private void notifyProfessionalsByEmail(CrisisAlert alert) {
         try {
-            List<User> professionals = userRepository.findByRoleAndActiveTrueAndEmailIsNotNull("PROFESSIONAL");
+            List<User> professionals = userRepository.findByRoleInAndActiveTrueAndEmailIsNotNull(
+                    List.of("PROFESSIONAL", "SUPER_ADMIN")
+            );
             if (professionals.isEmpty()) {
                 log.info("No active professionals with email found — crisis alert email skipped for alert {}",
                         alert.getAlertId());

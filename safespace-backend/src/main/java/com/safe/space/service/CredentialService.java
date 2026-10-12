@@ -659,10 +659,19 @@ public class CredentialService {
         user.setLockedUntil(null);
         userRepository.save(user);
 
-        // Send Password Reset email via Brevo SMTP (async)
-        emailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(), user.getUsername(), rawPassword);
+        boolean hasEmail = user.getEmail() != null && !user.getEmail().isBlank();
+        if (hasEmail) {
+            // Send Password Reset email via Brevo REST API (async)
+            emailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(), user.getUsername(), rawPassword);
+        } else {
+            log.warn("Password reset by admin for {} without email. Generated temp password must be conveyed directly.", user.getUsername());
+        }
 
-        log.info("Password reset by admin: username={}", user.getUsername());
+        log.info("Password reset by admin: username={}, hasEmail={}", user.getUsername(), hasEmail);
+
+        String statusMessage = hasEmail
+                ? "Password reset successfully. A notification with sign-in instructions has been dispatched to " + user.getEmail() + "."
+                : "Password reset successfully. User has no email on file — temporary password is: " + rawPassword;
 
         return RegisterUserResponse.builder()
                 .institutionalId(user.getInstitutionalId())
@@ -670,7 +679,7 @@ public class CredentialService {
                 .generatedPassword(rawPassword)
                 .fullName(user.getFullName())
                 .role(user.getRole())
-                .message("Password reset. User must change on next login.")
+                .message(statusMessage)
                 .build();
     }
 

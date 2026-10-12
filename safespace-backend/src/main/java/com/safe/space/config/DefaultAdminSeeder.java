@@ -34,16 +34,24 @@ public class DefaultAdminSeeder implements ApplicationRunner {
 
         String encodedPassword = ENCODER.encode(DEFAULT_PASSWORD);
 
+        // Check for optional real email override from environment
+        String alertEmailOverride = System.getenv("PROFESSIONAL_ALERT_EMAIL");
+        if (alertEmailOverride == null || alertEmailOverride.isBlank()) {
+            alertEmailOverride = System.getProperty("PROFESSIONAL_ALERT_EMAIL");
+        }
+        String psychometricianEmail = (alertEmailOverride != null && !alertEmailOverride.isBlank()) ? alertEmailOverride.trim() : "psychometrician@safespace.edu";
+        String psychologistEmail = (alertEmailOverride != null && !alertEmailOverride.isBlank()) ? alertEmailOverride.trim() : "psychologist@safespace.edu";
+
         // 1. Maintenance (IT / Developer - Infrastructure & Telemetry)
         seedUser("IT-DEV-001", "maintenance", "System Maintenance Engineer", "maintenance@safespace.edu",
                 "IT & Platform Services", null, "MAINTENANCE", encodedPassword);
 
         // 2. Super Admin (Lead Psychometrician - Clinic & Counseling Head)
-        seedUser("RPM-001", "psychometrician", "Lead Psychometrician, RPM", "psychometrician@safespace.edu",
+        seedUser("RPM-001", "psychometrician", "Lead Psychometrician, RPM", psychometricianEmail,
                 "Guidance & Counseling Center (Clinic Head)", null, "SUPER_ADMIN", encodedPassword);
 
         // 3. Professional (Staff Psychologist)
-        seedUser("RPSY-001", "psychologist", "Dr. Clara Reyes, RPsy", "psychologist@safespace.edu",
+        seedUser("RPSY-001", "psychologist", "Dr. Clara Reyes, RPsy", psychologistEmail,
                 "Guidance & Counseling Center (Staff Psychologist)", null, "PROFESSIONAL", encodedPassword);
 
         // 4. Student (University Student)
