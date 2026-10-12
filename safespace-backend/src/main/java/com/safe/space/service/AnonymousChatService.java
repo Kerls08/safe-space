@@ -272,26 +272,56 @@ public class AnonymousChatService {
      */
     @Transactional
     public void deleteSession(String sessionId, String requesterId, String role) {
-        deleteSession(sessionId, requesterId, null, role);
+        deleteSession(sessionId, requesterId, null, role, null);
+    }
+
+    @Transactional
+    public void deleteSession(String sessionId, String requesterId, String institutionalId, String role) {
+        deleteSession(sessionId, requesterId, institutionalId, role, null);
     }
 
     /**
      * Delete a chat session and all its messages.
-     * Allowed for student owner, assigned professional, or admin.
+     * Allowed for student owner/participant, assigned professional, or staff/admin.
      */
     @Transactional
-    public void deleteSession(String sessionId, String requesterId, String institutionalId, String role) {
+    public void deleteSession(String sessionId, String requesterId, String institutionalId, String role, String pseudonym) {
         ChatSession session = findSession(sessionId);
 
-        boolean isStudentOwner = (requesterId != null && (requesterId.equalsIgnoreCase(session.getStudentUserId()) || requesterId.equalsIgnoreCase(session.getStudentPseudonym())))
-                || (institutionalId != null && institutionalId.equalsIgnoreCase(session.getStudentUserId()));
-        boolean isProfessionalAssigned = (requesterId != null && requesterId.equalsIgnoreCase(session.getProfessionalId()));
-        boolean isStaffOrAdmin = "PROFESSIONAL".equalsIgnoreCase(role) || "SUPER_ADMIN".equalsIgnoreCase(role) || "ADMIN".equalsIgnoreCase(role);
-
-        // Fallback for student if session has no studentUserId set
-        if ("STUDENT".equalsIgnoreCase(role) && (session.getStudentUserId() == null || session.getStudentUserId().isBlank())) {
-            isStudentOwner = true;
+        boolean isStudentOwner = false;
+        if ("STUDENT".equalsIgnoreCase(role)) {
+            // 1. Matched by username or institutional ID
+            if ((requesterId != null && requesterId.equalsIgnoreCase(session.getStudentUserId()))
+                    || (institutionalId != null && institutionalId.equalsIgnoreCase(session.getStudentUserId()))) {
+                isStudentOwner = true;
+            }
+            // 2. Matched by student pseudonym passed from client session
+            else if (pseudonym != null && (pseudonym.equalsIgnoreCase(session.getStudentPseudonym()) || pseudonym.equalsIgnoreCase(session.getStudentUserId()))) {
+                isStudentOwner = true;
+            }
+            // 3. Matched if requesterId equals studentPseudonym
+            else if (requesterId != null && requesterId.equalsIgnoreCase(session.getStudentPseudonym())) {
+                isStudentOwner = true;
+            }
+            // 4. Session has no studentUserId set (anonymous room initiated without account)
+            else if (session.getStudentUserId() == null || session.getStudentUserId().isBlank()) {
+                isStudentOwner = true;
+            }
+            // 5. If the session is an outreach check-in invitation (INVITED/DECLINED) or WAITING/CLOSED,
+            // any authenticated student in possession of this session is authorized to dismiss/delete it
+            else if ("INVITED".equalsIgnoreCase(session.getStatus())
+                    || "DECLINED".equalsIgnoreCase(session.getStatus())
+                    || "WAITING".equalsIgnoreCase(session.getStatus())
+                    || "CLOSED".equalsIgnoreCase(session.getStatus())) {
+                isStudentOwner = true;
+            }
         }
+
+        boolean isProfessionalAssigned = (requesterId != null && requesterId.equalsIgnoreCase(session.getProfessionalId()));
+        boolean isStaffOrAdmin = "PROFESSIONAL".equalsIgnoreCase(role)
+                || "SUPER_ADMIN".equalsIgnoreCase(role)
+                || "ADMIN".equalsIgnoreCase(role)
+                || "MAINTENANCE".equalsIgnoreCase(role);
 
         if (!isStudentOwner && !isProfessionalAssigned && !isStaffOrAdmin) {
             throw new SecurityException("You do not have permission to delete this conversation.");
@@ -300,7 +330,7 @@ public class AnonymousChatService {
         messageRepository.deleteBySessionId(sessionId);
         sessionRepository.delete(session);
 
-        log.info("Chat session deleted: sessionId={}, deletedBy={}, role={}", sessionId, requesterId, role);
+        log.info("Chat session deleted: sessionId={}, deletedBy={}, role={}, pseudonym={}", sessionId, requesterId, role, pseudonym);
     }
 
     /**

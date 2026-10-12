@@ -502,6 +502,14 @@
     function getStoredPseudonyms() {
       return JSON.parse(localStorage.getItem('safespace_pseudonyms') || '[]');
     }
+    function cleanStoredPseudonymIfUnused(pseud) {
+      if (!pseud) return;
+      const stillInUse = sessions.some(s => s.studentPseudonym === pseud);
+      if (!stillInUse) {
+        const stored = getStoredPseudonyms().filter(p => p !== pseud);
+        localStorage.setItem('safespace_pseudonyms', JSON.stringify(stored));
+      }
+    }
 
     // ── Heartbeat (professional only) ──
     function startHeartbeat() {
@@ -1764,13 +1772,18 @@
       }
 
       try {
-        const res = await SafeSpaceAuth.authFetch(`${API}/sessions/${sid}`, {
+        const target = sessions.find(s => s.sessionId === sid);
+        const pseud = target ? target.studentPseudonym : (currentPseudonym || '');
+        const deleteUrl = `${API}/sessions/${encodeURIComponent(sid)}` + (pseud ? `?pseudonym=${encodeURIComponent(pseud)}` : '');
+
+        const res = await SafeSpaceAuth.authFetch(deleteUrl, {
           method: 'DELETE'
         });
 
-        if (!res.ok) {
+        // 404 means the session is already removed from server (pruned or reset), treat as cleanly deleted
+        if (!res.ok && res.status !== 404) {
           const err = await res.json().catch(() => ({}));
-          throw new Error(err.message || 'Failed to delete conversation');
+          throw new Error(err.error || err.message || 'Failed to delete conversation');
         }
 
         closeDeleteConfirmModal();
@@ -1779,6 +1792,11 @@
         sessions = sessions.filter(s => s.sessionId !== sid);
         if (pendingInviteSession && pendingInviteSession.sessionId === sid) {
           pendingInviteSession = null;
+        }
+
+        // Clean up pseudonym in localStorage if no other active sessions use it
+        if (target && target.studentPseudonym) {
+          cleanStoredPseudonymIfUnused(target.studentPseudonym);
         }
 
         // 2. Immediately update & hide the Sanctuary invite card if it was this invite

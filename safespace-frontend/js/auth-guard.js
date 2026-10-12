@@ -77,6 +77,8 @@ const SafeSpaceAuth = (() => {
     localStorage.removeItem('ss_username');
     localStorage.removeItem('ss_role');
     localStorage.removeItem('ss_fullName');
+    localStorage.removeItem('safespace_pseudonyms');
+    localStorage.removeItem('safespace_pseudonym');
     sessionStorage.removeItem('ss_token');
     sessionStorage.removeItem('ss_username');
     sessionStorage.removeItem('ss_role');

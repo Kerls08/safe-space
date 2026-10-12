@@ -120,12 +120,13 @@ public class AnonymousChatController {
     @DeleteMapping("/sessions/{sessionId}")
     public ResponseEntity<Map<String, Object>> deleteSession(
             @PathVariable String sessionId,
+            @RequestParam(required = false) String pseudonym,
             HttpServletRequest request) {
         String username = (String) request.getAttribute("auth.username");
         String role = (String) request.getAttribute("auth.role");
         com.safe.space.model.User user = (com.safe.space.model.User) request.getAttribute("auth.user");
         String institutionalId = user != null ? user.getInstitutionalId() : null;
-        chatService.deleteSession(sessionId, username, institutionalId, role);
+        chatService.deleteSession(sessionId, username, institutionalId, role, pseudonym);
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "sessionId", sessionId,
@@ -249,5 +250,10 @@ public class AnonymousChatController {
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<Map<String, String>> handleNotFound(NoSuchElementException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<Map<String, String>> handleSecurity(SecurityException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", ex.getMessage()));
     }
 }
