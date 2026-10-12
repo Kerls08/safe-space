@@ -699,7 +699,16 @@ public class CrisisAlertService {
         map.put("alertType", a.getAlertType());
         map.put("severity", a.getSeverity());
         map.put("status", a.getStatus());
-        map.put("outreachStatus", a.getOutreachStatus() != null ? a.getOutreachStatus() : "NONE");
+        String outreachStatus = a.getOutreachStatus() != null ? a.getOutreachStatus() : "NONE";
+        if ("NONE".equals(outreachStatus)) {
+            String notes = a.getResolutionNotes();
+            if (notes != null && (notes.toLowerCase().contains("declined") || notes.toLowerCase().contains("vent only"))) {
+                outreachStatus = "DECLINED";
+            } else if (notes != null && notes.toLowerCase().contains("invite")) {
+                outreachStatus = "INVITED";
+            }
+        }
+        map.put("outreachStatus", outreachStatus);
         map.put("chatSessionId", a.getChatSessionId());
         map.put("referenceId", a.getReferenceId());
         map.put("referenceType", a.getReferenceType());

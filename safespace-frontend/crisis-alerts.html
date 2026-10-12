@@ -66,6 +66,12 @@
 
       <!-- In Progress Panel -->
       <div class="alert-panel" id="panelInProgress">
+        <div class="severity-filters" id="inProgressFilters">
+          <button class="sev-pill active" data-progress="ALL">All In Progress <span class="pill-count" id="countProgAll">0</span></button>
+          <button class="sev-pill pill-declined" data-progress="DECLINED">⚠️ Outreach Declined <span class="pill-count" id="countProgDeclined">0</span></button>
+          <button class="sev-pill pill-active-chat" data-progress="ACTIVE">💬 Active In-Session <span class="pill-count" id="countProgActive">0</span></button>
+          <button class="sev-pill pill-invited" data-progress="INVITED">⏳ Invite Pending <span class="pill-count" id="countProgInvited">0</span></button>
+        </div>
         <div id="inProgressContainer"></div>
       </div>
 
@@ -126,13 +132,23 @@
         tab.addEventListener('click', () => switchTab(tab.dataset.tab));
       });
 
-      // Severity filters
+      // Severity filters (Needs Action)
       document.querySelectorAll('#sevFilters .sev-pill').forEach(pill => {
         pill.addEventListener('click', () => {
           document.querySelectorAll('#sevFilters .sev-pill').forEach(p => p.classList.remove('active'));
           pill.classList.add('active');
           currentSevFilter = pill.dataset.sev;
-          renderActiveAlerts();
+          renderNeedsActionAlerts();
+        });
+      });
+
+      // Casework stage filters (In Progress)
+      document.querySelectorAll('#inProgressFilters .sev-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          document.querySelectorAll('#inProgressFilters .sev-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          currentProgressFilter = pill.dataset.progress;
+          renderInProgressAlerts();
         });
       });
 
@@ -205,17 +221,33 @@
       } catch (e) { console.warn('Stats error:', e); }
     }
 
+    // ── Helper: Effective Outreach Status ──
+    function getEffectiveOutreachStatus(a) {
+      if (a.outreachStatus && a.outreachStatus !== 'NONE') return a.outreachStatus;
+      const notes = (a.resolutionNotes || '').toLowerCase();
+      if (notes.includes('declined') || notes.includes('vent only')) return 'DECLINED';
+      if (notes.includes('invite')) return 'INVITED';
+      return 'NONE';
+    }
+
     // ── Load Needs Action Alerts ──
     async function loadNeedsActionAlerts(silent = false) {
       try {
         const res = await SafeSpaceAuth.authFetch(API, { silent });
         cachedNeedsActionAlerts = await res.json();
         if (Array.isArray(cachedNeedsActionAlerts)) {
+          // Pin CRITICAL alerts to the top, then sort by newest first
+          const sevWeight = { CRITICAL: 4, HIGH: 3, MODERATE: 2, LOW: 1, INFO: 0 };
           cachedNeedsActionAlerts.sort((a, b) => {
+            const wA = sevWeight[a.severity?.toUpperCase()] || 0;
+            const wB = sevWeight[b.severity?.toUpperCase()] || 0;
+            if (wA !== wB) return wB - wA; // Pin CRITICAL / HIGH acute signals first
             const tA = parseDateString(a.createdAt)?.getTime() || 0;
             const tB = parseDateString(b.createdAt)?.getTime() || 0;
             return tB - tA;
           });
+        } else {
+          cachedNeedsActionAlerts = [];
         }
 
         const badge = document.getElementById('needsActionCount');
@@ -244,6 +276,9 @@
     }
 
     // ── Load In Progress Alerts ──
+    let cachedInProgressAlerts = [];
+    let currentProgressFilter = 'ALL';
+
     async function loadInProgressAlerts(silent = false) {
       try {
         const res = await SafeSpaceAuth.authFetch(`${API}/in-progress`, { silent });
@@ -254,22 +289,54 @@
             const tB = parseDateString(b.createdAt)?.getTime() || 0;
             return tB - tA;
           });
+          cachedInProgressAlerts = alerts;
+        } else {
+          cachedInProgressAlerts = [];
         }
 
         const badge = document.getElementById('inProgressCount');
         if (badge) {
-          badge.textContent = alerts.length;
-          badge.style.display = alerts.length > 0 ? '' : 'none';
+          badge.textContent = cachedInProgressAlerts.length;
+          badge.style.display = cachedInProgressAlerts.length > 0 ? '' : 'none';
         }
 
-        const container = document.getElementById('inProgressContainer');
-        if (!container) return;
-        if (alerts.length === 0) {
-          container.innerHTML = '<div class="alerts-empty"><i class="fas fa-check-double" style="color:#10b981;"></i><p>No alerts currently in progress</p></div>';
-          return;
-        }
-        container.innerHTML = alerts.map(a => buildAlertCard(a, true)).join('');
+        // Live casework pill counters
+        const countAll = cachedInProgressAlerts.length;
+        const countDeclined = cachedInProgressAlerts.filter(a => getEffectiveOutreachStatus(a) === 'DECLINED').length;
+        const countActive = cachedInProgressAlerts.filter(a => getEffectiveOutreachStatus(a) === 'ACTIVE').length;
+        const countInvited = cachedInProgressAlerts.filter(a => getEffectiveOutreachStatus(a) === 'INVITED').length;
+
+        const elAll = document.getElementById('countProgAll');
+        if (elAll) elAll.textContent = countAll;
+        const elDec = document.getElementById('countProgDeclined');
+        if (elDec) elDec.textContent = countDeclined;
+        const elAct = document.getElementById('countProgActive');
+        if (elAct) elAct.textContent = countActive;
+        const elInv = document.getElementById('countProgInvited');
+        if (elInv) elInv.textContent = countInvited;
+
+        renderInProgressAlerts();
       } catch (e) { console.warn('In Progress error:', e); }
+    }
+
+    function renderInProgressAlerts() {
+      const container = document.getElementById('inProgressContainer');
+      if (!container) return;
+
+      let filtered = cachedInProgressAlerts;
+      if (currentProgressFilter !== 'ALL') {
+        filtered = filtered.filter(a => getEffectiveOutreachStatus(a) === currentProgressFilter);
+      }
+
+      if (filtered.length === 0) {
+        let msg = 'No alerts currently in progress';
+        if (currentProgressFilter === 'DECLINED') msg = 'No outreach declined alerts';
+        else if (currentProgressFilter === 'ACTIVE') msg = 'No active counseling sessions in progress';
+        else if (currentProgressFilter === 'INVITED') msg = 'No pending outreach invitations';
+        container.innerHTML = `<div class="alerts-empty"><i class="fas fa-check-double" style="color:#10b981;"></i><p>${msg}</p></div>`;
+        return;
+      }
+      container.innerHTML = filtered.map(a => buildAlertCard(a, true)).join('');
     }
 
     // ── Load Resolved History ──
@@ -334,16 +401,17 @@
       if (a.status === 'ESCALATED') {
         return '<span class="alert-tag status-escalated"><i class="fas fa-arrow-up"></i> ESCALATED</span>';
       }
-      if (a.outreachStatus === 'DECLINED') {
+      const outreachStatus = getEffectiveOutreachStatus(a);
+      if (outreachStatus === 'DECLINED') {
         return '<span class="alert-tag status-declined"><i class="fas fa-hand-holding-heart"></i> ⚠️ Outreach Declined (Venting Only)</span>';
       }
-      if (a.outreachStatus === 'INVITED') {
+      if (outreachStatus === 'INVITED') {
         return '<span class="alert-tag status-invited"><i class="fas fa-paper-plane"></i> ⏳ Outreach Sent (Awaiting Student)</span>';
       }
-      if (a.outreachStatus === 'ACTIVE') {
+      if (outreachStatus === 'ACTIVE') {
         return '<span class="alert-tag status-chat-active"><i class="fas fa-comments"></i> 💬 In Active Counseling</span>';
       }
-      if (a.outreachStatus === 'CONCLUDED') {
+      if (outreachStatus === 'CONCLUDED') {
         return '<span class="alert-tag status-concluded"><i class="fas fa-check-circle"></i> ✓ Session Concluded</span>';
       }
       return `<span class="alert-tag status-${a.status?.toLowerCase()}">${a.status}</span>`;
@@ -359,6 +427,8 @@
       };
       const canAck = showActions && a.status === 'ACTIVE';
       const canResolve = showActions && (a.status === 'ACTIVE' || a.status === 'ACKNOWLEDGED');
+      const outreachStatus = getEffectiveOutreachStatus(a);
+      const isCritical = a.severity === 'CRITICAL';
 
       // Bottom Caseworker Assignment & Student Details Banner
       let bannerClass = 'unassigned';
@@ -384,7 +454,10 @@
           </div>
           <div class="alert-body">
             <div class="alert-top">
-              <div class="alert-title">${escapeHtml(a.title)}</div>
+              <div style="display:flex;align-items:center;gap:0.45rem;min-width:0;flex-wrap:wrap;">
+                <div class="alert-title">${escapeHtml(a.title)}</div>
+                ${isCritical ? '<span class="alert-critical-badge"><i class="fas fa-skull-crossbones"></i> CRITICAL — IMMEDIATE ACTION</span>' : ''}
+              </div>
               <div class="alert-time">${timeAgo(a.createdAt)}</div>
             </div>
 
@@ -403,13 +476,33 @@
               ${renderOutreachStatusTag(a)}
             </div>
 
-            ${a.outreachStatus === 'DECLINED' ? `
+            ${outreachStatus === 'DECLINED' ? `
             <!-- Dedicated Outreach Declined Callout -->
             <div class="alert-declined-callout">
               <div class="declined-callout-icon"><i class="fas fa-hand-holding-heart"></i></div>
               <div class="declined-callout-text">
                 <strong>Student declined counseling reach-out (prefers to vent only).</strong>
                 <span>Clinical oversight: Student opted out of chat. Review this post to confirm it is safe to monitor, or escalate if acute danger is present.</span>
+              </div>
+            </div>` : ''}
+
+            ${outreachStatus === 'ACTIVE' ? `
+            <!-- Dedicated Active Counseling Callout -->
+            <div class="alert-active-chat-callout">
+              <div class="active-callout-icon"><i class="fas fa-comments"></i></div>
+              <div class="active-callout-text">
+                <strong>Student accepted outreach — Active counseling session in progress.</strong>
+                <span>A clinician is currently connected in anonymous chat with this student.</span>
+              </div>
+            </div>` : ''}
+
+            ${outreachStatus === 'INVITED' ? `
+            <!-- Dedicated Outreach Pending Callout -->
+            <div class="alert-invited-callout">
+              <div class="invited-callout-icon"><i class="fas fa-paper-plane"></i></div>
+              <div class="invited-callout-text">
+                <strong>Outreach invitation sent — Awaiting student response.</strong>
+                <span>An invitation check-in has been sent to the student. Waiting for student to accept or decline.</span>
               </div>
             </div>` : ''}
 
@@ -436,13 +529,15 @@
           ${showActions ? `
           <div class="alert-actions">
             ${canAck ? `<button class="btn-alert ack" onclick="acknowledgeAlert('${a.alertId}')"><i class="fas fa-eye"></i> Ack</button>` : ''}
-            ${a.outreachStatus === 'DECLINED' ? `
+            ${outreachStatus === 'DECLINED' ? `
               <button class="btn-alert resolve" onclick="quickResolveDeclined('${a.alertId}')" title="Student chose to vent only. Close case safely as monitored."><i class="fas fa-check-double"></i> Mark Resolved (Monitored)</button>
               <button class="btn-alert resolve" onclick="openResolve('${a.alertId}','resolve')" title="Add custom notes"><i class="fas fa-clipboard"></i> Notes</button>
+            ` : (outreachStatus === 'ACTIVE' || outreachStatus === 'INVITED') ? `
+              <button class="btn-alert chat" onclick="window.location.href='anon-chat.html'"><i class="fas fa-comments"></i> ${outreachStatus === 'ACTIVE' ? 'Open Chat' : 'Monitor Session'}</button>
+              ${canResolve ? `<button class="btn-alert resolve" onclick="openResolve('${a.alertId}','resolve')"><i class="fas fa-check"></i> Resolve</button>` : ''}
             ` : (canResolve ? `<button class="btn-alert resolve" onclick="openResolve('${a.alertId}','resolve')"><i class="fas fa-check"></i> Resolve</button>` : '')}
             ${canResolve ? `<button class="btn-alert escalate" onclick="openResolve('${a.alertId}','escalate')"><i class="fas fa-arrow-up"></i> Escalate</button>` : ''}
-            ${(canResolve && a.pseudonym && a.outreachStatus !== 'DECLINED' && a.outreachStatus !== 'INVITED' && a.outreachStatus !== 'ACTIVE') ? `<button class="btn-alert chat" onclick="initiateChatFromAlert('${a.alertId}')"><i class="fas fa-hand-holding-heart"></i> Reach Out</button>` : ''}
-            ${(a.outreachStatus === 'INVITED' || a.outreachStatus === 'ACTIVE') ? `<button class="btn-alert chat" onclick="window.location.href='anon-chat.html'"><i class="fas fa-comments"></i> Open Chat</button>` : ''}
+            ${(canResolve && a.pseudonym && outreachStatus !== 'DECLINED' && outreachStatus !== 'INVITED' && outreachStatus !== 'ACTIVE') ? `<button class="btn-alert chat" onclick="initiateChatFromAlert('${a.alertId}')"><i class="fas fa-hand-holding-heart"></i> Reach Out</button>` : ''}
           </div>` : ''}
         </div>
       `;

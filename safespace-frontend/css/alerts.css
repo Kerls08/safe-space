@@ -201,6 +201,39 @@
   border-color: #161F36;
 }
 
+.sev-pill .pill-count {
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.08);
+  padding: 0.08rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  margin-left: 0.35rem;
+}
+
+.sev-pill.active .pill-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+}
+
+.sev-pill.pill-declined.active {
+  background: #C2410C;
+  border-color: #C2410C;
+  color: #FFFFFF;
+}
+
+.sev-pill.pill-active-chat.active {
+  background: #1D4ED8;
+  border-color: #1D4ED8;
+  color: #FFFFFF;
+}
+
+.sev-pill.pill-invited.active {
+  background: #0284C7;
+  border-color: #0284C7;
+  color: #FFFFFF;
+}
+
 /* ── Alert Card ── */
 .alert-card {
   background: #FFFFFF;
@@ -220,11 +253,31 @@
   transform: translateY(-1px);
 }
 
-.alert-card.sev-CRITICAL { border-left: 4px solid #dc2626; }
+.alert-card.sev-CRITICAL {
+  border-left: 5px solid #dc2626;
+  background: #FFFDFD;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.06);
+}
 .alert-card.sev-HIGH { border-left: 4px solid #ea580c; }
 .alert-card.sev-MODERATE { border-left: 4px solid #ca8a04; }
 .alert-card.sev-LOW { border-left: 4px solid #10b981; }
 .alert-card.sev-INFO { border-left: 4px solid #3b82f6; }
+
+/* Critical Pulse Badge */
+.alert-critical-badge {
+  background: #FEF2F2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.15);
+}
 
 /* Severity Icon */
 .alert-sev-icon {
@@ -356,6 +409,78 @@
 .alert-declined-callout .declined-callout-text span {
   font-size: 0.75rem;
   color: #9A3412;
+  opacity: 0.95;
+}
+
+/* ── Dedicated In Active Counseling Callout Banner ── */
+.alert-active-chat-callout {
+  margin-top: 0.65rem;
+  padding: 0.65rem 0.85rem;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-left: 4px solid #2563EB;
+  border-radius: 0.55rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #1E40AF;
+}
+
+.alert-active-chat-callout .active-callout-icon {
+  font-size: 1.05rem;
+  color: #2563EB;
+  margin-top: 0.05rem;
+  flex-shrink: 0;
+}
+
+.alert-active-chat-callout .active-callout-text strong {
+  display: block;
+  font-size: 0.82rem;
+  color: #1E3A8A;
+  margin-bottom: 0.15rem;
+}
+
+.alert-active-chat-callout .active-callout-text span {
+  font-size: 0.75rem;
+  color: #1E40AF;
+  opacity: 0.95;
+}
+
+/* ── Dedicated Outreach Pending Callout Banner ── */
+.alert-invited-callout {
+  margin-top: 0.65rem;
+  padding: 0.65rem 0.85rem;
+  background: #F0F9FF;
+  border: 1px solid #BAE6FD;
+  border-left: 4px solid #0284C7;
+  border-radius: 0.55rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #0369A1;
+}
+
+.alert-invited-callout .invited-callout-icon {
+  font-size: 1.05rem;
+  color: #0284C7;
+  margin-top: 0.05rem;
+  flex-shrink: 0;
+}
+
+.alert-invited-callout .invited-callout-text strong {
+  display: block;
+  font-size: 0.82rem;
+  color: #075985;
+  margin-bottom: 0.15rem;
+}
+
+.alert-invited-callout .invited-callout-text span {
+  font-size: 0.75rem;
+  color: #0369A1;
   opacity: 0.95;
 }
 
