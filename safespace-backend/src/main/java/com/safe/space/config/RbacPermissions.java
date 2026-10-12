@@ -73,22 +73,47 @@ public class RbacPermissions {
                     "/api/alerts",                  // Crisis alerts triage
                     "/api/resources",               // Manage wellness resources
                     "/api/calm-down",               // View calm-down interventions
-                    "/api/auth/register-colleague", // Register fellow counseling colleague
-                    "/api/auth/register",           // Register colleague
-                    "/api/auth/colleagues"          // View campus counseling team & resend welcome
+                    "/api/auth/colleagues"          // View campus counseling team & directory
             ),
 
-            "ADMIN", List.of(
-                    "/api/auth/register",           // Register single user / professional
-                    "/api/auth/register-colleague", // Register colleague
-                    "/api/auth/colleagues",         // View campus counseling team & resend welcome
+            "SUPER_ADMIN", List.of(
+                    "/api/posts",                   // View student rants & sentiment
+                    "/api/chat",                    // Accept & conduct counseling chat
+                    "/api/dashboard",               // Emotional trends dashboard
+                    "/api/alerts",                  // Crisis alerts triage
+                    "/api/resources",               // Manage wellness resources
+                    "/api/calm-down",               // View calm-down interventions
+                    "/api/auth/colleagues",         // View & manage campus counseling team
+                    "/api/auth/register-colleague", // Register colleague / staff / admin
+                    "/api/auth/users"               // List users / toggle status / transfer admin
+            ),
+
+            "MAINTENANCE", List.of(
+                    "/api/admin/maintenance",       // System maintenance, diagnostics, & audit
+                    "/api/auth/register",           // Register single user (fallback)
                     "/api/auth/batch-import",       // Batch import users (JSON)
                     "/api/auth/file-import",        // Batch import (Excel/CSV)
                     "/api/auth/import-template",    // Download import template
                     "/api/auth/users",              // List/search/toggle/reset users
+                    "/api/auth/stats"               // Credential statistics
+            ),
+
+            "ADMIN", List.of(
+                    "/api/auth/register",           // Register single user / professional / admin
+                    "/api/auth/register-colleague", // Register colleague / staff / admin
+                    "/api/auth/colleagues",         // View campus counseling team & resend welcome
+                    "/api/auth/batch-import",       // Batch import users (JSON)
+                    "/api/auth/file-import",        // Batch import (Excel/CSV)
+                    "/api/auth/import-template",    // Download import template
+                    "/api/auth/users",              // List/search/toggle/reset users & transfer role
                     "/api/auth/stats",              // Credential statistics
                     "/api/dashboard",               // System & emotional analytics overview
-                    "/api/admin/maintenance"        // System maintenance, diagnostics, & audit
+                    "/api/admin/maintenance",       // System maintenance, diagnostics, & audit
+                    "/api/posts",                   // Rant board
+                    "/api/chat",                    // Chat
+                    "/api/alerts",                  // Alerts
+                    "/api/resources",               // Resources
+                    "/api/calm-down"                // Interventions
             )
     );
 
@@ -115,7 +140,31 @@ public class RbacPermissions {
                     "heartbeat_presence",           // Report online status
                     "session_management",           // Close/manage chat sessions
                     "resource_linker_manage",       // Manage wellness resources
-                    "colleague_registration"        // Register & collaborate with campus colleagues
+                    "colleague_directory"           // View campus counseling team directory
+            ),
+
+            "SUPER_ADMIN", List.of(
+                    "rant_board_view",              // View student rants
+                    "anonymous_chat_professional",  // Accept & respond to sessions
+                    "monitoring_dashboard",         // Live emotional trends
+                    "crisis_alerts",                // Receive & triage crisis flags
+                    "heartbeat_presence",           // Report online status
+                    "session_management",           // Close/manage chat sessions
+                    "resource_linker_manage",       // Manage wellness resources
+                    "colleague_directory",          // View campus counseling team directory
+                    "colleague_registration",       // Colleague & admin registration
+                    "role_transfer"                 // Transfer lead admin role to colleague
+            ),
+
+            "MAINTENANCE", List.of(
+                    "system_maintenance",           // System health & maintenance mode
+                    "infrastructure_diagnostics",   // Hardware & runtime telemetry
+                    "audit_logs",                   // Security audit logging
+                    "broadcast_announcements",      // System-wide broadcast alerts
+                    "credential_management",        // Fallback user import & credential management
+                    "user_management",              // Emergency password reset & activate/deactivate
+                    "batch_import",                 // Bulk student import
+                    "credential_statistics"         // Credential stats
             ),
 
             "ADMIN", List.of(
@@ -124,7 +173,8 @@ public class RbacPermissions {
                     "batch_import",                 // Bulk user creation
                     "credential_statistics",        // System credential stats
                     "monitoring_overview",          // Platform monitoring overview
-                    "colleague_registration",       // Colleague registration
+                    "colleague_registration",       // Colleague & admin registration
+                    "role_transfer",                // Transfer admin role to colleague
                     "system_maintenance",           // System health & maintenance mode
                     "infrastructure_diagnostics",   // Hardware & runtime telemetry
                     "audit_logs",                   // Security audit logging
@@ -181,13 +231,18 @@ public class RbacPermissions {
                 pages.add(Map.of("name", "Anonymous Chat", "path", "anon-chat.html", "icon", "fas fa-comments"));
                 pages.add(Map.of("name", "My Profile", "path", "profile.html", "icon", "fas fa-user-circle"));
             }
-            case "PROFESSIONAL" -> {
+            case "PROFESSIONAL", "SUPER_ADMIN" -> {
                 pages.add(Map.of("name", "Rant Board", "path", "rant-board.html", "icon", "fas fa-comment-dots"));
                 pages.add(Map.of("name", "Anonymous Chat", "path", "anon-chat.html", "icon", "fas fa-comments"));
                 pages.add(Map.of("name", "Monitoring Dashboard", "path", "pro-dashboard.html", "icon", "fas fa-chart-line"));
                 pages.add(Map.of("name", "Crisis Alerts", "path", "crisis-alerts.html", "icon", "fas fa-bell"));
                 pages.add(Map.of("name", "Resource Manager", "path", "resource-manager.html", "icon", "fas fa-hand-holding-heart"));
                 pages.add(Map.of("name", "Colleagues", "path", "colleagues.html", "icon", "fas fa-user-doctor"));
+                pages.add(Map.of("name", "My Profile", "path", "profile.html", "icon", "fas fa-user-circle"));
+            }
+            case "MAINTENANCE" -> {
+                pages.add(Map.of("name", "System Maintenance", "path", "system-maintenance.html", "icon", "fas fa-server"));
+                pages.add(Map.of("name", "Credential Manager", "path", "credential-manager.html", "icon", "fas fa-users-gear"));
                 pages.add(Map.of("name", "My Profile", "path", "profile.html", "icon", "fas fa-user-circle"));
             }
             case "ADMIN" -> {

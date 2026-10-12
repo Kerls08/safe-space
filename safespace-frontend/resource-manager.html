@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="css/resources.css">
 </head>
 <body>
-  <script src="js/auth-guard.js" data-page="resource-manager" data-allowed-roles="PROFESSIONAL"></script>
+  <script src="js/auth-guard.js" data-page="resource-manager" data-allowed-roles="PROFESSIONAL,SUPER_ADMIN,ADMIN"></script>
   <nav class="navbar" id="navbar"></nav>
 
   <div class="res-layout">
@@ -117,7 +117,7 @@
           <div class="form-row">
             <label for="fLink">Link / Phone / URL *</label>
             <input type="text" id="fLink" placeholder="e.g., tel:1553 or https://..." required />
-            <div class="hint">Use tel: for phone, sms: for text, mailto: for email, or https:// for web links</div>
+            <div class="hint">Use tel: for phone, mailto: for email, or https:// for web links</div>
           </div>
 
           <div class="form-row-inline">

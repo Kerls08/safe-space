@@ -1,5 +1,6 @@
 package com.safe.space.controller;
 
+import com.safe.space.repository.UserRepository;
 import com.safe.space.service.CrisisAlertService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ import java.util.NoSuchElementException;
 public class CrisisAlertController {
 
     private final CrisisAlertService alertService;
+    private final UserRepository userRepository;
 
     // ── Read Endpoints ──
 
@@ -179,19 +181,16 @@ public class CrisisAlertController {
 
         String professionalName = body != null ? body.getOrDefault("professionalName", username) : username;
 
-        var session = alertService.initiateChatFromAlert(alertId, username, professionalName);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                "status", "chat_initiated",
-                "sessionId", session.getSessionId(),
-                "pseudonym", session.getStudentPseudonym(),
-                "message", "Chat session created and accepted. You can now message the student."));
+        Map<String, Object> result = alertService.initiateChatFromAlert(alertId, username, professionalName);
+        return ResponseEntity.ok(result);
     }
 
     // ── Helpers ──
 
     private boolean isProfessionalOrAdmin(String role) {
-        return "PROFESSIONAL".equals(role);
+        return "PROFESSIONAL".equalsIgnoreCase(role)
+                || "SUPER_ADMIN".equalsIgnoreCase(role)
+                || "ADMIN".equalsIgnoreCase(role);
     }
 
     private ResponseEntity<Map<String, String>> forbidden(String message) {
@@ -207,8 +206,22 @@ public class CrisisAlertController {
         map.put("title", alert.getTitle());
         map.put("message", alert.getMessage());
         map.put("acknowledgedBy", alert.getAcknowledgedBy());
+        String ackByName = alert.getAcknowledgedBy();
+        if (ackByName != null && userRepository != null) {
+            ackByName = userRepository.findByUsername(alert.getAcknowledgedBy())
+                    .map(com.safe.space.model.User::getFullName)
+                    .orElse(alert.getAcknowledgedBy());
+        }
+        map.put("acknowledgedByName", ackByName);
         map.put("acknowledgedAt", alert.getAcknowledgedAt());
         map.put("resolvedBy", alert.getResolvedBy());
+        String resByName = alert.getResolvedBy();
+        if (resByName != null && userRepository != null) {
+            resByName = userRepository.findByUsername(alert.getResolvedBy())
+                    .map(com.safe.space.model.User::getFullName)
+                    .orElse(alert.getResolvedBy());
+        }
+        map.put("resolvedByName", resByName);
         map.put("resolvedAt", alert.getResolvedAt());
         map.put("resolutionNotes", alert.getResolutionNotes());
         return map;

@@ -79,6 +79,12 @@ public class PostController {
         return ResponseEntity.ok(postService.getMyPosts(username));
     }
 
+    private boolean isStaffOrAdmin(String role) {
+        return "PROFESSIONAL".equalsIgnoreCase(role)
+                || "SUPER_ADMIN".equalsIgnoreCase(role)
+                || "ADMIN".equalsIgnoreCase(role);
+    }
+
     /**
      * Retrieve all crisis-flagged posts.
      * Intended for PROFESSIONAL and ADMIN roles (enforced by RBAC interceptor
@@ -88,7 +94,7 @@ public class PostController {
     @GetMapping("/flagged")
     public ResponseEntity<?> getFlaggedPosts(HttpServletRequest httpRequest) {
         String role = (String) httpRequest.getAttribute("auth.role");
-        if (!"PROFESSIONAL".equals(role)) {
+        if (!isStaffOrAdmin(role)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Only professionals can view flagged posts."));
         }
@@ -101,7 +107,7 @@ public class PostController {
     @GetMapping("/unreviewed")
     public ResponseEntity<?> getUnreviewedPosts(HttpServletRequest httpRequest) {
         String role = (String) httpRequest.getAttribute("auth.role");
-        if (!"PROFESSIONAL".equals(role)) {
+        if (!isStaffOrAdmin(role)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Only professionals can view unreviewed posts."));
         }
@@ -117,7 +123,7 @@ public class PostController {
             HttpServletRequest httpRequest) {
         String role = (String) httpRequest.getAttribute("auth.role");
         String username = (String) httpRequest.getAttribute("auth.username");
-        if (!"PROFESSIONAL".equals(role)) {
+        if (!isStaffOrAdmin(role)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Only professionals can review posts."));
         }
@@ -130,7 +136,7 @@ public class PostController {
     @GetMapping("/stats")
     public ResponseEntity<?> getPostStats(HttpServletRequest httpRequest) {
         String role = (String) httpRequest.getAttribute("auth.role");
-        if (!"PROFESSIONAL".equals(role)) {
+        if (!isStaffOrAdmin(role)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Only professionals can view post stats."));
         }
@@ -154,7 +160,7 @@ public class PostController {
             @PathVariable String postId,
             HttpServletRequest httpRequest) {
         String role = (String) httpRequest.getAttribute("auth.role");
-        if (!"PROFESSIONAL".equals(role)) {
+        if (!isStaffOrAdmin(role)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Only professionals can delete posts."));
         }

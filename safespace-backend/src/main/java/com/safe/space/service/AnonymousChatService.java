@@ -51,6 +51,18 @@ public class AnonymousChatService {
      */
     @Transactional
     public ChatSessionResponse createSession(ChatSessionRequest request) {
+        // If student is logged in, check if they already have an open session (WAITING, INVITED, or ACTIVE)
+        if (request.getStudentUserId() != null && !request.getStudentUserId().isBlank()) {
+            List<ChatSession> open = sessionRepository.findOpenSessionsForStudent(request.getStudentUserId(), request.getPseudonym());
+            if (!open.isEmpty()) {
+                ChatSession existing = open.get(0);
+                log.info("Student '{}' already has an open chat session: {} (status: {}). Returning existing.",
+                        request.getStudentUserId(), existing.getSessionId(), existing.getStatus());
+                long unread = messageRepository.countBySessionIdAndSenderTypeNotAndReadFalse(existing.getSessionId(), "student");
+                return toSessionResponse(existing, unread);
+            }
+        }
+
         String pseudonym = (request.getPseudonym() != null && !request.getPseudonym().isBlank())
                 ? request.getPseudonym().trim()
                 : generatePseudonym();
@@ -82,6 +94,119 @@ public class AnonymousChatService {
                 sessionId, pseudonym, crisisFlag,
                 request.getTopic() != null ? request.getTopic().substring(0, Math.min(50, request.getTopic().length())) : "none");
 
+        return toSessionResponse(session, 0);
+    }
+
+    /**
+     * Professional creates a gentle crisis outreach invitation for a student.
+     * Status is set to INVITED, waiting for the student's consent.
+     */
+    @Transactional
+    public ChatSessionResponse createOutreachInvite(String studentUserId, String pseudonym, String topic,
+                                                    String emotionTag, Integer energyScore,
+                                                    String professionalId, String professionalName) {
+        String sessionId = "chat-" + Long.toString(System.currentTimeMillis(), 36)
+                + "-" + UUID.randomUUID().toString().substring(0, 8);
+
+        ChatSession session = ChatSession.builder()
+                .sessionId(sessionId)
+                .studentPseudonym(pseudonym)
+                .studentUserId(studentUserId)
+                .professionalId(professionalId)
+                .professionalName(professionalName)
+                .status("INVITED")
+                .topic(topic)
+                .emotionTag(emotionTag)
+                .energyScore(energyScore)
+                .crisisFlag(true)
+                .messageCount(1)
+                .build();
+
+        sessionRepository.save(session);
+
+        String greetingContent = "Hello. I'm " + professionalName + " from Guidance. I came across your post and wanted to make sure you're doing okay. We opened a private, confidential space if you'd like to talk. There is zero pressure to reply if you just wanted to vent, but if you need a listening ear, I'm here.";
+        String messageId = "msg-" + Long.toString(System.currentTimeMillis(), 36)
+                + "-" + UUID.randomUUID().toString().substring(0, 6);
+
+        ChatMessage greetingMessage = ChatMessage.builder()
+                .messageId(messageId)
+                .sessionId(sessionId)
+                .senderType("professional")
+                .senderName(professionalName)
+                .content(greetingContent)
+                .read(false)
+                .build();
+
+        messageRepository.save(greetingMessage);
+
+        log.info("Crisis outreach invite created: sessionId={}, studentUserId={}, professional={}",
+                sessionId, studentUserId, professionalName);
+
+        return toSessionResponse(session, 0);
+    }
+
+    /**
+     * Student accepts an outreach invitation.
+     * Transitions status from INVITED to ACTIVE.
+     */
+    @Transactional
+    public ChatSessionResponse acceptInvite(String sessionId, String studentUserId) {
+        ChatSession session = findSession(sessionId);
+
+        if (!"INVITED".equals(session.getStatus())) {
+            throw new IllegalStateException("Session is not in INVITED status. Current: " + session.getStatus());
+        }
+
+        session.setStatus("ACTIVE");
+        session.setAcceptedAt(LocalDateTime.now());
+        sessionRepository.save(session);
+
+        String msgId = "msg-" + Long.toString(System.currentTimeMillis(), 36)
+                + "-" + UUID.randomUUID().toString().substring(0, 6);
+        ChatMessage sysMsg = ChatMessage.builder()
+                .messageId(msgId)
+                .sessionId(sessionId)
+                .senderType("system")
+                .senderName("System")
+                .content("Student accepted the invitation and joined the chat.")
+                .read(false)
+                .build();
+        messageRepository.save(sysMsg);
+
+        log.info("Outreach invite accepted: sessionId={}, student={}", sessionId, studentUserId);
+        return toSessionResponse(session, 0);
+    }
+
+    /**
+     * Student declines an outreach invitation.
+     * Transitions status from INVITED to DECLINED.
+     */
+    @Transactional
+    public ChatSessionResponse declineInvite(String sessionId, String studentUserId) {
+        ChatSession session = findSession(sessionId);
+
+        if (!"INVITED".equals(session.getStatus())) {
+            throw new IllegalStateException("Session is not in INVITED status. Current: " + session.getStatus());
+        }
+
+        session.setStatus("DECLINED");
+        session.setClosedBy("student_declined");
+        session.setClosedAt(LocalDateTime.now());
+        sessionRepository.save(session);
+
+        String msgId = "msg-" + Long.toString(System.currentTimeMillis(), 36)
+                + "-" + UUID.randomUUID().toString().substring(0, 6);
+        ChatMessage sysMsg = ChatMessage.builder()
+                .messageId(msgId)
+                .sessionId(sessionId)
+                .senderType("system")
+                .senderName("System")
+                .content("Student politely declined the invitation (prefers to vent only).")
+                .read(false)
+                .build();
+        messageRepository.save(sysMsg);
+
+        log.info("Outreach invite declined: sessionId={}, student={}", sessionId, studentUserId);
         return toSessionResponse(session, 0);
     }
 
@@ -127,6 +252,43 @@ public class AnonymousChatService {
         log.info("Chat session closed: sessionId={}, closedBy={}", sessionId, closedBy);
 
         return toSessionResponse(session, 0);
+    }
+
+    /**
+     * Delete a chat session and all its messages.
+     * Allowed for student owner, assigned professional, or admin.
+     */
+    @Transactional
+    public void deleteSession(String sessionId, String requesterId, String role) {
+        deleteSession(sessionId, requesterId, null, role);
+    }
+
+    /**
+     * Delete a chat session and all its messages.
+     * Allowed for student owner, assigned professional, or admin.
+     */
+    @Transactional
+    public void deleteSession(String sessionId, String requesterId, String institutionalId, String role) {
+        ChatSession session = findSession(sessionId);
+
+        boolean isStudentOwner = (requesterId != null && (requesterId.equalsIgnoreCase(session.getStudentUserId()) || requesterId.equalsIgnoreCase(session.getStudentPseudonym())))
+                || (institutionalId != null && institutionalId.equalsIgnoreCase(session.getStudentUserId()));
+        boolean isProfessionalAssigned = (requesterId != null && requesterId.equalsIgnoreCase(session.getProfessionalId()));
+        boolean isStaffOrAdmin = "PROFESSIONAL".equalsIgnoreCase(role) || "SUPER_ADMIN".equalsIgnoreCase(role) || "ADMIN".equalsIgnoreCase(role);
+
+        // Fallback for student if session has no studentUserId set
+        if ("STUDENT".equalsIgnoreCase(role) && (session.getStudentUserId() == null || session.getStudentUserId().isBlank())) {
+            isStudentOwner = true;
+        }
+
+        if (!isStudentOwner && !isProfessionalAssigned && !isStaffOrAdmin) {
+            throw new SecurityException("You do not have permission to delete this conversation.");
+        }
+
+        messageRepository.deleteBySessionId(sessionId);
+        sessionRepository.delete(session);
+
+        log.info("Chat session deleted: sessionId={}, deletedBy={}, role={}", sessionId, requesterId, role);
     }
 
     /**
@@ -201,7 +363,13 @@ public class AnonymousChatService {
                 })
                 .collect(Collectors.toList());
 
-        return Map.of("waiting", waitingQueue, "active", activeSessions);
+        // Invited sessions sent by this professional (pending student response)
+        List<ChatSessionResponse> invitedSessions = sessionRepository
+                .findByProfessionalIdAndStatusOrderByCreatedAtDesc(professionalId, "INVITED").stream()
+                .map(s -> toSessionResponse(s, 0))
+                .collect(Collectors.toList());
+
+        return Map.of("waiting", waitingQueue, "active", activeSessions, "invited", invitedSessions);
     }
 
     // ── Messaging ──

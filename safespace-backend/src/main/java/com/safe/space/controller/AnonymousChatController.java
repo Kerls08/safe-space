@@ -3,6 +3,7 @@ package com.safe.space.controller;
 import com.safe.space.dto.*;
 import com.safe.space.service.AnonymousChatService;
 import com.safe.space.service.FallbackResponseService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,8 @@ import java.util.NoSuchElementException;
  * Session lifecycle:
  *   POST   /api/chat/sessions                              — Student initiates chat
  *   PUT    /api/chat/sessions/{id}/accept                   — Professional accepts
+ *   PUT    /api/chat/sessions/{id}/accept-invite            — Student accepts outreach invite
+ *   PUT    /api/chat/sessions/{id}/decline-invite           — Student declines outreach invite
  *   PUT    /api/chat/sessions/{id}/close                    — Close session
  *   GET    /api/chat/sessions/{id}                          — Get session details
  *   GET    /api/chat/sessions/student/{pseudonym}           — Student's sessions
@@ -75,6 +78,30 @@ public class AnonymousChatController {
     }
 
     /**
+     * Student accepts an outreach invitation.
+     */
+    @PutMapping("/sessions/{sessionId}/accept-invite")
+    public ResponseEntity<ChatSessionResponse> acceptInvite(
+            @PathVariable String sessionId,
+            HttpServletRequest request) {
+        String username = (String) request.getAttribute("auth.username");
+        ChatSessionResponse response = chatService.acceptInvite(sessionId, username);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Student declines an outreach invitation.
+     */
+    @PutMapping("/sessions/{sessionId}/decline-invite")
+    public ResponseEntity<ChatSessionResponse> declineInvite(
+            @PathVariable String sessionId,
+            HttpServletRequest request) {
+        String username = (String) request.getAttribute("auth.username");
+        ChatSessionResponse response = chatService.declineInvite(sessionId, username);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Close a chat session.
      */
     @PutMapping("/sessions/{sessionId}/close")
@@ -84,6 +111,26 @@ public class AnonymousChatController {
         String closedBy = body.getOrDefault("closedBy", "system");
         ChatSessionResponse response = chatService.closeSession(sessionId, closedBy);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Delete a chat session and all its messages.
+     * Allowed for student owner, assigned professional, or admin.
+     */
+    @DeleteMapping("/sessions/{sessionId}")
+    public ResponseEntity<Map<String, Object>> deleteSession(
+            @PathVariable String sessionId,
+            HttpServletRequest request) {
+        String username = (String) request.getAttribute("auth.username");
+        String role = (String) request.getAttribute("auth.role");
+        com.safe.space.model.User user = (com.safe.space.model.User) request.getAttribute("auth.user");
+        String institutionalId = user != null ? user.getInstitutionalId() : null;
+        chatService.deleteSession(sessionId, username, institutionalId, role);
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "sessionId", sessionId,
+                "message", "Conversation deleted successfully."
+        ));
     }
 
     /**

@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="css/rant.css">
 </head>
 <body>
-  <script src="js/auth-guard.js" data-page="rant-board" data-allowed-roles="STUDENT,PROFESSIONAL"></script>
+  <script src="js/auth-guard.js" data-page="rant-board" data-allowed-roles="STUDENT,PROFESSIONAL,SUPER_ADMIN,ADMIN"></script>
   <nav class="navbar" id="navbar"></nav>
 
   <div class="rant-layout">
@@ -305,7 +305,7 @@
     const API_BASE = window.SAFE_SPACE_API_URL || (window.location.protocol === 'file:' || window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:8080/api' : 'https://safespace-backend-ws0m.onrender.com/api');
     const API = API_BASE + '/posts';
     const RESOURCE_API = API_BASE + '/resources';
-    let isProfessional = (typeof SafeSpaceAuth !== 'undefined' && SafeSpaceAuth.getRole) ? SafeSpaceAuth.getRole() === 'PROFESSIONAL' : false;
+    let isProfessional = (typeof SafeSpaceAuth !== 'undefined' && SafeSpaceAuth.getRole) ? (SafeSpaceAuth.getRole() === 'PROFESSIONAL' || SafeSpaceAuth.getRole() === 'SUPER_ADMIN') : false;
     let selectedEmotion = 'Anxious';
     let feedPage = 0;
     let feedEmotion = 'ALL';
@@ -379,7 +379,7 @@
 
       // ── Role-Based Ethical Boundaries ──
       const userRole = SafeSpaceAuth.getRole();
-      isProfessional = userRole === 'PROFESSIONAL';
+      isProfessional = (userRole === 'PROFESSIONAL' || userRole === 'SUPER_ADMIN');
 
       if (isProfessional) {
         // Professionals are clinical observers, not clients.

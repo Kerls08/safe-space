@@ -132,6 +132,18 @@ const SafeSpaceAuth = (() => {
       { name: 'Resources', href: 'resource-manager.html', icon: 'fas fa-hand-holding-heart', id: 'resource-manager' },
       { name: 'Colleagues', href: 'colleagues.html', icon: 'fas fa-user-doctor', id: 'colleagues' }
     ],
+    SUPER_ADMIN: [
+      { name: 'Rant Board', href: 'rant-board.html', icon: 'fas fa-comment-dots', id: 'rant-board' },
+      { name: 'Chat', href: 'anon-chat.html', icon: 'fas fa-comments', id: 'anon-chat' },
+      { name: 'Dashboard', href: 'pro-dashboard.html', icon: 'fas fa-chart-line', id: 'pro-dashboard' },
+      { name: 'Crisis Alerts', href: 'crisis-alerts.html', icon: 'fas fa-bell', id: 'crisis-alerts' },
+      { name: 'Resources', href: 'resource-manager.html', icon: 'fas fa-hand-holding-heart', id: 'resource-manager' },
+      { name: 'Colleagues', href: 'colleagues.html', icon: 'fas fa-user-doctor', id: 'colleagues' }
+    ],
+    MAINTENANCE: [
+      { name: 'System Maintenance', href: 'system-maintenance.html', icon: 'fas fa-server', id: 'system-maintenance' },
+      { name: 'Credential Manager', href: 'credential-manager.html', icon: 'fas fa-users-gear', id: 'credential-manager' }
+    ],
     ADMIN: [
       { name: 'System Maintenance', href: 'system-maintenance.html', icon: 'fas fa-server', id: 'system-maintenance' },
       { name: 'Credential Manager', href: 'credential-manager.html', icon: 'fas fa-users-gear', id: 'credential-manager' },
@@ -154,22 +166,24 @@ const SafeSpaceAuth = (() => {
     const links = NAV_CONFIG[role] || NAV_CONFIG['STUDENT'];
 
     const roleBadgeColors = {
-      STUDENT: { bg: '#E8EFF4', color: '#161F36', border: '#BACBD8' },
-      PROFESSIONAL: { bg: '#F2EDE2', color: '#161F36', border: '#E0D7C6' },
-      ADMIN: { bg: '#EDE9FE', color: '#5B21B6', border: '#DDD6FE' }
+      STUDENT: { bg: '#E8EFF4', color: '#161F36', border: '#BACBD8', label: 'STUDENT' },
+      PROFESSIONAL: { bg: '#F2EDE2', color: '#161F36', border: '#E0D7C6', label: 'PROFESSIONAL' },
+      SUPER_ADMIN: { bg: '#F2EDE2', color: '#161F36', border: '#E0D7C6', label: 'PROFESSIONAL' },
+      MAINTENANCE: { bg: '#E0F2FE', color: '#0369A1', border: '#BAE6FD', label: 'MAINTENANCE (IT)' },
+      ADMIN: { bg: '#EDE9FE', color: '#5B21B6', border: '#DDD6FE', label: 'ADMINISTRATOR' }
     };
     const badge = roleBadgeColors[role] || roleBadgeColors.STUDENT;
 
     nav.innerHTML = `
       <div class="navbar-inner">
-        <a href="${role === 'ADMIN' ? 'system-maintenance.html' : 'rant-board.html'}" class="navbar-brand">
+        <a href="${(role === 'MAINTENANCE' || role === 'ADMIN') ? 'system-maintenance.html' : (role === 'SUPER_ADMIN' || role === 'PROFESSIONAL') ? 'pro-dashboard.html' : 'rant-board.html'}" class="navbar-brand">
           <i class="fas fa-shield-heart"></i>
           <span class="brand-text">Safe<span>Space</span></span>
         </a>
         <div class="navbar-menu" id="navMenu">
           ${links.map(l =>
             `<a href="${l.href}" class="navbar-link${l.id === activePage ? ' active' : ''}" data-nav-id="${l.id}" style="display:inline-flex;align-items:center;gap:0.3rem;">
-              ${l.name}<span class="nav-badge" id="badge-${l.id}" style="display:none;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:#D9534F;color:#fff;font-size:0.55rem;font-weight:800;line-height:16px;text-align:center;box-shadow:0 1px 4px rgba(217,83,79,0.3);flex-shrink:0;"></span>
+              ${l.name}<span class="nav-badge" id="badge-${l.id}" style="display:none;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#EF4444;color:#FFFFFF;font-size:0.68rem;font-weight:700;line-height:18px;text-align:center;box-shadow:0 1px 4px rgba(239,68,68,0.25);flex-shrink:0;"></span>
             </a>`
           ).join('')}
           <div class="navbar-user-dropdown" id="userDropdown">
@@ -183,15 +197,15 @@ const SafeSpaceAuth = (() => {
                 <div class="dropdown-avatar">${getInitials(fullName)}</div>
                 <div class="dropdown-user-info">
                   <span class="dropdown-user-fullname">${escapeHtml(fullName || '')}</span>
-                  <span class="dropdown-role-badge" style="background:${badge.bg};color:${badge.color};border:1px solid ${badge.border};">${role}</span>
+                  <div style="display:flex;align-items:center;gap:0.35rem;flex-wrap:wrap;margin-top:0.25rem;">
+                    <span class="dropdown-role-badge" style="background:${badge.bg};color:${badge.color};border:1px solid ${badge.border};">${badge.label || role}</span>
+                  </div>
                 </div>
               </div>
               <div class="dropdown-menu-items">
                 <a href="profile.html" class="dropdown-menu-item">
                   <i class="fas fa-user-circle"></i> My Profile
                 </a>
-                ${role === 'PROFESSIONAL' ? `<a href="colleagues.html" class="dropdown-menu-item"><i class="fas fa-user-plus"></i> Register Colleague</a>` : ''}
-                ${role === 'ADMIN' ? `<a href="system-maintenance.html" class="dropdown-menu-item"><i class="fas fa-server"></i> System Maintenance</a><a href="credential-manager.html" class="dropdown-menu-item"><i class="fas fa-id-badge"></i> Credential Manager</a><a href="colleagues.html" class="dropdown-menu-item"><i class="fas fa-user-doctor"></i> Campus Team</a>` : ''}
                 <div class="dropdown-divider"></div>
                 <button class="dropdown-menu-item logout-item" onclick="SafeSpaceAuth.logout()">
                   <i class="fas fa-arrow-right-from-bracket"></i> Sign Out
@@ -256,7 +270,7 @@ const SafeSpaceAuth = (() => {
       if (existing) existing.remove();
 
       let bannerHtml = '';
-      if (data.maintenance && data.maintenance.active && role !== 'ADMIN') {
+      if (data.maintenance && data.maintenance.active && role !== 'MAINTENANCE' && role !== 'ADMIN') {
         bannerHtml = `
           <div id="systemBroadcastBanner" style="position:fixed;top:56px;left:0;right:0;z-index:999;background:#FEF3C7;color:#92400E;padding:0.65rem 1.25rem;border-bottom:1px solid #FDE68A;display:flex;align-items:center;justify-content:center;gap:0.6rem;font-size:0.85rem;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
             <i class="fas fa-triangle-exclamation" style="color:#D97706;font-size:1rem;"></i>
@@ -295,6 +309,13 @@ const SafeSpaceAuth = (() => {
   function updateBadge(navId, count) {
     const el = document.getElementById('badge-' + navId);
     if (!el) return;
+    if (count === '!') {
+      el.textContent = '!';
+      el.style.display = 'inline-flex';
+      el.style.alignItems = 'center';
+      el.style.justifyContent = 'center';
+      return;
+    }
     const n = typeof count === 'number' ? count : 0;
     if (n > 0) {
       el.textContent = n > 99 ? '99+' : n;
@@ -316,7 +337,7 @@ const SafeSpaceAuth = (() => {
   /**
    * Poll API endpoints to fetch notification counts for navbar badges.
    *
-   * PROFESSIONAL:
+   * PROFESSIONAL & SUPER_ADMIN:
    *   Chat      → waiting sessions + unread messages from students in active sessions
    *   Alerts    → active (unresolved) alert count
    *   Dashboard → flagged posts needing review
@@ -329,18 +350,18 @@ const SafeSpaceAuth = (() => {
     const token = getToken();
     if (!token) return;
 
-    if (role === 'PROFESSIONAL') {
+    if (role === 'PROFESSIONAL' || role === 'SUPER_ADMIN' || role === 'ADMIN') {
       await pollProfessionalBadges();
-    } else {
+    } else if (role === 'STUDENT') {
       await pollStudentBadges();
     }
   }
 
   /**
    * Professional badge polling:
-   *  - Chat: waiting sessions + unread messages in active sessions
-   *  - Alerts: active alert count
-   *  - Dashboard: flagged posts + waiting chats
+   *  - Chat: waiting sessions in queue + unread messages in active sessions
+   *  - Alerts: active + acknowledged (unresolved) alert count
+   *  - Dashboard: flagged posts needing review
    */
   async function pollProfessionalBadges() {
     const username = getUsername();
@@ -349,38 +370,49 @@ const SafeSpaceAuth = (() => {
 
     const hdrs = { 'Authorization': 'Bearer ' + token };
 
-    // 1. Chat badge: waiting sessions + unread messages in active sessions
+    // 1. Chat badge: waiting sessions in queue + unread messages in active sessions
     try {
-      const statsRes = await fetch(API_BASE + '/chat/stats', { headers: hdrs });
-      if (statsRes.ok) {
-        const stats = await statsRes.json();
-        if (stats.waitingSessions > 0) updateBadge('anon-chat', stats.waitingSessions);
-      }
-
+      let chatCount = 0;
       const queueRes = await fetch(API_BASE + '/chat/sessions/professional/' + encodeURIComponent(username), { headers: hdrs });
       if (queueRes.ok) {
-        const sessions = await queueRes.json();
-        const activeCount = Array.isArray(sessions) ? sessions.filter(s => s.status === 'ACTIVE' || s.status === 'WAITING').length : 0;
-        if (activeCount > 0) updateBadge('anon-chat', activeCount);
+        const data = await queueRes.json();
+        const waitingList = Array.isArray(data.waiting) ? data.waiting : [];
+        const activeList = Array.isArray(data.active) ? data.active : [];
+
+        // Unread messages from students in active chats
+        const unreadMessagesCount = activeList.reduce((acc, s) => acc + (s.unreadCount > 0 ? s.unreadCount : 0), 0);
+
+        // Waiting sessions needing counselor pickup
+        const waitingCount = waitingList.length;
+
+        chatCount = waitingCount + unreadMessagesCount;
+      } else {
+        const statsRes = await fetch(API_BASE + '/chat/stats', { headers: hdrs });
+        if (statsRes.ok) {
+          const stats = await statsRes.json();
+          chatCount = stats.waitingSessions || 0;
+        }
       }
+      updateBadge('anon-chat', chatCount);
     } catch (e) { /* ignore */ }
 
-    // 2. Alerts badge
+    // 2. Alerts badge: active + acknowledged (unresolved) crisis alerts
     try {
       const res = await fetch(API_BASE + '/alerts/stats', { headers: hdrs });
       if (res.ok) {
         const stats = await res.json();
-        const activeAlerts = (stats.todayTotal || 0) - (stats.resolvedTotal || 0);
-        if (activeAlerts > 0) updateBadge('crisis-alerts', activeAlerts);
+        const unresolvedAlerts = (stats.active || 0) + (stats.acknowledged || 0);
+        updateBadge('crisis-alerts', unresolvedAlerts);
       }
     } catch (e) { /* ignore */ }
 
-    // 3. Dashboard badge
+    // 3. Dashboard badge: flagged posts requiring review
     try {
       const res = await fetch(API_BASE + '/dashboard/overview', { headers: hdrs });
       if (res.ok) {
         const data = await res.json();
-        if (data.highRiskPosts > 0) updateBadge('pro-dashboard', '!');
+        const flagged = data.flaggedPosts || 0;
+        updateBadge('pro-dashboard', flagged);
       }
     } catch (e) { /* ignore */ }
   }
@@ -410,7 +442,9 @@ const SafeSpaceAuth = (() => {
         for (const s of sessions) {
           if (seenSessionIds.has(s.sessionId)) continue;
           seenSessionIds.add(s.sessionId);
-          if (s.status === 'ACTIVE' && s.unreadCount > 0) {
+          if (s.status === 'INVITED') {
+            totalUnread += 1;
+          } else if (s.unreadCount > 0) {
             totalUnread += s.unreadCount;
           }
         }
@@ -429,7 +463,9 @@ const SafeSpaceAuth = (() => {
           for (const s of sessions) {
             if (seenSessionIds.has(s.sessionId)) continue;
             seenSessionIds.add(s.sessionId);
-            if (s.status === 'ACTIVE' && s.unreadCount > 0) {
+            if (s.status === 'INVITED') {
+              totalUnread += 1;
+            } else if (s.unreadCount > 0) {
               totalUnread += s.unreadCount;
             }
           }

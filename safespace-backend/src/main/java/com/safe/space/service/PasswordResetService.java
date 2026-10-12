@@ -19,9 +19,9 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Self-Service Password Recovery Service.
  *
- * Provides multi-factor account recovery:
+ * Provides account recovery:
  *   1. Account Lookup & Destination Masking
- *   2. Dual-mode OTP Dispatch (Email OTP / Phone SMS OTP)
+ *   2. Email OTP Dispatch (6-Digit Code)
  *   3. 6-digit OTP Code Verification (5-minute TTL)
  *   4. Secure Single-Use Reset Token Execution (10-minute TTL)
  */
@@ -68,9 +68,7 @@ public class PasswordResetService {
         return ForgotPasswordLookupResponse.builder()
                 .institutionalId(user.getInstitutionalId())
                 .maskedEmail(EmailService.maskEmail(user.getEmail()))
-                .maskedPhone(null)
                 .hasEmail(true)
-                .hasPhone(false)
                 .build();
     }
 

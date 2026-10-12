@@ -17,12 +17,15 @@ class CredentialServiceTest {
     @Mock
     private EmailService emailService;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     private CredentialService credentialService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        credentialService = new CredentialService(userRepository, emailService);
+        credentialService = new CredentialService(userRepository, emailService, eventPublisher);
     }
 
     @Test
@@ -161,7 +164,7 @@ class CredentialServiceTest {
                 .email("test@ustp.edu.ph")
                 .build();
         IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () ->
-                credentialService.registerColleague(noName, "counselor1"));
+                credentialService.registerColleague(noName, "psych1"));
         assertTrue(ex1.getMessage().contains("full name"));
 
         com.safe.space.dto.AuthDTOs.RegisterColleagueRequest noEmail = com.safe.space.dto.AuthDTOs.RegisterColleagueRequest.builder()
@@ -170,7 +173,41 @@ class CredentialServiceTest {
                 .email("")
                 .build();
         IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () ->
-                credentialService.registerColleague(noEmail, "counselor1"));
+                credentialService.registerColleague(noEmail, "psych1"));
         assertTrue(ex2.getMessage().contains("email"));
+    }
+
+    @Test
+    @DisplayName("Should successfully transfer admin role and demote caller when relinquish is true")
+    void testTransferAdminRelinquish() {
+        com.safe.space.model.User caller = com.safe.space.model.User.builder()
+                .username("admin1")
+                .fullName("Lead Psychometrician")
+                .role("SUPER_ADMIN")
+                .active(true)
+                .build();
+
+        com.safe.space.model.User target = com.safe.space.model.User.builder()
+                .username("psych1")
+                .fullName("Dr. Clara Reyes")
+                .role("PROFESSIONAL")
+                .active(true)
+                .build();
+
+        org.mockito.Mockito.when(userRepository.findByUsername("admin1")).thenReturn(java.util.Optional.of(caller));
+        org.mockito.Mockito.when(userRepository.findByUsername("psych1")).thenReturn(java.util.Optional.of(target));
+
+        com.safe.space.dto.AuthDTOs.TransferAdminResponse res = credentialService.transferAdmin("psych1", true, "admin1");
+
+        assertNotNull(res);
+        assertEquals("psych1", res.getTargetUsername());
+        assertEquals("SUPER_ADMIN", res.getTargetRole());
+        assertEquals("PROFESSIONAL", res.getCallerRole());
+        assertEquals("SUPER_ADMIN", target.getRole());
+        assertEquals("PROFESSIONAL", caller.getRole());
+
+        org.mockito.Mockito.verify(userRepository).save(target);
+        org.mockito.Mockito.verify(userRepository).save(caller);
+        org.mockito.Mockito.verify(eventPublisher).publishEvent(org.mockito.ArgumentMatchers.any(com.safe.space.event.AdminAuditEvent.class));
     }
 }

@@ -123,9 +123,9 @@ public class SystemMaintenanceService {
             String role = (String) row[0];
             long count = ((Number) row[1]).longValue();
             switch (role) {
-                case "STUDENT" -> students = count;
-                case "PROFESSIONAL" -> professionals = count;
-                case "ADMIN" -> admins = count;
+                case "STUDENT" -> students += count;
+                case "PROFESSIONAL" -> professionals += count;
+                case "SUPER_ADMIN", "MAINTENANCE", "ADMIN" -> admins += count;
             }
         }
 

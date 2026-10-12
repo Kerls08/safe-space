@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Safe Space — Campus Counseling Team &amp; Colleagues</title>
-  <meta name="description" content="Register and collaborate with campus mental health professionals, guidance counselors, psychologists, and psychometricians.">
+  <meta name="description" content="Register and collaborate with campus mental health professionals, psychologists, and psychometricians.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -97,16 +97,11 @@
     /* Stat Cards Row */
     .colleagues-stats-row {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 1.15rem;
       margin-bottom: 1.75rem;
     }
-    @media (max-width: 1024px) {
-      .colleagues-stats-row {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-    @media (max-width: 640px) {
+    @media (max-width: 900px) {
       .colleagues-stats-row {
         grid-template-columns: 1fr;
       }
@@ -339,11 +334,6 @@
       font-weight: 700;
       letter-spacing: 0.2px;
     }
-    .colleague-role-badge.counselor {
-      background: #E0F2FE;
-      color: #0369A1;
-      border: 1px solid #BAE6FD;
-    }
     .colleague-role-badge.psychometrician {
       background: #F3E8FF;
       color: #7E22CE;
@@ -533,6 +523,39 @@
       line-height: 1.45;
     }
 
+    /* Transfer Admin Button & Admin Badges */
+    .btn-transfer-admin {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.45rem 0.75rem;
+      border-radius: 0.55rem;
+      border: 1.5px solid #DDD6FE;
+      background: #F5F3FF;
+      color: #6D28D9;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-transfer-admin:hover {
+      background: #EDE9FE;
+      border-color: #C4B5FD;
+      color: #5B21B6;
+    }
+    .colleague-admin-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: #EDE9FE;
+      color: #5B21B6;
+      border: 1px solid #DDD6FE;
+    }
+
     /* Toast Notification */
     .copy-toast {
       position: fixed;
@@ -559,7 +582,7 @@
 </head>
 <body>
   <!-- Auth Guard: accessible to registered professionals and administrators -->
-  <script src="js/auth-guard.js" data-page="colleagues" data-allowed-roles="PROFESSIONAL,ADMIN"></script>
+  <script src="js/auth-guard.js" data-page="colleagues" data-allowed-roles="PROFESSIONAL,SUPER_ADMIN,ADMIN"></script>
 
   <!-- Navigation Bar -->
   <nav class="navbar" id="navbar"></nav>
@@ -573,12 +596,12 @@
         <div class="colleagues-header-info">
           <h1><i class="fas fa-user-doctor"></i> Campus Counseling Team &amp; Colleagues</h1>
           <p class="colleagues-header-desc">
-            Collaborate and manage verified campus professionals (Guidance Counselors, Psychometricians, and Psychologists) authorized to assist and observe students.
+            Collaborate and manage verified campus professionals (Psychometricians and Psychologists) authorized to assist and observe students.
           </p>
         </div>
         <div class="colleagues-header-actions">
-          <button class="dash-btn-primary" onclick="openRegisterColleagueModal()">
-            <i class="fas fa-user-plus"></i> Register Colleague
+          <button class="dash-btn-primary" id="btnRegisterColleagueHeader" onclick="openRegisterColleagueModal()" style="display:none;">
+            <i class="fas fa-user-plus"></i> Add Colleague
           </button>
           <button class="refresh-btn" id="refreshBtn" onclick="loadColleagues()">
             <i class="fas fa-rotate-right"></i> Refresh
@@ -597,16 +620,6 @@
           <div class="stat-card-value" id="statTotalColleagues">—</div>
           <div class="stat-card-label">Total Campus Professionals</div>
           <div class="stat-card-sub neutral"><i class="fas fa-shield-halved"></i> Verified Staff</div>
-        </div>
-
-        <!-- Guidance Counselors -->
-        <div class="stat-card blue interactive" id="cardCounselor" onclick="setRoleFilter('COUNSELOR', document.getElementById('filterBtnCounselor'))">
-          <div class="stat-card-icon"><i class="fas fa-hand-holding-heart"></i></div>
-          <div class="stat-card-value" id="statCounselors">—</div>
-          <div class="stat-card-label">Guidance Counselors</div>
-          <div class="stat-card-sub" style="background:#eff6ff;color:#0284c7;border:1px solid #bfdbfe;">
-            <i class="fas fa-user-graduate"></i> Student Counseling
-          </div>
         </div>
 
         <!-- Psychometricians -->
@@ -643,9 +656,6 @@
           <button class="directory-filter-btn active" id="filterBtnAll" onclick="setRoleFilter('ALL', this)">
             All Roles <span class="filter-count" id="countAll">0</span>
           </button>
-          <button class="directory-filter-btn" id="filterBtnCounselor" onclick="setRoleFilter('COUNSELOR', this)">
-            Guidance Counselors <span class="filter-count" id="countCounselor">0</span>
-          </button>
           <button class="directory-filter-btn" id="filterBtnPsychometrician" onclick="setRoleFilter('PSYCHOMETRICIAN', this)">
             Psychometricians <span class="filter-count" id="countPsychometrician">0</span>
           </button>
@@ -666,25 +676,35 @@
     </div>
   </div>
 
-  <!-- Register Colleague Modal -->
+  <!-- Register Colleague or Admin Modal -->
   <div class="cred-modal-overlay" id="registerColleagueModal" style="display:none;">
     <div class="cred-modal" style="max-width:520px;">
       <div class="cred-modal-header">
-        <h3><i class="fas fa-user-plus" style="color:#161F36;"></i> Register a Colleague</h3>
+        <h3><i class="fas fa-user-plus" style="color:#161F36;"></i> Register Staff or Administrator</h3>
         <button class="cred-modal-close" onclick="closeModal('registerColleagueModal')"><i class="fas fa-xmark"></i></button>
       </div>
       <div class="cred-modal-body" id="colleagueModalBody">
         <div class="auth-form" id="colleagueFormFields">
+          <div class="form-group">
+            <label class="form-label">System Access Tier <span class="required-star">*</span></label>
+            <select class="form-input" id="colleagueAccountRole" onchange="handleAccountRoleChange()">
+              <option value="PROFESSIONAL" selected>Campus Professional (Staff Psychologist / Psychometrician)</option>
+              <option value="SUPER_ADMIN">Lead Psychometrician (Super Admin)</option>
+            </select>
+            <span style="font-size:0.75rem;color:#64748b;margin-top:0.25rem;display:block;">
+              Lead Psychometricians receive administrative authority to manage colleagues and clinic operations.
+            </span>
+          </div>
+
           <div class="form-group">
             <label class="form-label">Full Name <span class="required-star">*</span></label>
             <input class="form-input" id="colleagueName" placeholder="e.g. Dr. Clara Reyes, RPsy">
           </div>
 
           <div class="form-group">
-            <label class="form-label">Professional Role <span class="required-star">*</span></label>
+            <label class="form-label">Professional Role / Specialization <span class="required-star">*</span></label>
             <select class="form-input" id="colleagueTitle">
-              <option value="Guidance Counselor" selected>Guidance Counselor</option>
-              <option value="Psychometrician">Psychometrician</option>
+              <option value="Psychometrician" selected>Psychometrician</option>
               <option value="Psychologist">Psychologist</option>
             </select>
           </div>
@@ -715,7 +735,59 @@
       <div class="cred-modal-footer" id="colleagueModalFooter">
         <button class="cred-btn cred-btn-outline" onclick="closeModal('registerColleagueModal')">Cancel</button>
         <button class="dash-btn-primary" id="colleagueSubmitBtn" onclick="submitRegisterColleague()" style="padding:0.65rem 1.3rem;">
-          <i class="fas fa-user-plus"></i> Register Colleague
+          <i class="fas fa-user-plus"></i> Register Member
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transfer Admin Modal -->
+  <div class="cred-modal-overlay" id="transferAdminModal" style="display:none;">
+    <div class="cred-modal" style="max-width:520px;">
+      <div class="cred-modal-header">
+        <h3><i class="fas fa-shield-halved" style="color:#7C3AED;"></i> Transfer Admin Role</h3>
+        <button class="cred-modal-close" onclick="closeModal('transferAdminModal')"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="cred-modal-body">
+        <p style="font-size:0.88rem;color:#475569;margin-bottom:1rem;line-height:1.5;">
+          You are about to transfer administrative leadership to <strong id="transferTargetName" style="color:#161F36;"></strong> (<span id="transferTargetUsername" style="font-family:monospace;color:#7C3AED;"></span>).
+        </p>
+        <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:0.75rem;padding:0.9rem 1rem;margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:flex-start;gap:0.65rem;">
+            <i class="fas fa-triangle-exclamation" style="color:#DC2626;font-size:1.15rem;margin-top:0.15rem;flex-shrink:0;"></i>
+            <div style="font-size:0.82rem;color:#991B1B;line-height:1.45;">
+              <strong>Administrative Governance Policy:</strong>
+              <p style="margin:0.25rem 0 0 0;">
+                Administrators hold full custody over platform maintenance, user accounts, and security audit logs.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="font-weight:700;color:#161F36;">Transfer Mode</label>
+          <div style="display:flex;flex-direction:column;gap:0.6rem;margin-top:0.4rem;">
+            <label style="display:flex;align-items:flex-start;gap:0.5rem;font-size:0.84rem;color:#334155;cursor:pointer;background:#F8FAFC;padding:0.65rem 0.75rem;border-radius:0.5rem;border:1px solid #E2E8F0;">
+              <input type="radio" name="transferMode" value="relinquish" checked style="margin-top:0.2rem;">
+              <div>
+                <strong>Primary Leadership Transfer</strong>
+                <div style="color:#64748b;font-size:0.77rem;margin-top:0.1rem;">Transfer primary admin to this colleague and transition my account to regular Professional.</div>
+              </div>
+            </label>
+            <label style="display:flex;align-items:flex-start;gap:0.5rem;font-size:0.84rem;color:#334155;cursor:pointer;background:#F8FAFC;padding:0.65rem 0.75rem;border-radius:0.5rem;border:1px solid #E2E8F0;">
+              <input type="radio" name="transferMode" value="coadmin" style="margin-top:0.2rem;">
+              <div>
+                <strong>Appoint Co-Administrator</strong>
+                <div style="color:#64748b;font-size:0.77rem;margin-top:0.1rem;">Grant administrative privileges to this colleague while retaining my own Admin status.</div>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div id="transferResult" style="display:none;margin-top:1rem;"></div>
+      </div>
+      <div class="cred-modal-footer" id="transferModalFooter">
+        <button class="cred-btn cred-btn-outline" onclick="closeModal('transferAdminModal')">Cancel</button>
+        <button class="dash-btn-primary" id="confirmTransferBtn" onclick="submitTransferAdmin()" style="background:#7C3AED;border-color:#6D28D9;padding:0.65rem 1.3rem;">
+          <i class="fas fa-check"></i> Confirm Role Transfer
         </button>
       </div>
     </div>
@@ -735,13 +807,11 @@
     let currentFilter = 'ALL';
 
     document.addEventListener('DOMContentLoaded', () => {
-      // Adjust dashboard shortcut button if admin
-      if (SafeSpaceAuth.getRole() === 'ADMIN') {
-        const btn = document.getElementById('dashShortcutBtn');
-        if (btn) {
-          btn.href = 'credential-manager.html';
-          btn.innerHTML = '<i class="fas fa-users-gear"></i> Credential Manager';
-        }
+      // Show colleague registration button for Lead Psychometrician (SUPER_ADMIN)
+      const role = SafeSpaceAuth.getRole();
+      if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+        const regBtn = document.getElementById('btnRegisterColleagueHeader');
+        if (regBtn) regBtn.style.display = 'inline-flex';
       }
       loadColleagues();
     });
@@ -784,51 +854,48 @@
 
     function renderMetrics() {
       const total = allColleagues.length;
-      let counselors = 0;
       let psychometricians = 0;
       let psychologists = 0;
 
       allColleagues.forEach(c => {
         const cat = getColleagueCategory(c);
         if (cat === 'PSYCHOLOGIST') psychologists++;
-        else if (cat === 'PSYCHOMETRICIAN') psychometricians++;
-        else counselors++;
+        else psychometricians++;
       });
 
       // Update stat cards numbers
       document.getElementById('statTotalColleagues').textContent = total;
-      document.getElementById('statCounselors').textContent = counselors;
       document.getElementById('statPsychometricians').textContent = psychometricians;
       document.getElementById('statPsychologists').textContent = psychologists;
 
       // Update filter pills count badges
       document.getElementById('countAll').textContent = total;
-      document.getElementById('countCounselor').textContent = counselors;
       document.getElementById('countPsychometrician').textContent = psychometricians;
       document.getElementById('countPsychologist').textContent = psychologists;
     }
 
     function getColleagueCategory(c) {
       const text = ((c.department || '') + ' ' + (c.fullName || '')).toLowerCase();
-      if (text.includes('psychologist')) return 'PSYCHOLOGIST';
-      if (text.includes('psychometrician') || text.includes('rpm')) return 'PSYCHOMETRICIAN';
-      return 'COUNSELOR';
+      if (text.includes('psychologist') || text.includes('rpsy')) return 'PSYCHOLOGIST';
+      return 'PSYCHOMETRICIAN';
     }
 
     function getCategoryBadge(c) {
       const cat = getColleagueCategory(c);
+      let roleHtml = '';
+      if (c.role === 'SUPER_ADMIN' || c.role === 'ADMIN') {
+        roleHtml = `<span class="colleague-admin-badge" style="margin-right:0.35rem;">Lead Psychometrician</span>`;
+      }
       if (cat === 'PSYCHOLOGIST') {
-        return `<span class="colleague-role-badge psychologist"><i class="fas fa-brain"></i> Psychologist</span>`;
+        return roleHtml + `<span class="colleague-role-badge psychologist"><i class="fas fa-brain"></i> Psychologist</span>`;
       }
-      if (cat === 'PSYCHOMETRICIAN') {
-        return `<span class="colleague-role-badge psychometrician"><i class="fas fa-chart-line"></i> Psychometrician</span>`;
-      }
-      return `<span class="colleague-role-badge counselor"><i class="fas fa-hand-holding-heart"></i> Guidance Counselor</span>`;
+      return roleHtml + `<span class="colleague-role-badge psychometrician"><i class="fas fa-chart-line"></i> Psychometrician</span>`;
     }
 
     function renderColleagues() {
       const grid = document.getElementById('colleaguesGrid');
       const query = (document.getElementById('colleagueSearchInput').value || '').toLowerCase().trim();
+      const isSuperAdminViewer = (SafeSpaceAuth.getRole() === 'SUPER_ADMIN' || SafeSpaceAuth.getRole() === 'ADMIN');
 
       let list = allColleagues;
 
@@ -858,9 +925,9 @@
             </p>
             ${query ? `
               <button class="dash-btn-primary" onclick="clearSearch()"><i class="fas fa-xmark"></i> Clear Search</button>
-            ` : `
-              <button class="dash-btn-primary" onclick="openRegisterColleagueModal()"><i class="fas fa-user-plus"></i> Register a Colleague</button>
-            `}
+            ` : (isSuperAdminViewer ? `
+              <button class="dash-btn-primary" onclick="openRegisterColleagueModal()"><i class="fas fa-user-plus"></i> Add Colleague</button>
+            ` : '')}
           </div>
         `;
         return;
@@ -884,11 +951,11 @@
                     <span class="colleague-name">${escapeHtml(c.fullName)}</span>
                     ${isSelf ? '<span class="colleague-you-pill"><i class="fas fa-user-check"></i> You</span>' : ''}
                   </div>
-                  <div>${badge}</div>
+                  <div style="display:flex;align-items:center;flex-wrap:wrap;gap:0.3rem;">${badge}</div>
                 </div>
               </div>
 
-              <!-- Information Details (No text truncation bug!) -->
+              <!-- Information Details -->
               <div class="colleague-details-box">
                 <div class="colleague-detail-row">
                   <i class="fas fa-id-badge colleague-detail-icon" title="Staff ID"></i>
@@ -931,27 +998,39 @@
             <!-- Card Footer -->
             <div class="colleague-footer">
               <div class="colleague-status">
-                <span class="colleague-status-dot"></span>
-                <span>Active &amp; Authorized</span>
+                <span class="colleague-status-dot" style="${(c.role === 'SUPER_ADMIN' || c.role === 'ADMIN') ? 'background:#7C3AED;box-shadow:0 0 6px rgba(124,58,237,0.4);' : ''}"></span>
+                <span>${(c.role === 'SUPER_ADMIN' || c.role === 'ADMIN') ? 'Lead Psychometrician' : 'Active &amp; Authorized'}</span>
               </div>
-              <button class="btn-resend-welcome" id="resendBtn_${escapeHtml(staffId)}" onclick="resendColleagueEmail('${escapeHtml(c.username)}', '${escapeHtml(c.fullName)}', '${escapeHtml(staffId)}')">
-                <i class="fas fa-paper-plane"></i> Resend Email
-              </button>
+              <div style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;">
+                ${isSuperAdminViewer && !isSelf && c.role !== 'SUPER_ADMIN' && c.role !== 'ADMIN' ? `
+                  <button class="btn-transfer-admin" onclick="openTransferAdminModal('${escapeHtml(c.username)}', '${escapeHtml(c.fullName)}')">
+                    <i class="fas fa-shield-halved"></i> Transfer Lead Role
+                  </button>
+                ` : (isSuperAdminViewer && !isSelf && (c.role === 'SUPER_ADMIN' || c.role === 'ADMIN') && c.username !== 'admin' && c.username !== 'psychometrician' ? `
+                  <button class="btn-transfer-admin" style="background:#F1F5F9;border-color:#CBD5E1;color:#475569;" onclick="revokeAdminColleague('${escapeHtml(c.username)}', '${escapeHtml(c.fullName)}')">
+                    <i class="fas fa-user-minus"></i> Demote
+                  </button>
+                ` : '')}
+                ${isSuperAdminViewer ? `
+                  <button class="btn-resend-welcome" id="resendBtn_${escapeHtml(staffId)}" onclick="resendColleagueEmail('${escapeHtml(c.username)}', '${escapeHtml(c.fullName)}', '${escapeHtml(staffId)}')">
+                    <i class="fas fa-paper-plane"></i> Resend Email
+                  </button>
+                ` : ''}
+              </div>
             </div>
           </div>
         `;
       }).join('');
 
-      // Senior UX Polish: When only 1 colleague is registered (e.g. newly onboarded team),
-      // render an inviting "Register Colleague" card right next to it instead of leaving 75% empty void!
-      if (list.length === 1 && currentFilter === 'ALL' && !query) {
+      // When only 1 colleague is registered, render inviting card for Super Admin
+      if (list.length === 1 && currentFilter === 'ALL' && !query && isSuperAdminViewer) {
         html += `
           <div class="colleague-add-card">
             <div class="colleague-add-icon"><i class="fas fa-user-plus"></i></div>
             <h4>Register a Colleague</h4>
-            <p>Add fellow campus counselors, psychologists, or psychometricians to collaborate on student wellbeing.</p>
+            <p>Add fellow campus psychometricians or psychologists to collaborate on student wellbeing.</p>
             <button class="dash-btn-primary" onclick="openRegisterColleagueModal()">
-              <i class="fas fa-user-plus"></i> Register Colleague
+              <i class="fas fa-user-plus"></i> Add Colleague
             </button>
           </div>
         `;
@@ -970,7 +1049,6 @@
       // Update stat cards active filter styling
       document.querySelectorAll('.stat-card.interactive').forEach(c => c.classList.remove('active-filter'));
       if (role === 'ALL') document.getElementById('cardTotal').classList.add('active-filter');
-      else if (role === 'COUNSELOR') document.getElementById('cardCounselor').classList.add('active-filter');
       else if (role === 'PSYCHOMETRICIAN') document.getElementById('cardPsychometrician').classList.add('active-filter');
       else if (role === 'PSYCHOLOGIST') document.getElementById('cardPsychologist').classList.add('active-filter');
 
@@ -995,6 +1073,14 @@
       renderColleagues();
     }
 
+    function handleAccountRoleChange() {
+      const role = document.getElementById('colleagueAccountRole').value;
+      const titleSelect = document.getElementById('colleagueTitle');
+      if (role === 'ADMIN' && titleSelect) {
+        titleSelect.value = 'Psychometrician';
+      }
+    }
+
     function openRegisterColleagueModal() {
       // Reset form
       document.getElementById('colleagueName').value = '';
@@ -1002,7 +1088,10 @@
       document.getElementById('colleagueEmail').value = '';
       document.getElementById('colleagueDept').value = 'Guidance & Counseling Center';
       document.getElementById('colleaguePhone').value = '';
-      document.getElementById('colleagueTitle').value = 'Guidance Counselor';
+      document.getElementById('colleagueTitle').value = 'Psychometrician';
+      if (document.getElementById('colleagueAccountRole')) {
+        document.getElementById('colleagueAccountRole').value = 'PROFESSIONAL';
+      }
 
       // Reset view
       document.getElementById('colleagueFormFields').style.display = 'block';
@@ -1012,7 +1101,7 @@
 
       const btn = document.getElementById('colleagueSubmitBtn');
       btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-user-plus"></i> Register Colleague';
+      btn.innerHTML = '<i class="fas fa-user-plus"></i> Register Member';
 
       document.getElementById('registerColleagueModal').style.display = 'flex';
       setTimeout(() => {
@@ -1031,6 +1120,7 @@
       const email = document.getElementById('colleagueEmail').value.trim();
       const dept = document.getElementById('colleagueDept').value.trim() || 'Guidance & Counseling Center';
       const phone = document.getElementById('colleaguePhone').value.trim();
+      const accountRole = document.getElementById('colleagueAccountRole') ? document.getElementById('colleagueAccountRole').value : 'PROFESSIONAL';
       const btn = document.getElementById('colleagueSubmitBtn');
 
       if (!name) {
@@ -1056,7 +1146,7 @@
       }
 
       btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering Colleague...';
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Provisioning Member...';
 
       try {
         const body = {
@@ -1065,7 +1155,8 @@
           email: email,
           title: title,
           department: dept,
-          phoneNumber: phone
+          phoneNumber: phone,
+          role: accountRole
         };
 
         const res = await SafeSpaceAuth.authFetch(`${API}/register-colleague`, {
@@ -1089,7 +1180,7 @@
             <div style="width:3.5rem;height:3.5rem;border-radius:50%;background:#DCFCE7;color:#15803d;display:inline-flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:0.75rem;">
               <i class="fas fa-circle-check"></i>
             </div>
-            <h4 style="font-size:1.15rem;font-weight:800;color:#166534;margin:0 0 0.4rem 0;">Colleague Registered Successfully!</h4>
+            <h4 style="font-size:1.15rem;font-weight:800;color:#166534;margin:0 0 0.4rem 0;">${(accountRole === 'SUPER_ADMIN' || accountRole === 'ADMIN') ? 'Lead Psychometrician' : 'Colleague'} Registered Successfully!</h4>
             <p style="font-size:0.86rem;color:#15803d;margin:0;line-height:1.5;">
               A welcome email with login instructions has been sent to <strong>${escapeHtml(data.email || email)}</strong>.
             </p>
@@ -1097,12 +1188,17 @@
 
           <div style="background:#FAF7F2;border:1.5px solid #E0D7C6;border-radius:0.85rem;padding:1.25rem;margin-bottom:1.5rem;">
             <div style="font-size:0.75rem;font-weight:800;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:0.75rem;">
-              Colleague Sign-In Details (Shareable)
+              Staff Sign-In Details (Shareable)
             </div>
 
             <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid #EDE8E0;">
-              <span style="font-size:0.85rem;color:#475569;">Colleague Name:</span>
+              <span style="font-size:0.85rem;color:#475569;">Name:</span>
               <strong style="color:#161F36;">${escapeHtml(data.fullName || name)}</strong>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid #EDE8E0;">
+              <span style="font-size:0.85rem;color:#475569;">System Role:</span>
+              <span class="role-badge" style="background:#EDE9FE;color:#5B21B6;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:6px;">${escapeHtml(data.role || accountRole)}</span>
             </div>
 
             <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid #EDE8E0;">
@@ -1139,7 +1235,7 @@
         loadColleagues();
       } catch (err) {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-user-plus"></i> Register Colleague';
+        btn.innerHTML = '<i class="fas fa-user-plus"></i> Register Member';
         showCopyToast(err.message || 'Registration failed');
       }
     }
@@ -1147,6 +1243,92 @@
     function finishColleagueRegistration() {
       closeModal('registerColleagueModal');
       loadColleagues();
+    }
+
+    // ── Admin Role Transfer ──
+    let transferTargetUsername = null;
+    let transferTargetFullName = null;
+
+    function openTransferAdminModal(username, fullName) {
+      transferTargetUsername = username;
+      transferTargetFullName = fullName;
+
+      document.getElementById('transferTargetName').textContent = fullName;
+      document.getElementById('transferTargetUsername').textContent = `@${username}`;
+      document.getElementById('transferResult').style.display = 'none';
+      document.getElementById('transferResult').innerHTML = '';
+      document.getElementById('transferModalFooter').style.display = 'flex';
+
+      const btn = document.getElementById('confirmTransferBtn');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-check"></i> Confirm Role Transfer';
+
+      document.getElementById('transferAdminModal').style.display = 'flex';
+    }
+
+    async function submitTransferAdmin() {
+      if (!transferTargetUsername) return;
+      const mode = document.querySelector('input[name="transferMode"]:checked').value;
+      const relinquish = (mode === 'relinquish');
+
+      const btn = document.getElementById('confirmTransferBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Transferring Role...';
+
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API_BASE}/auth/users/${encodeURIComponent(transferTargetUsername)}/transfer-admin`, {
+          method: 'POST',
+          body: JSON.stringify({ relinquishAdmin: relinquish })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to transfer administrative role');
+
+        showCopyToast(data.message || 'Admin role transferred successfully');
+
+        const resultEl = document.getElementById('transferResult');
+        resultEl.style.display = 'block';
+        resultEl.innerHTML = `
+          <div style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:0.75rem;padding:1rem;text-align:center;">
+            <i class="fas fa-circle-check" style="color:#15803d;font-size:1.5rem;margin-bottom:0.4rem;"></i>
+            <h4 style="color:#166534;margin:0 0 0.3rem 0;font-size:1rem;">Role Updated Successfully</h4>
+            <p style="color:#15803d;font-size:0.84rem;margin:0;">${escapeHtml(data.message)}</p>
+          </div>
+        `;
+        document.getElementById('transferModalFooter').style.display = 'none';
+
+        setTimeout(() => {
+          closeModal('transferAdminModal');
+          if (relinquish) {
+            sessionStorage.setItem('safespace_role', 'PROFESSIONAL');
+            localStorage.setItem('safespace_role', 'PROFESSIONAL');
+            window.location.reload();
+          } else {
+            loadColleagues();
+          }
+        }, 1600);
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Confirm Role Transfer';
+        showCopyToast(err.message || 'Role transfer failed');
+      }
+    }
+
+    async function revokeAdminColleague(username, fullName) {
+      if (!confirm(`Revoke administrator privileges from ${fullName} (@${username})? Their account will return to a standard Professional.`)) {
+        return;
+      }
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API_BASE}/auth/users/${encodeURIComponent(username)}/role`, {
+          method: 'PUT',
+          body: JSON.stringify({ role: 'PROFESSIONAL' })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to revoke admin role');
+        showCopyToast(data.message || 'Administrator privileges revoked successfully');
+        loadColleagues();
+      } catch (err) {
+        showCopyToast(err.message || 'Failed to revoke admin role');
+      }
     }
 
     async function resendColleagueEmail(username, fullName, staffId) {

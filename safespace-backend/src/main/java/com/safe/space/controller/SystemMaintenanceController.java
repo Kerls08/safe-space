@@ -175,6 +175,6 @@ public class SystemMaintenanceController {
     }
 
     private boolean isAdmin(String role) {
-        return "ADMIN".equalsIgnoreCase(role);
+        return "MAINTENANCE".equalsIgnoreCase(role) || "ADMIN".equalsIgnoreCase(role);
     }
 }

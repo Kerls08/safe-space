@@ -2,8 +2,10 @@ package com.safe.space.service;
 
 import com.safe.space.dto.ChatSessionRequest;
 import com.safe.space.dto.ChatSessionResponse;
+import com.safe.space.model.ChatSession;
 import com.safe.space.model.CrisisAlert;
 import com.safe.space.model.User;
+import com.safe.space.repository.ChatSessionRepository;
 import com.safe.space.repository.CrisisAlertRepository;
 import com.safe.space.repository.PostRepository;
 import com.safe.space.repository.UserRepository;
@@ -43,6 +45,7 @@ public class CrisisAlertService {
 
     private final CrisisAlertRepository alertRepository;
     private final AnonymousChatService chatService;
+    private final ChatSessionRepository sessionRepository;
     private final PostRepository postRepository;
     private final EmailService emailService;
     private final UserRepository userRepository;
@@ -469,7 +472,7 @@ public class CrisisAlertService {
      * @return the created and accepted chat session response
      */
     @Transactional
-    public ChatSessionResponse initiateChatFromAlert(String alertId, String professionalId,
+    public Map<String, Object> initiateChatFromAlert(String alertId, String professionalId,
             String professionalName) {
         CrisisAlert alert = alertRepository.findByAlertId(alertId)
                 .orElseThrow(() -> new NoSuchElementException("Alert not found: " + alertId));
@@ -495,34 +498,100 @@ public class CrisisAlertService {
             log.warn("Error resolving pseudonym '{}' to userId: {}", alert.getPseudonym(), e.getMessage());
         }
 
-        // Build a chat session request on behalf of the student
-        ChatSessionRequest chatRequest = new ChatSessionRequest();
-        chatRequest.setPseudonym(alert.getPseudonym());
-        chatRequest.setStudentUserId(studentUserId);
-        chatRequest
-                .setTopic("[Crisis Alert] " + (alert.getTitle() != null ? alert.getTitle() : "Professional outreach"));
-        chatRequest.setEmotionTag(alert.getEmotionTag());
-        chatRequest.setEnergyScore(alert.getEnergyScore());
+        // Check if student already has an open session (WAITING, INVITED, or ACTIVE)
+        List<ChatSession> openSessions = sessionRepository.findOpenSessionsForStudent(studentUserId, alert.getPseudonym());
 
-        // Create the session (status = WAITING)
-        ChatSessionResponse session = chatService.createSession(chatRequest);
+        if (!openSessions.isEmpty()) {
+            ChatSession existing = openSessions.get(0);
 
-        // Immediately accept it with the professional's credentials (status = ACTIVE)
-        ChatSessionResponse accepted = chatService.acceptSession(
-                session.getSessionId(), professionalId, professionalName);
+            // Case 1: Student is WAITING (they voluntarily started a chat and are waiting in queue)
+            if ("WAITING".equals(existing.getStatus())) {
+                ChatSessionResponse accepted = chatService.acceptSession(
+                        existing.getSessionId(), professionalId, professionalName);
 
-        // Auto-acknowledge the alert if it's still ACTIVE
+                autoAcknowledgeAlert(alert, professionalId);
+
+                return Map.of(
+                        "status", "claimed_waiting",
+                        "sessionId", accepted.getSessionId(),
+                        "pseudonym", accepted.getStudentPseudonym(),
+                        "professionalName", professionalName,
+                        "message", "Connected to student's waiting chat session.");
+            }
+
+            // Case 2: Session is ACTIVE with THIS professional
+            if ("ACTIVE".equals(existing.getStatus()) && professionalId.equals(existing.getProfessionalId())) {
+                autoAcknowledgeAlert(alert, professionalId);
+                return Map.of(
+                        "status", "resumed_active",
+                        "sessionId", existing.getSessionId(),
+                        "pseudonym", existing.getStudentPseudonym(),
+                        "professionalName", professionalName,
+                        "message", "Resumed ongoing active counseling session.");
+            }
+
+            // Case 3: Session is ACTIVE with ANOTHER professional
+            if ("ACTIVE".equals(existing.getStatus()) && !professionalId.equals(existing.getProfessionalId())) {
+                String assignedName = existing.getProfessionalName() != null ? existing.getProfessionalName() : existing.getProfessionalId();
+                return Map.of(
+                        "status", "already_active_with_other",
+                        "sessionId", existing.getSessionId(),
+                        "professionalName", assignedName,
+                        "message", "This student is currently in an active counseling session with " + assignedName + ".");
+            }
+
+            // Case 4: Session is INVITED by ANOTHER professional
+            if ("INVITED".equals(existing.getStatus()) && !professionalId.equals(existing.getProfessionalId())) {
+                String assignedName = existing.getProfessionalName() != null ? existing.getProfessionalName() : existing.getProfessionalId();
+                return Map.of(
+                        "status", "already_invited_by_other",
+                        "sessionId", existing.getSessionId(),
+                        "professionalName", assignedName,
+                        "message", "An outreach invitation was already sent to this student by " + assignedName + " (pending response).");
+            }
+
+            // Case 5: Session is INVITED by THIS professional
+            if ("INVITED".equals(existing.getStatus()) && professionalId.equals(existing.getProfessionalId())) {
+                return Map.of(
+                        "status", "invite_sent",
+                        "sessionId", existing.getSessionId(),
+                        "pseudonym", existing.getStudentPseudonym(),
+                        "professionalName", professionalName,
+                        "message", "Outreach invitation already sent by you. Waiting for student to accept.");
+            }
+        }
+
+        // Case 6: No open session exists -> Create gentle outreach invitation (status = INVITED)
+        String topic = "[Crisis Outreach] " + (alert.getTitle() != null ? alert.getTitle() : "Counselor Check-in");
+        ChatSessionResponse inviteSession = chatService.createOutreachInvite(
+                studentUserId,
+                alert.getPseudonym(),
+                topic,
+                alert.getEmotionTag(),
+                alert.getEnergyScore(),
+                professionalId,
+                professionalName);
+
+        autoAcknowledgeAlert(alert, professionalId);
+
+        log.info("Crisis outreach invitation created: alertId={}, sessionId={}, professional={}, pseudonym={}",
+                alertId, inviteSession.getSessionId(), professionalName, alert.getPseudonym());
+
+        return Map.of(
+                "status", "invite_sent",
+                "sessionId", inviteSession.getSessionId(),
+                "pseudonym", alert.getPseudonym(),
+                "professionalName", professionalName,
+                "message", "Outreach invitation sent to student. Waiting for student to accept.");
+    }
+
+    private void autoAcknowledgeAlert(CrisisAlert alert, String professionalId) {
         if ("ACTIVE".equals(alert.getStatus())) {
             alert.setStatus("ACKNOWLEDGED");
             alert.setAcknowledgedBy(professionalId);
             alert.setAcknowledgedAt(LocalDateTime.now());
             alertRepository.save(alert);
         }
-
-        log.info("Chat initiated from alert: alertId={}, sessionId={}, professional={}, pseudonym={}",
-                alertId, accepted.getSessionId(), professionalName, alert.getPseudonym());
-
-        return accepted;
     }
 
     // ── EMAIL NOTIFICATION TO PROFESSIONALS ──
@@ -589,8 +658,22 @@ public class CrisisAlertService {
         map.put("energyScore", a.getEnergyScore());
         map.put("flaggedKeywords", a.getFlaggedKeywords());
         map.put("acknowledgedBy", a.getAcknowledgedBy());
+        String ackByName = a.getAcknowledgedBy();
+        if (ackByName != null && !ackByName.isBlank()) {
+            ackByName = userRepository.findByUsername(ackByName)
+                    .map(User::getFullName)
+                    .orElse(ackByName);
+        }
+        map.put("acknowledgedByName", ackByName);
         map.put("acknowledgedAt", a.getAcknowledgedAt());
         map.put("resolvedBy", a.getResolvedBy());
+        String resByName = a.getResolvedBy();
+        if (resByName != null && !resByName.isBlank()) {
+            resByName = userRepository.findByUsername(resByName)
+                    .map(User::getFullName)
+                    .orElse(resByName);
+        }
+        map.put("resolvedByName", resByName);
         map.put("resolvedAt", a.getResolvedAt());
         map.put("resolutionNotes", a.getResolutionNotes());
         map.put("createdAt", a.getCreatedAt());

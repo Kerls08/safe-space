@@ -17,4 +17,10 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     /** Count messages by sender type in a session (for fallback logic). */
     long countBySessionIdAndSenderType(String sessionId, String senderType);
+
+    /** Delete all messages for a session. */
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Query("DELETE FROM ChatMessage m WHERE m.sessionId = :sessionId")
+    void deleteBySessionId(@org.springframework.data.repository.query.Param("sessionId") String sessionId);
 }

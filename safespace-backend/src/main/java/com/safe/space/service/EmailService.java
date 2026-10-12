@@ -15,13 +15,13 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Brevo REST API Email & SMS Dispatch Service.
+ * Brevo REST API Email Dispatch Service.
  *
  * Handles asynchronous transactional delivery for:
  *   1. Account Welcome & Credential Provisioning
  *   2. Admin-initiated Password Reset Notifications
- *   3. Student Registration Confirmation (Email & Welcome SMS)
- *   4. Forgot Password 6-Digit OTP (Email & SMS)
+ *   3. Student Registration Confirmation (Email)
+ *   4. Forgot Password 6-Digit OTP (Email)
  *
  * Connects via Brevo HTTP API v3 over standard HTTPS (Port 443).
  */
@@ -30,7 +30,6 @@ import java.util.concurrent.CompletableFuture;
 public class EmailService {
 
     private static final String BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
-    private static final String BREVO_SMS_API_URL = "https://api.brevo.com/v3/transactionalSMS/sms";
 
     private final HttpClient httpClient;
 
@@ -139,7 +138,7 @@ public class EmailService {
 
     /**
      * Send Professional Welcome & Initial Credentials (Institutional ID & Temporary Password) email asynchronously.
-     * Mental health professionals (Psychometrician, Psychologist, Guidance Counselor) are provisioned by Admin
+     * Mental health professionals (Psychometrician, Psychologist) are provisioned by Admin
      * and must receive their official Institutional ID and temporary password to log in.
      */
     public void sendProfessionalWelcomeEmail(String toEmail, String fullName, String institutionalId, String username, String tempPassword, String designation) {
@@ -435,114 +434,7 @@ public class EmailService {
         );
     }
 
-    /**
-     * Send Student Registration Welcome SMS notification asynchronously.
-     */
-    public void sendStudentRegistrationWelcomeSms(String rawPhoneNumber, String fullName, String username) {
-        if (rawPhoneNumber == null || rawPhoneNumber.isBlank()) {
-            log.warn("Student welcome SMS skipped: phone number is null/empty.");
-            return;
-        }
 
-        String normalizedPhone = normalizePhilippinePhone(rawPhoneNumber);
-        String maskedPhone = maskPhoneNumber(normalizedPhone);
-        String firstName = (fullName != null && !fullName.isBlank()) ? fullName.trim().split("\\s+")[0] : "Student";
-
-        String message = "SafeSpace: Welcome, " + firstName + "! Your account (" + username + ") is registered. Mental health & peer support is always here for you.";
-
-        // Always log prominently to dev console for local testing / audit:
-        log.info("===============================================================================");
-        log.info("📢 [STUDENT WELCOME SMS - LOCAL / AUDIT LOG]");
-        log.info("   Target Phone: {} (Raw: {})", maskedPhone, rawPhoneNumber);
-        log.info("   Student: {} ({})", fullName, username);
-        log.info("   Message: {}", message);
-        log.info("===============================================================================");
-
-        if (apiKey == null || apiKey.trim().isEmpty() || !mailEnabled) {
-            log.info("Brevo API key not configured or mail disabled. Simulated welcome SMS logged above.");
-            return;
-        }
-
-        CompletableFuture.runAsync(() -> {
-            try {
-                sendBrevoSmsMessage(normalizedPhone, message);
-            } catch (Exception e) {
-                log.warn("Brevo SMS delivery attempt for {} failed: {}. (Welcome SMS logged above for dev testing)", maskedPhone, e.getMessage());
-            }
-        });
-    }
-
-    /**
-     * Send 6-digit Password Reset OTP Code via SMS asynchronously.
-     * Attempts Brevo Transactional SMS if API key / credits are available.
-     * Always provides a development console fallback log for seamless local testing.
-     */
-    public void sendOtpSms(String rawPhoneNumber, String otpCode) {
-        if (rawPhoneNumber == null || rawPhoneNumber.isBlank()) {
-            log.warn("SMS OTP dispatch skipped: phone number is null/empty.");
-            return;
-        }
-
-        String normalizedPhone = normalizePhilippinePhone(rawPhoneNumber);
-        String maskedPhone = maskPhoneNumber(normalizedPhone);
-
-        // Always log prominently to dev console for local testing:
-        log.info("===============================================================================");
-        log.info("📢 [SMS OTP DISPATCH - LOCAL / AUDIT LOG]");
-        log.info("   Target Phone: {} (Raw: {})", maskedPhone, rawPhoneNumber);
-        log.info("   6-Digit OTP Code: >>> {} <<<", otpCode);
-        log.info("   Message: SafeSpace verification code: {}. Valid for 5 minutes.", otpCode);
-        log.info("===============================================================================");
-
-        if (apiKey == null || apiKey.trim().isEmpty() || !mailEnabled) {
-            log.info("Brevo API key not configured or mail disabled. Simulated SMS logged above.");
-            return;
-        }
-
-        CompletableFuture.runAsync(() -> {
-            try {
-                String messageContent = "SafeSpace: Your password recovery code is " + otpCode + ". Valid for 5 minutes. Do not share this code.";
-                sendBrevoSmsMessage(normalizedPhone, messageContent);
-            } catch (Exception e) {
-                log.warn("Brevo SMS delivery attempt for {} failed: {}. (OTP is logged above for dev testing)", maskedPhone, e.getMessage());
-            }
-        });
-    }
-
-    private void sendBrevoSmsMessage(String recipientPhone, String messageContent) throws Exception {
-        String jsonBody = """
-            {
-              "type": "transactional",
-              "unicodeEnabled": false,
-              "sender": "SafeSpace",
-              "recipient": "%s",
-              "content": "%s"
-            }
-            """.formatted(
-                escapeJson(recipientPhone),
-                escapeJson(messageContent)
-        );
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BREVO_SMS_API_URL))
-                .header("accept", "application/json")
-                .header("content-type", "application/json")
-                .header("api-key", apiKey.trim())
-                .POST(HttpRequest.BodyPublishers.ofString(jsonBody, StandardCharsets.UTF_8))
-                .timeout(Duration.ofSeconds(15))
-                .build();
-
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-        if (response.statusCode() >= 200 && response.statusCode() < 300) {
-            log.info("✅ SMS dispatched successfully to {} via Brevo (HTTP {}): {}", recipientPhone, response.statusCode(), response.body());
-        } else {
-            log.warn("⚠️ Brevo SMS API returned HTTP {}: {}. Dev audit log above can be used for testing.", response.statusCode(), response.body());
-            if (response.body() != null && response.body().contains("No sms related addons")) {
-                log.warn("👉 [BREVO NOTICE]: Brevo account does not have SMS credits enabled. To deliver real SMS to mobile phones, prepaid SMS credits must be purchased in Brevo (Usage and plan -> Addons -> SMS credits).");
-            }
-        }
-    }
 
     // ── Internal Helpers ──
 
@@ -1036,31 +928,7 @@ public class EmailService {
             """.formatted(escapeHtml(fullName), escapeHtml(otpCode));
     }
 
-    public static String normalizePhilippinePhone(String raw) {
-        if (raw == null) return "";
-        String digits = raw.replaceAll("[^0-9+]", "");
-        if (digits.startsWith("+63")) {
-            return digits;
-        }
-        if (digits.startsWith("63") && digits.length() >= 12) {
-            return "+" + digits;
-        }
-        if (digits.startsWith("09") && digits.length() == 11) {
-            return "+63" + digits.substring(1);
-        }
-        if (digits.startsWith("9") && digits.length() == 10) {
-            return "+63" + digits;
-        }
-        return digits.startsWith("+") ? digits : "+" + digits;
-    }
 
-    public static String maskPhoneNumber(String phone) {
-        if (phone == null || phone.isBlank()) return null;
-        String clean = phone.trim();
-        if (clean.length() < 7) return "***";
-        int len = clean.length();
-        return clean.substring(0, Math.min(4, len)) + "******" + clean.substring(Math.max(0, len - 3));
-    }
 
     public static String maskEmail(String email) {
         if (email == null || email.isBlank() || !email.contains("@")) return null;

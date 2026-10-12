@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="css/chat.css">
 </head>
 <body>
-  <script src="js/auth-guard.js" data-page="anon-chat" data-allowed-roles="STUDENT,PROFESSIONAL"></script>
+  <script src="js/auth-guard.js" data-page="anon-chat" data-allowed-roles="STUDENT,PROFESSIONAL,SUPER_ADMIN,ADMIN"></script>
 
   <!-- Navigation -->
   <nav class="navbar" id="navbar"></nav>
@@ -24,10 +24,35 @@
     <!-- Sidebar — Session List -->
     <aside class="chat-sidebar" id="chatSidebar">
       <div class="sidebar-header">
-        <h3><i class="fas fa-comments"></i> My Chats</h3>
-        <button class="new-chat-btn" id="newChatBtn" style="display:none;">
-          <i class="fas fa-plus"></i> New Conversation
-        </button>
+        <div class="sidebar-header-top">
+          <h2 class="sidebar-header-title">Chats</h2>
+          <div class="sidebar-header-actions">
+            <button type="button" class="sidebar-icon-btn" onclick="showSanctuaryHome()" title="Sanctuary Lounge" id="btnSanctuaryHomeNav">
+              <i class="fas fa-house"></i>
+            </button>
+            <button type="button" class="sidebar-icon-btn primary" id="newChatBtn" title="New Conversation" style="display:none;">
+              <i class="fas fa-pen-to-square"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Bar Row (Pill Input) -->
+        <div class="sidebar-search-box">
+          <i class="fas fa-magnifying-glass search-icon"></i>
+          <input type="text" id="chatSearchInput" class="sidebar-search-input" placeholder="Search conversations..." autocomplete="off">
+          <button type="button" id="chatSearchClear" class="sidebar-search-clear" style="display:none;" onclick="clearChatSearch()" title="Clear search">
+            <i class="fas fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Filter Pills & Counselor Check-in Tab -->
+        <div class="sidebar-filter-tabs">
+          <button type="button" class="filter-tab-pill active" id="filterTabAll" onclick="setFilterTab('all')">All</button>
+          <button type="button" class="filter-tab-pill" id="filterTabUnread" onclick="setFilterTab('unread')">Unread</button>
+          
+          <!-- Neutral Counselor Check-in Tab (Students Only) -->
+          <button type="button" class="filter-tab-pill" id="filterTabCheckin" style="display:none;" onclick="setFilterTab('checkin')" title="Counselor Check-in">Counselor Check-in</button>
+        </div>
       </div>
       <div class="sidebar-list" id="sessionList">
         <div class="sidebar-empty" id="sidebarEmpty">
@@ -47,6 +72,7 @@
         </div>
         <h2>Safe, Anonymous Sanctuary</h2>
         <p>Connect with a campus mental health professional in real time. Your student credentials, name, and email are completely detached from this session.</p>
+
 
         <div class="welcome-quick-topics">
           <span class="quick-topics-label">Choose a starting topic or begin an open dialogue:</span>
@@ -157,8 +183,14 @@
             </div>
           </div>
           <div class="chat-header-actions">
-            <button title="Refresh" onclick="refreshMessages()"><i class="fas fa-rotate-right"></i></button>
-            <button title="Close session" class="danger" id="closeSessionBtn" onclick="closeCurrentSession()"><i class="fas fa-xmark"></i></button>
+            <button title="Refresh messages" onclick="refreshMessages()"><i class="fas fa-rotate-right"></i></button>
+            <button title="Delete conversation" class="danger delete-btn" id="deleteSessionBtn" onclick="confirmDeleteCurrentSession()"><i class="fas fa-trash-alt"></i></button>
+            <button title="End conversation" class="danger end-session-btn" id="endSessionBtn" onclick="confirmEndCurrentSession()">
+              <i class="fas fa-power-off"></i> <span class="end-btn-text">End Session</span>
+            </button>
+            <button title="Exit to Sanctuary Lounge (keeps conversation open)" class="exit-lounge-btn" id="exitChatBtn" onclick="showSanctuaryHome()">
+              <i class="fas fa-xmark"></i>
+            </button>
           </div>
         </div>
 
@@ -167,6 +199,14 @@
           <span style="font-size:0.85rem; color:#161F36; font-weight:600; margin-right:1rem;">This session is waiting to be accepted.</span>
           <button id="acceptSessionBtn" onclick="acceptCurrentSession()" style="background:#161F36; color:#FAF7F2; border:none; padding:0.6rem 1.5rem; border-radius:0.6rem; font-size:0.88rem; font-weight:700; cursor:pointer; font-family:Inter,sans-serif; box-shadow:0 2px 8px rgba(22,31,54,0.15); transition:all 0.2s ease;">
             <i class="fas fa-check"></i> Accept Session
+          </button>
+        </div>
+
+        <!-- Invited Session Banner (shown for INVITED sessions) -->
+        <div id="invitedSessionBanner" style="display:none; padding:0.85rem 1.5rem; background:#FFFBEB; border-bottom:1.5px solid #FEF3C7; text-align:center;">
+          <span id="invitedBannerText" style="font-size:0.85rem; color:#92400E; font-weight:600; margin-right:1rem;">Outreach invitation sent to student. Awaiting student consent.</span>
+          <button id="studentJoinInviteBtn" onclick="acceptCurrentInviteFromBanner()" style="display:none; background:#10B981; color:#fff; border:none; padding:0.55rem 1.25rem; border-radius:0.6rem; font-size:0.85rem; font-weight:700; cursor:pointer; font-family:Inter,sans-serif; box-shadow:0 2px 8px rgba(16,185,129,0.25);">
+            <i class="fas fa-check"></i> Join Conversation
           </button>
         </div>
 
@@ -254,6 +294,180 @@
     </div>
   </div>
 
+  <!-- Active Session Choice Modal (When student clicks + New Conversation with active session) -->
+  <div class="modal-overlay" id="activeSessionChoiceModal" style="display:none;">
+    <div class="chat-modal" style="max-width:480px;">
+      <div class="chat-modal-header" style="border-bottom:none;padding-bottom:0;">
+        <div style="width:48px;height:48px;border-radius:50%;background:#e0e7ff;color:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.5rem;">
+          <i class="fas fa-comments"></i>
+        </div>
+        <h3 style="text-align:center;width:100%;"><i class="fas fa-circle-exclamation" style="color:#6366f1;"></i> Ongoing Conversation in Progress</h3>
+        <button class="chat-modal-close" onclick="closeChoiceModal()"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="chat-modal-body" style="text-align:center;padding-top:0.5rem;">
+        <p style="font-size:0.9rem;color:#475569;line-height:1.6;" id="choiceModalMessage">
+          You currently have an active conversation session. To provide you with focused guidance, you can have one active session at a time.
+        </p>
+      </div>
+      <div class="chat-modal-footer" style="flex-direction:column;gap:0.6rem;padding:1.25rem 1.5rem;">
+        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:0.75rem;" onclick="resumeCurrentSession()">
+          <i class="fas fa-arrow-left"></i> Resume Current Conversation
+        </button>
+        <button class="btn btn-ghost" style="width:100%;justify-content:center;color:#ef4444;border:1px solid #fecaca;" onclick="endOldAndStartNew()">
+          <i class="fas fa-rotate"></i> End Old & Start New Conversation
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Student Gentle Outreach Invitation Modal -->
+  <div class="modal-overlay" id="studentInviteModal" style="display:none;">
+    <div class="chat-modal" style="max-width:500px;">
+      <div class="chat-modal-header" style="border-bottom:none;padding-bottom:0;">
+        <div style="width:54px;height:54px;border-radius:50%;background:#fef3c7;color:#d97706;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 0.5rem;">
+          <i class="fas fa-heart"></i>
+        </div>
+        <h3 style="text-align:center;width:100%;font-size:1.2rem;">💌 Guidance Counselor Check-in</h3>
+        <button class="chat-modal-close" onclick="closeInviteModal()"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="chat-modal-body" style="padding-top:0.5rem;">
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:0.9rem 1rem;margin-bottom:1rem;font-size:0.86rem;color:#334155;line-height:1.55;">
+          <p id="inviteModalMessage">
+            Hello! A school guidance counselor noticed you might be going through a tough time and opened a private, confidential space if you'd like someone to talk to.
+          </p>
+        </div>
+        <div class="privacy-note" style="margin-top:0;background:#f0fdf4;border-color:#bbf7d0;color:#166534;">
+          <i class="fas fa-user-shield" style="color:#16a34a;"></i>
+          <span>You are completely <strong>anonymous</strong> and you are <strong>not in trouble</strong>. There is zero pressure to reply if you just wanted to vent.</span>
+        </div>
+      </div>
+      <div class="chat-modal-footer" style="flex-direction:column;gap:0.6rem;padding:1.25rem 1.5rem;">
+        <button class="btn btn-primary" style="width:100%;justify-content:center;background:#10b981;border-color:#10b981;padding:0.75rem;" id="acceptInviteBtn" onclick="acceptCurrentInvite()">
+          <i class="fas fa-check"></i> Accept & Join Confidential Chat
+        </button>
+        <button class="btn btn-ghost" style="width:100%;justify-content:center;color:#64748b;" onclick="declineCurrentInvite()">
+          <i class="fas fa-times"></i> Decline (I just wanted to vent)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Decline Reassurance & Hotline Info Modal -->
+  <div class="modal-overlay" id="declineHotlineModal" style="display:none;">
+    <div class="chat-modal" style="max-width:460px;">
+      <div class="chat-modal-header">
+        <h3 style="font-size:1.05rem;"><i class="fas fa-hand-holding-heart" style="color:#10b981;"></i> We Respect Your Space</h3>
+        <button class="chat-modal-close" onclick="closeDeclineModal()"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="chat-modal-body">
+        <p style="font-size:0.88rem;color:#475569;line-height:1.6;margin-bottom:1rem;">
+          Your feelings and thoughts are always safe and welcome on SafeSpace. If you ever feel ready to talk to someone, our Anonymous Chat is always here for you.
+        </p>
+        <div style="background:#fffbeb;border:1px solid #fef3c7;border-radius:8px;padding:0.85rem 1rem;font-size:0.82rem;color:#92400e;">
+          <strong>24/7 Emergency Support Hotlines:</strong><br>
+          📞 <strong>NCMH Crisis Hotline:</strong> 1553 (Toll-free landline) / 0917-899-8727<br>
+          📞 <strong>Hopeline Philippines:</strong> (02) 804-4635 / 0917-558-4673
+        </div>
+      </div>
+      <div class="chat-modal-footer">
+        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="closeDeclineModal()">Got It</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Conversation Confirmation Modal -->
+  <div class="modal-overlay" id="deleteConfirmModal" style="display:none;">
+    <div class="chat-modal" style="max-width:440px;">
+      <div class="chat-modal-header" style="border-bottom:none;padding-bottom:0;">
+        <div class="delete-confirm-icon-wrap">
+          <i class="fas fa-trash-alt"></i>
+        </div>
+        <h3 style="text-align:center;width:100%;font-size:1.15rem;color:#161F36;">Delete Conversation?</h3>
+        <button class="chat-modal-close" onclick="closeDeleteConfirmModal()"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="chat-modal-body" style="text-align:center;padding-top:0.4rem;">
+        <p style="font-size:0.9rem;color:#475569;line-height:1.55;margin:0;" id="deleteConfirmMsg">
+          Are you sure you want to permanently delete this conversation? All messages will be wiped immediately. This action cannot be undone.
+        </p>
+      </div>
+      <div class="chat-modal-footer" style="gap:0.75rem;padding:1.25rem 1.5rem;">
+        <button class="btn btn-ghost" onclick="closeDeleteConfirmModal()" style="flex:1;">Cancel</button>
+        <button class="btn btn-delete-confirm" id="btnConfirmDeleteSession" onclick="executeDeleteSession()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:0.45rem;">
+          <i class="fas fa-trash-alt"></i> Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- End Session Confirmation Modal (Safe Space Option A) -->
+  <div class="modal-overlay" id="endSessionConfirmModal" style="display:none;">
+    <div class="chat-modal" style="max-width:480px;">
+      <div class="chat-modal-header" style="border-bottom:none;padding-bottom:0;">
+        <div style="width:56px;height:56px;border-radius:50%;background:#FEF3C7;color:#D97706;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 0.75rem;box-shadow:0 4px 14px rgba(217,119,6,0.15);">
+          <i class="fas fa-hand-holding-heart"></i>
+        </div>
+        <h3 style="text-align:center;width:100%;font-size:1.2rem;color:#161F36;">End This Conversation?</h3>
+        <button class="chat-modal-close" onclick="closeEndSessionModal()"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="chat-modal-body" style="text-align:center;padding-top:0.35rem;">
+        <p style="font-size:0.92rem;color:#334155;line-height:1.6;margin-bottom:0.75rem;" id="endSessionConfirmText">
+          Are you ready to conclude your counseling session? This will complete the room and archive it.
+        </p>
+        <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:0.75rem 1rem;font-size:0.82rem;color:#166534;line-height:1.45;text-align:left;display:flex;align-items:flex-start;gap:0.5rem;">
+          <i class="fas fa-shield-halved" style="color:#16A34A;margin-top:0.15rem;flex-shrink:0;"></i>
+          <span><strong>Need a break?</strong> You don't have to end the chat. You can click <strong>Leave for Now</strong> to keep your room open and return anytime.</span>
+        </div>
+      </div>
+      <div class="chat-modal-footer" style="flex-direction:column;gap:0.6rem;padding:1.25rem 1.5rem;">
+        <button class="btn btn-ghost" onclick="leaveChatForNow()" style="width:100%;justify-content:center;padding:0.75rem;border:1.5px solid #CBD5E1;color:#1E293B;font-weight:700;">
+          <i class="fas fa-house"></i> Leave for Now (Keep Open)
+        </button>
+        <div style="display:flex;gap:0.6rem;width:100%;">
+          <button class="btn btn-ghost" onclick="closeEndSessionModal()" style="flex:1;justify-content:center;">
+            Cancel
+          </button>
+          <button class="btn" id="btnExecuteEndSession" onclick="executeEndSession()" style="flex:1;justify-content:center;background:#EF4444;border-color:#DC2626;color:#FFFFFF;font-weight:700;display:flex;align-items:center;gap:0.4rem;">
+            <i class="fas fa-power-off"></i> End Conversation
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Session Options Bottom Sheet -->
+  <div class="mobile-options-overlay" id="mobileSessionOptionsModal" onclick="handleOptionsOverlayClick(event)">
+    <div class="mobile-options-sheet" id="mobileOptionsSheet" onclick="event.stopPropagation()">
+      <div class="options-sheet-pill"></div>
+      <div class="options-sheet-header">
+        <div class="options-sheet-avatar" id="sheetAvatar">AN</div>
+        <div class="options-sheet-info">
+          <div class="options-sheet-title" id="sheetTitle">Anonymous Student</div>
+          <div class="options-sheet-subtitle" id="sheetSubtitle">Topic: Anxiety & Pressure</div>
+        </div>
+      </div>
+      <div class="options-sheet-actions">
+        <button class="options-action-btn" id="sheetOpenBtn" onclick="sheetOpenConversation()">
+          <i class="fas fa-comments"></i> Open Conversation
+        </button>
+        <button class="options-action-btn" id="sheetLeaveBtn" onclick="sheetLeaveChat()">
+          <i class="fas fa-house"></i> Leave Chat (Keep Open)
+        </button>
+        <button class="options-action-btn" id="sheetCloseBtn" onclick="sheetEndConversation()">
+          <i class="fas fa-power-off"></i> End Conversation
+        </button>
+        <button class="options-action-btn" id="sheetCopyMsgBtn" style="display:none;" onclick="sheetCopyMessage()">
+          <i class="fas fa-copy"></i> Copy Message Text
+        </button>
+        <button class="options-action-btn danger" id="sheetDeleteBtn" onclick="sheetDeleteConversation()">
+          <i class="fas fa-trash-alt"></i> Delete Conversation
+        </button>
+        <button class="options-action-btn cancel" onclick="closeSessionOptionsModal()">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ============================================
     //  Safe Space — Anonymous Chat Frontend
@@ -268,7 +482,7 @@
     const userRole = SafeSpaceAuth.getRole();
     const username = SafeSpaceAuth.getUsername();
     const fullName = SafeSpaceAuth.getFullName() || username;
-    const isProfessional = userRole === 'PROFESSIONAL';
+    const isProfessional = (userRole === 'PROFESSIONAL' || userRole === 'SUPER_ADMIN');
 
     // State
     let sessions = [];
@@ -302,6 +516,8 @@
     async function init() {
       if (isProfessional) {
         document.getElementById('newChatBtn').style.display = 'none';
+        const tabCheckin = document.getElementById('filterTabCheckin');
+        if (tabCheckin) tabCheckin.style.display = 'none';
         document.querySelector('#sidebarEmpty p').innerHTML = 'No sessions in queue.<br>Waiting for students...';
 
         // Show professional welcome console, hide student sanctuary lounge
@@ -317,14 +533,30 @@
         startHeartbeat();
         await loadProfessionalSessions();
       } else {
-        document.getElementById('newChatBtn').style.display = 'block';
+        document.getElementById('newChatBtn').style.display = 'inline-flex';
+        const tabCheckin = document.getElementById('filterTabCheckin');
+        if (tabCheckin) tabCheckin.style.display = 'inline-flex';
         const chatWelcome = document.getElementById('chatWelcome');
         const proWelcome = document.getElementById('proWelcome');
         if (chatWelcome) chatWelcome.style.display = 'flex';
         if (proWelcome) proWelcome.style.display = 'none';
 
         await loadStudentSessions();
+        checkForPendingStudentInvite();
       }
+
+      // Initialize search listener
+      const searchInput = document.getElementById('chatSearchInput');
+      if (searchInput && !searchInput.dataset.initialized) {
+        searchInput.dataset.initialized = 'true';
+        searchInput.addEventListener('input', (e) => {
+          currentSearchQuery = (e.target.value || '').trim();
+          const clearBtn = document.getElementById('chatSearchClear');
+          if (clearBtn) clearBtn.style.display = currentSearchQuery ? 'inline-flex' : 'none';
+          renderSessionList();
+        });
+      }
+
       renderSessionList();
 
       // Handle ?session= query parameter (e.g. from Crisis Alerts outreach)
@@ -336,6 +568,8 @@
     }
 
     async function loadStudentSessions() {
+      const freshMap = new Map();
+
       // 1. Load sessions by stored pseudonyms (backward compatible)
       const pseudonyms = getStoredPseudonyms();
       for (const p of pseudonyms) {
@@ -343,14 +577,7 @@
           const res = await SafeSpaceAuth.authFetch(`${API}/sessions/student/${encodeURIComponent(p)}`);
           if (res.ok) {
             const data = await res.json();
-            data.forEach(s => {
-              const idx = sessions.findIndex(x => x.sessionId === s.sessionId);
-              if (idx !== -1) {
-                sessions[idx] = s;
-              } else {
-                sessions.push(s);
-              }
-            });
+            data.forEach(s => freshMap.set(s.sessionId, s));
             if (!currentPseudonym && data.length > 0) currentPseudonym = p;
           }
         } catch (e) { console.warn('Failed to load sessions for', p); }
@@ -363,19 +590,18 @@
           if (res.ok) {
             const data = await res.json();
             data.forEach(s => {
-              const idx = sessions.findIndex(x => x.sessionId === s.sessionId);
-              if (idx !== -1) {
-                sessions[idx] = s;
-              } else {
-                sessions.push(s);
-                // Save the pseudonym so future polls also find this session
-                savePseudonym(s.studentPseudonym);
-              }
+              freshMap.set(s.sessionId, s);
+              // Save the pseudonym so future polls also find this session
+              savePseudonym(s.studentPseudonym);
             });
             if (!currentPseudonym && data.length > 0) currentPseudonym = data[0].studentPseudonym;
           }
         } catch (e) { console.warn('Failed to load sessions by userId:', e); }
       }
+
+      // Synchronize in-memory sessions list with fresh server data (prunes deleted sessions)
+      sessions = Array.from(freshMap.values());
+      checkForPendingStudentInvite();
     }
 
     async function loadProfessionalSessions() {
@@ -385,8 +611,40 @@
         const data = await res.json();
         sessions = [];
         (data.waiting||[]).forEach(s => { if (!sessions.find(x=>x.sessionId===s.sessionId)) sessions.push(s); });
+        (data.invited||[]).forEach(s => { if (!sessions.find(x=>x.sessionId===s.sessionId)) sessions.push(s); });
         (data.active||[]).forEach(s => { if (!sessions.find(x=>x.sessionId===s.sessionId)) sessions.push(s); });
       } catch (e) { console.warn('Failed to load professional sessions:', e); }
+    }
+
+    // ── Modern Messenger Filter & Search State ──
+    let currentFilterTab = 'all'; // 'all' | 'unread' | 'checkin'
+    let currentSearchQuery = '';
+    let checkinNotificationSeen = false;
+
+    function setFilterTab(tab) {
+      currentFilterTab = tab;
+      const tabAll = document.getElementById('filterTabAll');
+      const tabUnread = document.getElementById('filterTabUnread');
+      const tabCheckin = document.getElementById('filterTabCheckin');
+      if (tabAll) tabAll.classList.toggle('active', tab === 'all');
+      if (tabUnread) tabUnread.classList.toggle('active', tab === 'unread');
+      if (tabCheckin) {
+        tabCheckin.classList.toggle('active', tab === 'checkin');
+        if (tab === 'checkin') {
+          checkinNotificationSeen = true;
+          tabCheckin.classList.remove('highlighted');
+        }
+      }
+      renderSessionList();
+    }
+
+    function clearChatSearch() {
+      const input = document.getElementById('chatSearchInput');
+      const clearBtn = document.getElementById('chatSearchClear');
+      if (input) input.value = '';
+      if (clearBtn) clearBtn.style.display = 'none';
+      currentSearchQuery = '';
+      renderSessionList();
     }
 
     // ── Session List Rendering ──
@@ -396,16 +654,90 @@
 
       if (sessions.length === 0) {
         empty.style.display = 'flex';
+        empty.innerHTML = `
+          <i class="fas fa-comment-slash"></i>
+          <p>${isProfessional ? 'No sessions in queue.<br>Waiting for students...' : 'No conversations yet.<br>Start one to talk anonymously.'}</p>
+        `;
+        list.querySelectorAll('.session-card').forEach(c => c.remove());
+        return;
+      }
+
+      // Priority: ACTIVE (0) -> WAITING (1) -> INVITED (2) -> DECLINED (3) -> CLOSED (4)
+      function getStatusPriority(status) {
+        switch (status) {
+          case 'ACTIVE': return 0;
+          case 'WAITING': return 1;
+          case 'INVITED': return 2;
+          case 'DECLINED': return 3;
+          case 'CLOSED': return 4;
+          default: return 5;
+        }
+      }
+
+      let filtered = [...sessions];
+
+      // Tab filter
+      if (currentFilterTab === 'unread') {
+        if (isProfessional) {
+          filtered = filtered.filter(s => (s.unreadCount > 0 && s.sessionId !== currentSessionId) || (s.status === 'WAITING' && s.sessionId !== currentSessionId));
+        } else {
+          // Student: only sessions with actual unread messages from counselor
+          filtered = filtered.filter(s => s.unreadCount > 0 && s.sessionId !== currentSessionId);
+        }
+      } else if (currentFilterTab === 'checkin') {
+        filtered = filtered.filter(s => s.status === 'INVITED' || (s.topic && (s.topic.includes('[Crisis Outreach]') || s.topic.toLowerCase().includes('check-in'))));
+      }
+
+      // Search filter
+      if (currentSearchQuery) {
+        const q = currentSearchQuery.toLowerCase();
+        filtered = filtered.filter(s => {
+          const name = (s.studentPseudonym || '').toLowerCase();
+          const pro = (s.professionalName || '').toLowerCase();
+          const topic = (s.topic || '').toLowerCase();
+          const emotion = (s.emotionTag || '').toLowerCase();
+          return name.includes(q) || pro.includes(q) || topic.includes(q) || emotion.includes(q);
+        });
+      }
+
+      // Empty states for filter/search
+      if (filtered.length === 0) {
+        empty.style.display = 'flex';
+        if (currentSearchQuery) {
+          empty.innerHTML = `
+            <i class="fas fa-magnifying-glass"></i>
+            <p>No conversations found matching "<strong>${escapeHtml(currentSearchQuery)}</strong>"</p>
+          `;
+        } else if (currentFilterTab === 'unread') {
+          empty.innerHTML = `
+            <i class="fas fa-envelope-open"></i>
+            <p>No unread conversations</p>
+          `;
+        } else if (currentFilterTab === 'checkin') {
+          empty.innerHTML = `
+            <i class="fas fa-user-shield"></i>
+            <p>No counselor check-ins at this time</p>
+          `;
+        } else {
+          empty.innerHTML = `
+            <i class="fas fa-comment-slash"></i>
+            <p>No conversations yet.<br>Start one to talk anonymously.</p>
+          `;
+        }
+        list.querySelectorAll('.session-card').forEach(c => c.remove());
         return;
       }
 
       empty.style.display = 'none';
-      // Sort: active first, then waiting, then closed; within each group newest first
-      const sorted = [...sessions].sort((a, b) => {
-        const order = { ACTIVE: 0, WAITING: 1, CLOSED: 2 };
-        const diff = (order[a.status] || 3) - (order[b.status] || 3);
-        if (diff !== 0) return diff;
-        return new Date(b.createdAt) - new Date(a.createdAt);
+
+      const sorted = filtered.sort((a, b) => {
+        const pA = getStatusPriority(a.status);
+        const pB = getStatusPriority(b.status);
+        if (pA !== pB) return pA - pB;
+        // Within same status group, sort by newest activity first
+        const timeA = new Date(a.updatedAt || a.lastMessageAt || a.createdAt || 0).getTime();
+        const timeB = new Date(b.updatedAt || b.lastMessageAt || b.createdAt || 0).getTime();
+        return timeB - timeA;
       });
 
       // Remove existing cards, keep empty
@@ -413,15 +745,28 @@
 
       sorted.forEach(s => {
         const card = document.createElement('div');
-        const hasUnread = s.unreadCount > 0 && s.sessionId !== currentSessionId;
-        card.className = `session-card${s.sessionId === currentSessionId ? ' active' : ''}${hasUnread ? ' has-unread' : ''}`;
-        card.onclick = () => openSession(s.sessionId);
+        const isCurrent = s.sessionId === currentSessionId;
+        const hasUnread = (s.unreadCount > 0) && !isCurrent;
+        card.className = `session-card${isCurrent ? ' active' : ''}${hasUnread ? ' has-unread' : ''}`;
+        card.dataset.sessionId = s.sessionId;
+        card.onclick = (e) => {
+          if (card.dataset.justLongPressed === 'true') {
+            card.dataset.justLongPressed = 'false';
+            return;
+          }
+          openSession(s.sessionId);
+        };
 
-        const avatarClass = s.crisisFlag ? 'crisis' : (s.status === 'WAITING' ? 'waiting' : (s.status === 'ACTIVE' ? 'active' : ''));
+        const avatarClass = s.crisisFlag ? 'crisis' : (s.status === 'INVITED' ? 'invited' : (s.status === 'WAITING' ? 'waiting' : (s.status === 'ACTIVE' ? 'active' : '')));
         const statusClass = s.status.toLowerCase();
-        const initials = s.studentPseudonym.split('-').slice(1, 2).join('').substring(0, 2).toUpperCase() || 'AN';
+        const initials = (s.studentPseudonym || 'AN').split('-').slice(1, 2).join('').substring(0, 2).toUpperCase() || 'AN';
         const time = formatTime(s.createdAt);
-        const topic = s.topic ? truncate(s.topic, 40) : 'No topic specified';
+        let topic = s.topic ? truncate(s.topic, 40) : 'No topic specified';
+        if (s.status === 'INVITED') {
+          topic = isProfessional ? 'Outreach invitation sent (awaiting student)' : `💌 Check-in from ${s.professionalName || 'Guidance Counselor'}`;
+        }
+        const statusIcon = s.status === 'ACTIVE' ? 'circle' : (s.status === 'WAITING' ? 'clock' : (s.status === 'INVITED' ? 'envelope-open-text' : 'lock'));
+        const statusLabel = s.status === 'INVITED' ? 'CHECK-IN' : s.status;
 
         // Build unread badge text: "1", "2", ... "9+"
         let unreadBadge = '';
@@ -430,31 +775,62 @@
           unreadBadge = `<span class="session-unread-badge">${count}</span>`;
         }
 
+        // Crisis urgency dot: only for professionals on live pending/active triage queue
+        const showCrisisDot = isProfessional && s.crisisFlag && (s.status === 'WAITING' || s.status === 'ACTIVE');
+
         card.innerHTML = `
-          ${s.crisisFlag ? '<div class="session-crisis-dot"></div>' : ''}
+          ${showCrisisDot ? '<div class="session-crisis-dot" title="Crisis Alert"></div>' : ''}
           <div class="session-avatar ${avatarClass}">${initials}</div>
           <div class="session-info">
             <div class="session-info-top">
-              <span class="session-name">${escapeHtml(s.studentPseudonym)}</span>
+              <span class="session-name">${escapeHtml(s.studentPseudonym || 'Anonymous')}</span>
               <span style="display:inline-flex;align-items:center;gap:0.35rem;">
                 ${unreadBadge}
                 <span class="session-time">${time}</span>
+                <button class="session-card-delete-btn" title="Delete conversation" onclick="handleCardDelete(event, '${s.sessionId}')">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
               </span>
             </div>
             <div class="session-topic">${escapeHtml(topic)}</div>
             <span class="session-status-badge ${statusClass}">
-              <i class="fas fa-${s.status === 'ACTIVE' ? 'circle' : s.status === 'WAITING' ? 'clock' : 'lock'}"></i>
-              ${s.status}
+              <i class="fas fa-${statusIcon}"></i>
+              ${statusLabel}
             </span>
           </div>
         `;
+
+        // Mobile responsiveness: Long-press gesture listener on session item
+        attachLongPressListener(card, () => {
+          openSessionOptionsModal(s.sessionId);
+        });
+
         list.appendChild(card);
       });
     }
 
-    // ── Create Session ──
+    // ── Create Session & Choice Handlers ──
+    let pendingChoiceSession = null;
+
     function openModal() {
       if (isProfessional) return;
+
+      // Check if student already has an active, waiting, or invited session
+      const openSession = sessions.find(s => s.status === 'WAITING' || s.status === 'ACTIVE' || s.status === 'INVITED');
+      if (openSession) {
+        pendingChoiceSession = openSession;
+        const msgEl = document.getElementById('choiceModalMessage');
+        if (openSession.status === 'ACTIVE') {
+          msgEl.innerHTML = `You already have an active conversation in progress with <strong>${escapeHtml(openSession.professionalName || 'a counselor')}</strong>.<br><br>To provide you with focused guidance, you can have one active conversation at a time.`;
+        } else if (openSession.status === 'INVITED') {
+          msgEl.innerHTML = `You have a pending outreach invitation from <strong>${escapeHtml(openSession.professionalName || 'a counselor')}</strong>.<br><br>Would you like to review that invitation, or cancel it to start a fresh chat?`;
+        } else {
+          msgEl.innerHTML = `You already have a conversation waiting in the queue.<br><br>Would you like to resume your waiting session, or cancel it to start a fresh one?`;
+        }
+        document.getElementById('activeSessionChoiceModal').style.display = 'flex';
+        return;
+      }
+
       document.getElementById('newChatModal').style.display = 'flex';
       document.getElementById('modalPseudonym').focus();
     }
@@ -467,6 +843,41 @@
 
     function closeModal() {
       document.getElementById('newChatModal').style.display = 'none';
+    }
+
+    function closeChoiceModal() {
+      document.getElementById('activeSessionChoiceModal').style.display = 'none';
+      pendingChoiceSession = null;
+    }
+
+    function resumeCurrentSession() {
+      if (pendingChoiceSession) {
+        const sid = pendingChoiceSession.sessionId;
+        closeChoiceModal();
+        openSession(sid);
+      }
+    }
+
+    async function endOldAndStartNew() {
+      if (!pendingChoiceSession) return;
+      const sid = pendingChoiceSession.sessionId;
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/sessions/${sid}/close`, {
+          method: 'PUT',
+          body: JSON.stringify({ closedBy: 'student' })
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          const idx = sessions.findIndex(s => s.sessionId === sid);
+          if (idx !== -1) sessions[idx] = updated;
+          renderSessionList();
+        }
+      } catch (e) {
+        console.warn('Error closing old session:', e);
+      }
+      closeChoiceModal();
+      document.getElementById('newChatModal').style.display = 'flex';
+      document.getElementById('modalPseudonym').focus();
     }
 
     document.getElementById('newChatBtn').addEventListener('click', openModal);
@@ -498,7 +909,12 @@
 
         const session = await res.json();
         savePseudonym(session.studentPseudonym);
-        sessions.push(session);
+        const existingIdx = sessions.findIndex(s => s.sessionId === session.sessionId);
+        if (existingIdx !== -1) {
+          sessions[existingIdx] = session;
+        } else {
+          sessions.push(session);
+        }
         closeModal();
         renderSessionList();
         openSession(session.sessionId);
@@ -515,6 +931,148 @@
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-paper-plane"></i> Start Chat';
       }
+    }
+
+    // ── Outreach Invitation Handlers ──
+    let pendingInviteSession = null;
+
+    function checkForPendingStudentInvite() {
+      const tabCheckin = document.getElementById('filterTabCheckin');
+      if (isProfessional) {
+        if (tabCheckin) tabCheckin.style.display = 'none';
+        return;
+      }
+      if (tabCheckin) tabCheckin.style.display = 'inline-flex';
+      const pendingInvites = sessions.filter(s => s.status === 'INVITED');
+
+      if (pendingInvites.length > 0) {
+        pendingInviteSession = pendingInvites[0];
+        if (tabCheckin) {
+          if (!checkinNotificationSeen) {
+            tabCheckin.classList.add('highlighted');
+          } else {
+            tabCheckin.classList.remove('highlighted');
+          }
+        }
+      } else {
+        pendingInviteSession = null;
+        checkinNotificationSeen = false;
+        if (tabCheckin) {
+          tabCheckin.classList.remove('highlighted');
+        }
+      }
+    }
+
+    function deleteInviteFromSanctuary() {
+      const invite = sessions.find(s => s.status === 'INVITED') || pendingInviteSession;
+      if (!invite) return;
+      confirmDeleteSession(invite.sessionId);
+    }
+
+    function openInvitedSessionFromSanctuary() {
+      const invite = sessions.find(s => s.status === 'INVITED') || pendingInviteSession;
+      if (invite) {
+        openSession(invite.sessionId);
+      }
+    }
+
+    function showSanctuaryHome() {
+      currentSessionId = null;
+      clearInterval(pollInterval);
+      document.getElementById('chatView').style.display = 'none';
+      if (isProfessional) {
+        document.getElementById('proWelcome').style.display = 'flex';
+      } else {
+        document.getElementById('chatWelcome').style.display = 'flex';
+        checkForPendingStudentInvite();
+      }
+      document.getElementById('chatLayout').classList.remove('mobile-chat-active');
+      renderSessionList();
+    }
+
+    function closeInviteModal() {
+      document.getElementById('studentInviteModal').style.display = 'none';
+    }
+
+    async function acceptCurrentInvite() {
+      const invite = (currentSessionId && sessions.find(s => s.sessionId === currentSessionId)) || pendingInviteSession;
+      if (!invite) return;
+      const sid = invite.sessionId;
+      const btn = document.getElementById('btnOutreachAccept') || document.getElementById('acceptInviteBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Joining...';
+      }
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/sessions/${sid}/accept-invite`, {
+          method: 'PUT'
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          const idx = sessions.findIndex(s => s.sessionId === sid);
+          if (idx !== -1) sessions[idx] = updated;
+          pendingInviteSession = null;
+          closeInviteModal();
+          checkForPendingStudentInvite();
+          renderSessionList();
+          lastMessageFingerprint = '';
+          openSession(sid);
+        } else {
+          alert('Could not join session. Please try again.');
+        }
+      } catch (e) {
+        alert('Error: ' + e.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-check"></i> Accept & Join Confidential Chat';
+        }
+      }
+    }
+
+    async function declineCurrentInvite() {
+      const invite = (currentSessionId && sessions.find(s => s.sessionId === currentSessionId)) || pendingInviteSession;
+      if (!invite) return;
+      const sid = invite.sessionId;
+      const btn = document.getElementById('btnOutreachDecline');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Declining...';
+      }
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/sessions/${sid}/decline-invite`, {
+          method: 'PUT'
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          const idx = sessions.findIndex(s => s.sessionId === sid);
+          if (idx !== -1) sessions[idx] = updated;
+          pendingInviteSession = null;
+          closeInviteModal();
+          checkForPendingStudentInvite();
+          renderSessionList();
+          lastMessageFingerprint = '';
+          openSession(sid);
+        }
+      } catch (e) {
+        console.warn('Decline error:', e);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-times"></i> Decline (I just wanted to vent)';
+        }
+      }
+      document.getElementById('declineHotlineModal').style.display = 'flex';
+    }
+
+    function closeDeclineModal() {
+      document.getElementById('declineHotlineModal').style.display = 'none';
+    }
+
+    async function acceptCurrentInviteFromBanner() {
+      if (!currentSessionId) return;
+      pendingInviteSession = sessions.find(s => s.sessionId === currentSessionId);
+      await acceptCurrentInvite();
     }
 
     // ── Accept Session (professional only) ──
@@ -545,6 +1103,34 @@
       currentSessionId = sessionId;
       lastMessageFingerprint = ''; // Reset so messages render immediately
 
+      // Immediately clear unread count for this session locally for instant responsiveness
+      const targetSession = sessions.find(s => s.sessionId === sessionId);
+      if (targetSession) {
+        targetSession.unreadCount = 0;
+        if (targetSession.status === 'INVITED') {
+          checkinNotificationSeen = true;
+          const tabCheckin = document.getElementById('filterTabCheckin');
+          if (tabCheckin) tabCheckin.classList.remove('highlighted');
+        }
+      }
+
+      // Smoothly and immediately unhighlight the clicked card and set it active in DOM
+      const allCards = document.querySelectorAll('#sessionList .session-card');
+      allCards.forEach(c => {
+        if (c.dataset.sessionId === sessionId) {
+          c.classList.add('active');
+          c.classList.remove('has-unread');
+          const badge = c.querySelector('.session-unread-badge');
+          if (badge) {
+            badge.style.opacity = '0';
+            badge.style.transform = 'scale(0.5)';
+            setTimeout(() => badge.remove(), 200);
+          }
+        } else {
+          c.classList.remove('active');
+        }
+      });
+
       // Update UI: hide all welcome states
       const chatWelcome = document.getElementById('chatWelcome');
       if (chatWelcome) chatWelcome.style.display = 'none';
@@ -557,8 +1143,17 @@
       // Mobile: switch to chat view
       document.getElementById('chatLayout').classList.add('mobile-chat-active');
 
-      // Find session
-      const session = sessions.find(s => s.sessionId === sessionId);
+      // Find session - fallback to API fetch if redirected from alerts and not yet loaded
+      let session = sessions.find(s => s.sessionId === sessionId);
+      if (!session) {
+        try {
+          const res = await SafeSpaceAuth.authFetch(`${API}/sessions/${sessionId}`);
+          if (res.ok) {
+            session = await res.json();
+            sessions.push(session);
+          }
+        } catch (e) { console.warn('Failed to fetch session fallback:', e); }
+      }
       if (!session) return;
 
       // Update header
@@ -567,33 +1162,55 @@
       const headerAvatar = document.getElementById('headerAvatar');
 
       if (isProfessional) {
-        headerName.textContent = session.studentPseudonym + (session.status === 'WAITING' ? ' (waiting)' : '');
+        headerName.textContent = (session.studentPseudonym || 'Anonymous') + (session.status === 'WAITING' ? ' (waiting)' : (session.status === 'INVITED' ? ' (invitation pending)' : ''));
       } else {
         if (session.status === 'ACTIVE' && session.professionalName) {
           headerName.textContent = session.professionalName;
         } else if (session.status === 'WAITING') {
           headerName.textContent = 'Waiting for professional...';
+        } else if (session.status === 'INVITED') {
+          headerName.textContent = session.professionalName || 'Guidance Counselor';
         } else {
           headerName.textContent = session.professionalName || 'Session Closed';
         }
       }
 
+      const statusIcon = session.status === 'ACTIVE' ? 'circle' : (session.status === 'WAITING' ? 'clock' : (session.status === 'INVITED' ? 'envelope-open-text' : 'lock'));
       headerBadge.className = `session-status-badge ${session.status.toLowerCase()}`;
-      headerBadge.innerHTML = `<i class="fas fa-${session.status === 'ACTIVE' ? 'circle' : session.status === 'WAITING' ? 'clock' : 'lock'}"></i> ${session.status}`;
+      headerBadge.innerHTML = `<i class="fas fa-${statusIcon}"></i> ${session.status === 'INVITED' ? 'CHECK-IN' : session.status}`;
 
-      const initials = session.studentPseudonym.split('-').slice(1, 2).join('').substring(0, 2).toUpperCase() || 'SS';
-      headerAvatar.textContent = initials;
+      if (session.status === 'INVITED' && !isProfessional) {
+        headerAvatar.className = 'chat-header-avatar invited';
+        const proName = session.professionalName || 'Guidance Counselor';
+        const initials = proName.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'GC';
+        headerAvatar.textContent = initials;
+      } else {
+        headerAvatar.className = 'chat-header-avatar';
+        const initials = session.studentPseudonym ? (session.studentPseudonym.split('-').slice(1, 2).join('').substring(0, 2).toUpperCase() || 'SS') : 'SS';
+        headerAvatar.textContent = initials;
+      }
 
       // Show/hide Accept banner (professional + WAITING only)
       const acceptBanner = document.getElementById('acceptSessionBanner');
-      acceptBanner.style.display = (isProfessional && session.status === 'WAITING') ? 'block' : 'none';
+      if (acceptBanner) acceptBanner.style.display = (isProfessional && session.status === 'WAITING') ? 'block' : 'none';
+
+      // Hide top banner since we render the full dedicated card inside chatMessages
+      const invitedBanner = document.getElementById('invitedSessionBanner');
+      if (invitedBanner) invitedBanner.style.display = 'none';
 
       // Show/hide input
-      if (session.status === 'CLOSED') {
+      if (session.status === 'CLOSED' || session.status === 'DECLINED') {
         document.getElementById('chatInputArea').style.display = 'none';
         document.getElementById('chatClosedBar').style.display = 'flex';
-      } else if (isProfessional && session.status === 'WAITING') {
-        // Professional must accept before messaging
+        document.getElementById('chatClosedBar').innerHTML = session.status === 'DECLINED'
+          ? '<i class="fas fa-info-circle"></i> This check-in invitation was declined.'
+          : '<i class="fas fa-lock"></i> This session has been closed.';
+      } else if (isProfessional && (session.status === 'WAITING' || session.status === 'INVITED')) {
+        // Professional cannot send messages until student accepts
+        document.getElementById('chatInputArea').style.display = 'none';
+        document.getElementById('chatClosedBar').style.display = 'none';
+      } else if (session.status === 'INVITED' && !isProfessional) {
+        // Student has dedicated decision card inside chatMessages
         document.getElementById('chatInputArea').style.display = 'none';
         document.getElementById('chatClosedBar').style.display = 'none';
       } else {
@@ -601,22 +1218,33 @@
         document.getElementById('chatClosedBar').style.display = 'none';
       }
 
-      // Show/hide close button
-      document.getElementById('closeSessionBtn').style.display = session.status === 'CLOSED' ? 'none' : 'flex';
+      // Show/hide End Session button & delete button & exit button
+      const endBtn = document.getElementById('endSessionBtn');
+      if (endBtn) {
+        endBtn.style.display = (session.status === 'CLOSED' || session.status === 'DECLINED') ? 'none' : 'inline-flex';
+      }
+      const delHeaderBtn = document.getElementById('deleteSessionBtn');
+      if (delHeaderBtn) delHeaderBtn.style.display = 'flex';
+      const exitBtn = document.getElementById('exitChatBtn');
+      if (exitBtn) exitBtn.style.display = 'flex';
 
       // Load messages
       await loadMessages();
       renderSessionList();
+      if (typeof SafeSpaceAuth !== 'undefined' && typeof SafeSpaceAuth.refreshBadges === 'function') {
+        SafeSpaceAuth.refreshBadges();
+      }
 
       // Start polling
       clearInterval(pollInterval);
-      if (session.status !== 'CLOSED') {
+      if (session.status !== 'CLOSED' && session.status !== 'DECLINED') {
         pollInterval = setInterval(pollSessionAndMessages, 3000);
       }
 
       // Check counselor availability
       checkCounselorAvailability();
     }
+
 
     // ── Load Messages ──
     let lastMessageFingerprint = '';
@@ -644,6 +1272,82 @@
       const session = sessions.find(s => s.sessionId === currentSessionId);
       container.innerHTML = '';
 
+      // ── Dedicated Outreach Space for INVITED Sessions ──
+      if (session && session.status === 'INVITED') {
+        if (!isProfessional) {
+          const proName = session.professionalName || 'Lead Psychometrician, RPM';
+          // Find counselor's greeting message if sent
+          const greetingMsg = messages.find(m => m.senderType === 'professional')?.content 
+            || `Hello. ${proName} from Guidance noticed your recent post and wanted to make sure you're doing okay. A private, confidential space has been opened if you'd like to talk.`;
+
+          const outreachDiv = document.createElement('div');
+          outreachDiv.className = 'chat-outreach-container';
+          outreachDiv.innerHTML = `
+            <div class="chat-outreach-card">
+              <div class="outreach-header">
+                <div class="outreach-icon-wrap">
+                  <i class="fas fa-heart"></i>
+                </div>
+                <div class="outreach-title-block">
+                  <h3>Guidance Counselor Check-in</h3>
+                  <span class="outreach-counselor-tag">
+                    <i class="fas fa-user-md"></i> From: <strong>${escapeHtml(proName)}</strong>
+                  </span>
+                </div>
+              </div>
+
+              <div class="outreach-message-quote">
+                <i class="fas fa-quote-left quote-mark"></i>
+                <p>${escapeHtml(greetingMsg)}</p>
+              </div>
+
+              <div class="outreach-privacy-box">
+                <i class="fas fa-user-shield"></i>
+                <div>
+                  <strong>Completely Anonymous &amp; Safe</strong>
+                  <p>You are completely anonymous and you are not in trouble. There is zero pressure to reply if you just wanted to vent.</p>
+                </div>
+              </div>
+
+              <div class="outreach-decision-actions">
+                <button type="button" class="btn-outreach-accept" id="btnOutreachAccept" onclick="acceptCurrentInvite()">
+                  <i class="fas fa-check"></i> Accept &amp; Join Confidential Chat
+                </button>
+                <button type="button" class="btn-outreach-decline" id="btnOutreachDecline" onclick="declineCurrentInvite()">
+                  <i class="fas fa-times"></i> Decline (I just wanted to vent)
+                </button>
+                <button type="button" class="btn-outreach-delete" id="btnOutreachDelete" onclick="confirmDeleteCurrentSession()">
+                  <i class="fas fa-trash-alt"></i> Delete Request
+                </button>
+              </div>
+
+              <div class="outreach-footer-reassurance">
+                <i class="fas fa-clock"></i>
+                <div>
+                  <strong>Take your time:</strong> If you cannot decide yet, there is no rush. This conversation space will stay right here in your chats so you can review this message again and decide whenever you feel ready.
+                </div>
+              </div>
+            </div>
+          `;
+          container.appendChild(outreachDiv);
+          return;
+        } else {
+          // Professional view of pending invited session
+          const proDiv = document.createElement('div');
+          proDiv.className = 'pro-outreach-status-card';
+          proDiv.innerHTML = `
+            <i class="fas fa-envelope-open-text main-icon"></i>
+            <h3>Outreach Invitation Sent</h3>
+            <p>You initiated a check-in with this student. A private, confidential space has been opened and the student has been gently invited to participate.</p>
+            <div class="status-pill">
+              <i class="fas fa-hourglass-half"></i> Awaiting Student Consent
+            </div>
+          `;
+          container.appendChild(proDiv);
+          return;
+        }
+      }
+
       // System message at top
       if (session) {
         addInfoMessage(container, `Session started • ${formatDate(session.createdAt)}`);
@@ -652,6 +1356,9 @@
         }
         if (session.status === 'ACTIVE' && session.professionalName) {
           addInfoMessage(container, `${session.professionalName} joined the conversation`);
+        }
+        if (session.status === 'DECLINED') {
+          addInfoMessage(container, 'Session was declined by student (preferred to vent only)');
         }
 
         // Clinical Intake Summary (Professional responder view)
@@ -717,6 +1424,10 @@
             </div>
           `;
         }
+        // Mobile responsiveness: Long-press gesture listener on message item
+        attachLongPressListener(div, () => {
+          openSessionOptionsModal(currentSessionId, m.content);
+        });
         container.appendChild(div);
       });
 
@@ -752,7 +1463,7 @@
 
       // Determine sender info based on role
       const senderType = isProfessional ? 'professional' : 'student';
-      const senderName = isProfessional ? fullName : session.studentPseudonym;
+      const senderName = isProfessional ? fullName : (session?.studentPseudonym || 'Anonymous');
 
       try {
         const res = await SafeSpaceAuth.authFetch(`${API}/sessions/${currentSessionId}/messages`, {
@@ -816,6 +1527,10 @@
           // Student: refresh sessions to update unread counts
           await loadStudentSessions();
         }
+        if (currentSessionId) {
+          const cur = sessions.find(s => s.sessionId === currentSessionId);
+          if (cur) cur.unreadCount = 0;
+        }
         renderSessionList();
       } catch (e) { console.warn('Poll error:', e); }
     }
@@ -824,25 +1539,366 @@
       if (currentSessionId) await loadMessages();
     }
 
-    // ── Close Session ──
-    async function closeCurrentSession() {
+    // ── End Session Handlers (Safe Space Option A) ──
+    function confirmEndCurrentSession() {
       if (!currentSessionId) return;
-      if (!confirm('Are you sure you want to close this conversation?')) return;
+      const session = sessions.find(s => s.sessionId === currentSessionId);
+      const otherParty = isProfessional 
+        ? (session?.studentPseudonym || 'Student') 
+        : (session?.professionalName || 'your Counselor');
+      const textEl = document.getElementById('endSessionConfirmText');
+      if (textEl) {
+        textEl.innerHTML = `Are you ready to conclude your counseling session with <strong>${escapeHtml(otherParty)}</strong>?<br><br>This will complete the room and archive it. If you just want to take a break or check other pages, you can click <strong>Leave for Now</strong> without closing your room.`;
+      }
+      const modal = document.getElementById('endSessionConfirmModal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeEndSessionModal() {
+      const modal = document.getElementById('endSessionConfirmModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function leaveChatForNow() {
+      closeEndSessionModal();
+      showSanctuaryHome();
+    }
+
+    async function executeEndSession() {
+      if (!currentSessionId) return;
+      const sid = currentSessionId;
+      const btn = document.getElementById('btnExecuteEndSession');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ending...';
+      }
 
       try {
-        const res = await SafeSpaceAuth.authFetch(`${API}/sessions/${currentSessionId}/close`, {
+        const res = await SafeSpaceAuth.authFetch(`${API}/sessions/${sid}/close`, {
           method: 'PUT',
           body: JSON.stringify({ closedBy: isProfessional ? 'professional' : 'student' })
         });
 
         if (res.ok) {
           const updated = await res.json();
-          const idx = sessions.findIndex(s => s.sessionId === currentSessionId);
+          const idx = sessions.findIndex(s => s.sessionId === sid);
           if (idx !== -1) sessions[idx] = updated;
           clearInterval(pollInterval);
-          openSession(currentSessionId);
+          closeEndSessionModal();
+          openSession(sid);
+          showNotificationToast('Conversation ended and closed.');
+        } else {
+          alert('Could not end session. Please try again.');
         }
-      } catch (e) { alert('Error closing session: ' + e.message); }
+      } catch (e) {
+        alert('Error ending session: ' + e.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-power-off"></i> End Conversation';
+        }
+      }
+    }
+
+    // Keep closeCurrentSession for backwards compatibility if referenced
+    function closeCurrentSession() {
+      confirmEndCurrentSession();
+    }
+
+    // ── Session Options Modal (Mobile Long Press & Options Menu) ──
+    let currentActionSessionId = null;
+    let currentActionMessageText = null;
+
+    function openSessionOptionsModal(sessionId, messageText = null) {
+      currentActionSessionId = sessionId;
+      currentActionMessageText = messageText;
+
+      const session = sessions.find(s => s.sessionId === sessionId);
+      if (!session) return;
+
+      const sheetModal = document.getElementById('mobileSessionOptionsModal');
+      const avatarEl = document.getElementById('sheetAvatar');
+      const titleEl = document.getElementById('sheetTitle');
+      const subtitleEl = document.getElementById('sheetSubtitle');
+      const openBtn = document.getElementById('sheetOpenBtn');
+      const leaveBtn = document.getElementById('sheetLeaveBtn');
+      const closeBtn = document.getElementById('sheetCloseBtn');
+      const copyMsgBtn = document.getElementById('sheetCopyMsgBtn');
+
+      const initials = (session.studentPseudonym || 'AN').split('-').slice(1, 2).join('').substring(0, 2).toUpperCase() || 'AN';
+      if (avatarEl) {
+        avatarEl.textContent = initials;
+        avatarEl.className = 'options-sheet-avatar' + (session.crisisFlag ? ' crisis' : '');
+      }
+
+      if (titleEl) {
+        titleEl.textContent = session.studentPseudonym || 'Anonymous Conversation';
+      }
+
+      if (subtitleEl) {
+        subtitleEl.textContent = session.topic ? `Topic: ${truncate(session.topic, 40)}` : 'Safe Space Conversation';
+      }
+
+      // Open button: show only if not currently open
+      if (openBtn) {
+        openBtn.style.display = (currentSessionId === sessionId) ? 'none' : 'flex';
+      }
+
+      // Leave button: show if this session is open and active
+      if (leaveBtn) {
+        leaveBtn.style.display = (currentSessionId === sessionId && (session.status === 'ACTIVE' || session.status === 'WAITING')) ? 'flex' : 'none';
+      }
+
+      // End Session button: show if active or waiting
+      if (closeBtn) {
+        closeBtn.style.display = (session.status === 'ACTIVE' || session.status === 'WAITING') ? 'flex' : 'none';
+      }
+
+      // Copy message button: show if long pressed on a specific message
+      if (copyMsgBtn) {
+        copyMsgBtn.style.display = (messageText && messageText.trim()) ? 'flex' : 'none';
+      }
+
+      if (sheetModal) {
+        sheetModal.classList.add('active');
+      }
+    }
+
+    function closeSessionOptionsModal() {
+      const sheetModal = document.getElementById('mobileSessionOptionsModal');
+      if (sheetModal) sheetModal.classList.remove('active');
+      currentActionMessageText = null;
+    }
+
+    function handleOptionsOverlayClick(event) {
+      if (event.target.id === 'mobileSessionOptionsModal') {
+        closeSessionOptionsModal();
+      }
+    }
+
+    function sheetOpenConversation() {
+      const sid = currentActionSessionId;
+      closeSessionOptionsModal();
+      if (sid) openSession(sid);
+    }
+
+    function sheetLeaveChat() {
+      closeSessionOptionsModal();
+      showSanctuaryHome();
+    }
+
+    function sheetEndConversation() {
+      const sid = currentActionSessionId;
+      closeSessionOptionsModal();
+      if (!sid) return;
+      currentSessionId = sid;
+      confirmEndCurrentSession();
+    }
+
+    function sheetCopyMessage() {
+      if (!currentActionMessageText) return;
+      navigator.clipboard.writeText(currentActionMessageText).then(() => {
+        showNotificationToast('Message copied to clipboard!');
+      }).catch(() => {
+        showNotificationToast('Failed to copy message.');
+      });
+      closeSessionOptionsModal();
+    }
+
+    function sheetDeleteConversation() {
+      const sid = currentActionSessionId;
+      closeSessionOptionsModal();
+      if (sid) confirmDeleteSession(sid);
+    }
+
+    // ── Delete Conversation Handlers ──
+    let sessionPendingDeletion = null;
+
+    function confirmDeleteCurrentSession() {
+      if (!currentSessionId) return;
+      confirmDeleteSession(currentSessionId);
+    }
+
+    function handleCardDelete(event, sessionId) {
+      if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+      confirmDeleteSession(sessionId);
+    }
+
+    function confirmDeleteSession(sessionId) {
+      sessionPendingDeletion = sessionId;
+      const modal = document.getElementById('deleteConfirmModal');
+      const target = sessions.find(s => s.sessionId === sessionId);
+      let targetDesc = 'this conversation';
+      if (target) {
+        if (target.status === 'INVITED') {
+          targetDesc = `the check-in request from ${target.professionalName || 'Counselor'}`;
+        } else if (isProfessional) {
+          targetDesc = `conversation with ${target.studentPseudonym || 'Student'}`;
+        } else {
+          targetDesc = `conversation with ${target.professionalName || target.studentPseudonym || 'Counselor'}`;
+        }
+      }
+      const msg = document.getElementById('deleteConfirmMsg');
+      if (msg) {
+        msg.textContent = `Are you sure you want to permanently delete ${targetDesc}? All messages will be wiped immediately. This cannot be undone.`;
+      }
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeDeleteConfirmModal() {
+      const modal = document.getElementById('deleteConfirmModal');
+      if (modal) modal.style.display = 'none';
+      sessionPendingDeletion = null;
+    }
+
+    async function executeDeleteSession() {
+      if (!sessionPendingDeletion) return;
+      const sid = sessionPendingDeletion;
+      const btn = document.getElementById('btnConfirmDeleteSession');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+      }
+
+      try {
+        const res = await SafeSpaceAuth.authFetch(`${API}/sessions/${sid}`, {
+          method: 'DELETE'
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || 'Failed to delete conversation');
+        }
+
+        closeDeleteConfirmModal();
+
+        // 1. Immediately remove from local sessions array and clear pending invite reference
+        sessions = sessions.filter(s => s.sessionId !== sid);
+        if (pendingInviteSession && pendingInviteSession.sessionId === sid) {
+          pendingInviteSession = null;
+        }
+
+        // 2. Immediately update & hide the Sanctuary invite card if it was this invite
+        checkForPendingStudentInvite();
+
+        // 3. Animate card removal in sidebar if present
+        const card = document.querySelector(`.session-card[data-session-id="${sid}"]`);
+        if (card) {
+          card.classList.add('deleting');
+        }
+
+        // 4. If currently open session was deleted, return to Sanctuary lounge / Welcome
+        const wasCurrent = (currentSessionId === sid);
+        if (wasCurrent) {
+          showSanctuaryHome();
+        }
+
+        // 5. Complete removal, re-render list, and update badges after brief exit animation
+        setTimeout(() => {
+          sessions = sessions.filter(s => s.sessionId !== sid);
+          if (pendingInviteSession && pendingInviteSession.sessionId === sid) {
+            pendingInviteSession = null;
+          }
+          renderSessionList();
+          checkForPendingStudentInvite();
+          if (typeof SafeSpaceAuth !== 'undefined' && typeof SafeSpaceAuth.refreshBadges === 'function') {
+            SafeSpaceAuth.refreshBadges();
+          }
+          showNotificationToast('Conversation deleted permanently.');
+        }, 300);
+
+      } catch (e) {
+        alert('Could not delete conversation: ' + e.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete';
+        }
+      }
+    }
+
+    // ── Mobile Long Press Gesture Utility ──
+    function attachLongPressListener(el, callback) {
+      let timer = null;
+      let startX = 0;
+      let startY = 0;
+      let isLongPress = false;
+
+      el.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 1) return;
+        const touch = e.touches[0];
+        startX = touch.clientX;
+        startY = touch.clientY;
+        isLongPress = false;
+
+        el.classList.add('long-pressing');
+
+        timer = setTimeout(() => {
+          isLongPress = true;
+          el.dataset.justLongPressed = 'true';
+          el.classList.remove('long-pressing');
+          if (navigator.vibrate) {
+            try { navigator.vibrate(40); } catch (_) {}
+          }
+          callback();
+        }, 500);
+      }, { passive: true });
+
+      el.addEventListener('touchmove', (e) => {
+        if (!timer) return;
+        const touch = e.touches[0];
+        const diffX = Math.abs(touch.clientX - startX);
+        const diffY = Math.abs(touch.clientY - startY);
+        if (diffX > 10 || diffY > 10) {
+          // Touch moved significantly -> scrolling, cancel long press
+          clearTimeout(timer);
+          timer = null;
+          el.classList.remove('long-pressing');
+        }
+      }, { passive: true });
+
+      el.addEventListener('touchend', (e) => {
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+        el.classList.remove('long-pressing');
+        if (isLongPress) {
+          setTimeout(() => {
+            el.dataset.justLongPressed = 'false';
+          }, 350);
+          e.preventDefault();
+        }
+      });
+
+      el.addEventListener('touchcancel', () => {
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+        el.classList.remove('long-pressing');
+      });
+    }
+
+    // ── Sleek Notification Toast ──
+    function showNotificationToast(message) {
+      let toast = document.getElementById('safeSpaceToast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'safeSpaceToast';
+        toast.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(20px);background:#161F36;color:#FAF7F2;padding:0.75rem 1.4rem;border-radius:999px;font-size:0.88rem;font-weight:600;box-shadow:0 8px 24px rgba(22,31,54,0.25);z-index:9999;opacity:0;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);pointer-events:none;display:flex;align-items:center;gap:0.5rem;';
+        document.body.appendChild(toast);
+      }
+      toast.innerHTML = `<i class="fas fa-circle-check" style="color:#10B981;"></i> ${escapeHtml(message)}`;
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateX(-50%) translateY(0)';
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(20px)';
+      }, 3000);
     }
 
     // ── Mobile Navigation ──
@@ -916,6 +1972,14 @@
 
     // Check availability every 30 seconds
     setInterval(checkCounselorAvailability, 30000);
+
+    // Idle sync for Sanctuary lounge (keeps invitations and sessions updated if idling)
+    setInterval(async () => {
+      if (!currentSessionId && !isProfessional) {
+        await loadStudentSessions();
+        renderSessionList();
+      }
+    }, 15000);
 
     // ── Boot ──
     init();

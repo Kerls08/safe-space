@@ -89,30 +89,33 @@ public class CredentialController {
     /**
      * Register a single user from the institutional directory.
      * Returns the generated username and initial password.
-     * When called by a PROFESSIONAL, the role is restricted to PROFESSIONAL.
+     * Accessible strictly to ADMIN.
      */
     @PostMapping("/register")
     public ResponseEntity<RegisterUserResponse> registerUser(
             HttpServletRequest servletRequest,
             @RequestBody RegisterUserRequest request) {
         User caller = (User) servletRequest.getAttribute("auth.user");
-        if (caller != null && "PROFESSIONAL".equalsIgnoreCase(caller.getRole())) {
-            request.setRole("PROFESSIONAL");
+        if (caller == null || (!"MAINTENANCE".equalsIgnoreCase(caller.getRole()) && !"ADMIN".equalsIgnoreCase(caller.getRole()) && !"SUPER_ADMIN".equalsIgnoreCase(caller.getRole()))) {
+            throw new IllegalStateException("Only System Maintenance or an Administrator can register users.");
         }
         RegisterUserResponse response = credentialService.registerUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
-     * Register a campus colleague (Psychometrician, Psychologist, Guidance Counselor).
-     * Accessible to both PROFESSIONAL and ADMIN.
+     * Register a campus colleague (Psychometrician, Psychologist) or Lead Admin.
+     * Accessible strictly to SUPER_ADMIN (or ADMIN fallback).
      */
     @PostMapping("/register-colleague")
     public ResponseEntity<RegisterUserResponse> registerColleague(
             HttpServletRequest servletRequest,
             @RequestBody RegisterColleagueRequest request) {
-        String currentUsername = (String) servletRequest.getAttribute("auth.username");
-        RegisterUserResponse response = credentialService.registerColleague(request, currentUsername != null ? currentUsername : "system");
+        User caller = (User) servletRequest.getAttribute("auth.user");
+        if (caller == null || (!"SUPER_ADMIN".equalsIgnoreCase(caller.getRole()) && !"ADMIN".equalsIgnoreCase(caller.getRole()))) {
+            throw new IllegalStateException("Only the Lead Psychometrician (Super Admin) can register colleagues or staff.");
+        }
+        RegisterUserResponse response = credentialService.registerColleague(request, caller.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -156,7 +159,7 @@ public class CredentialController {
     }
 
     /**
-     * Step 2: Dispatch a 6-digit OTP code to the student's chosen destination (EMAIL or PHONE).
+     * Step 2: Dispatch a 6-digit OTP code to the student's registered email address.
      */
     @PostMapping("/forgot-password/send-otp")
     public ResponseEntity<SendOtpResponse> sendOtp(@RequestBody SendOtpRequest request) {
@@ -270,11 +273,61 @@ public class CredentialController {
     }
 
     /**
+     * Transfer or assign administrative role to a colleague.
+     * Accessible strictly to ADMIN.
+     */
+    @PostMapping("/users/{username}/transfer-admin")
+    public ResponseEntity<TransferAdminResponse> transferAdminRole(
+            HttpServletRequest servletRequest,
+            @PathVariable String username,
+            @RequestBody(required = false) TransferAdminRequest request) {
+        User caller = (User) servletRequest.getAttribute("auth.user");
+        if (caller == null || (!"SUPER_ADMIN".equalsIgnoreCase(caller.getRole()) && !"ADMIN".equalsIgnoreCase(caller.getRole()))) {
+            throw new IllegalStateException("Only the Lead Psychometrician (Super Admin) can transfer administrative authority.");
+        }
+        boolean relinquish = request != null && request.isRelinquishAdmin();
+        TransferAdminResponse response = credentialService.transferAdmin(username, relinquish, caller.getUsername());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Update a user's role (SUPER_ADMIN, MAINTENANCE, PROFESSIONAL, STUDENT).
+     * Accessible strictly to SUPER_ADMIN, MAINTENANCE, or ADMIN.
+     */
+    @PutMapping("/users/{username}/role")
+    public ResponseEntity<Map<String, String>> updateUserRole(
+            HttpServletRequest servletRequest,
+            @PathVariable String username,
+            @RequestBody Map<String, String> body) {
+        User caller = (User) servletRequest.getAttribute("auth.user");
+        if (caller == null || (!"SUPER_ADMIN".equalsIgnoreCase(caller.getRole()) && !"MAINTENANCE".equalsIgnoreCase(caller.getRole()) && !"ADMIN".equalsIgnoreCase(caller.getRole()))) {
+            throw new IllegalStateException("Access denied: Insufficient privileges to update user roles.");
+        }
+        String newRole = body != null ? body.get("role") : null;
+        return ResponseEntity.ok(credentialService.updateUserRole(username, newRole, caller.getUsername()));
+    }
+
+    /**
      * Resend welcome email with temporary credentials via Brevo.
      */
     @PostMapping("/users/{username}/resend-welcome")
     public ResponseEntity<Map<String, String>> resendWelcomeEmail(@PathVariable String username) {
         return ResponseEntity.ok(credentialService.resendWelcomeEmail(username));
+    }
+
+    /**
+     * Update user details (admin action).
+     */
+    @PutMapping("/users/{username}")
+    public ResponseEntity<UserProfileResponse> updateUser(
+            HttpServletRequest request,
+            @PathVariable String username,
+            @RequestBody UpdateProfileRequest profileRequest) {
+        User caller = (User) request.getAttribute("auth.user");
+        if (caller == null || (!"SUPER_ADMIN".equalsIgnoreCase(caller.getRole()) && !"MAINTENANCE".equalsIgnoreCase(caller.getRole()) && !"ADMIN".equalsIgnoreCase(caller.getRole()))) {
+            throw new IllegalStateException("Access denied: Insufficient privileges to update user records.");
+        }
+        return ResponseEntity.ok(credentialService.updateProfile(username, profileRequest));
     }
 
     /**
@@ -388,6 +441,16 @@ public class CredentialController {
                             "features", RbacPermissions.getFeaturesForRole("PROFESSIONAL"),
                             "pages", RbacPermissions.getAccessiblePages("PROFESSIONAL"),
                             "apiPrefixes", RbacPermissions.ROLE_PERMISSIONS.get("PROFESSIONAL")
+                    ),
+                    "SUPER_ADMIN", Map.of(
+                            "features", RbacPermissions.getFeaturesForRole("SUPER_ADMIN"),
+                            "pages", RbacPermissions.getAccessiblePages("SUPER_ADMIN"),
+                            "apiPrefixes", RbacPermissions.ROLE_PERMISSIONS.get("SUPER_ADMIN")
+                    ),
+                    "MAINTENANCE", Map.of(
+                            "features", RbacPermissions.getFeaturesForRole("MAINTENANCE"),
+                            "pages", RbacPermissions.getAccessiblePages("MAINTENANCE"),
+                            "apiPrefixes", RbacPermissions.ROLE_PERMISSIONS.get("MAINTENANCE")
                     ),
                     "ADMIN", Map.of(
                             "features", RbacPermissions.getFeaturesForRole("ADMIN"),

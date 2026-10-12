@@ -270,11 +270,20 @@
   white-space: nowrap;
 }
 
-.alert-msg {
-  font-size: 0.78rem;
-  color: #4b5563;
-  line-height: 1.55;
-  margin-bottom: 0.55rem;
+.alert-msg-box {
+  background: #FAF7F2;
+  border-left: 3px solid #BACBD8;
+  border-radius: 0 0.5rem 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.alert-msg-box .alert-msg {
+  font-size: 0.82rem;
+  color: #1F2937;
+  font-style: italic;
+  margin-bottom: 0;
+  line-height: 1.45;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -293,9 +302,13 @@
   border-radius: 999px;
   font-size: 0.65rem;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .alert-tag.type { background: #FAF7F2; color: #161F36; border: 1px solid #E0D7C6; }
+.alert-tag.student-tag { background: #E8EFF4; color: #161F36; border: 1px solid #BACBD8; }
 .alert-tag.sev-critical { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
 .alert-tag.sev-high { background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; }
 .alert-tag.sev-moderate { background: #fffbeb; color: #ca8a04; border: 1px solid #fde68a; }
@@ -305,6 +318,92 @@
 .alert-tag.status-acknowledged { background: #fffbeb; color: #ca8a04; border: 1px solid #fde68a; }
 .alert-tag.status-resolved { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
 .alert-tag.status-escalated { background: #ede9fe; color: #7c3aed; border: 1px solid #ddd6fe; }
+
+/* ── Dedicated Caseworker & Assignment Banner (Bottom) ── */
+.alert-assigned-banner {
+  margin-top: 0.75rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.55rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.alert-assigned-banner .assigned-lead {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.alert-assigned-banner .assigned-lead strong {
+  font-weight: 700;
+}
+
+.alert-assigned-banner .assigned-time {
+  font-size: 0.68rem;
+  opacity: 0.85;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.alert-assigned-banner.acknowledged {
+  background: #FFFBEB;
+  color: #92400E;
+  border-color: #FDE68A;
+}
+.alert-assigned-banner.acknowledged .assigned-lead i {
+  color: #D97706;
+}
+
+.alert-assigned-banner.unassigned {
+  background: #FEF2F2;
+  color: #991B1B;
+  border-color: #FECACA;
+}
+.alert-assigned-banner.unassigned .assigned-lead i {
+  color: #DC2626;
+}
+
+.alert-assigned-banner.resolved {
+  background: #F0FDF4;
+  color: #166534;
+  border-color: #BBF7D0;
+}
+.alert-assigned-banner.resolved .assigned-lead i {
+  color: #16A34A;
+}
+
+.alert-notes-box {
+  margin-top: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.5rem;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  font-size: 0.73rem;
+  color: #475569;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  line-height: 1.45;
+}
+
+.alert-notes-box i {
+  color: #10B981;
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
+
+.alert-notes-box .notes-label {
+  font-weight: 700;
+  color: #1E293B;
+  margin-right: 0.25rem;
+}
 
 /* Actions */
 .alert-actions {

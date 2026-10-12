@@ -1,10 +1,12 @@
 package com.safe.space.service;
 
 import com.safe.space.dto.AuthDTOs.*;
+import com.safe.space.event.AdminAuditEvent;
 import com.safe.space.model.User;
 import com.safe.space.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +44,7 @@ public class CredentialService {
 
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder(12);
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -177,7 +180,7 @@ public class CredentialService {
         userRepository.save(user);
 
         // Send Welcome & Credential email via Brevo REST API (async)
-        if ("PROFESSIONAL".equalsIgnoreCase(user.getRole())) {
+        if ("PROFESSIONAL".equalsIgnoreCase(user.getRole()) || "SUPER_ADMIN".equalsIgnoreCase(user.getRole())) {
             emailService.sendProfessionalWelcomeEmail(
                     user.getEmail(),
                     user.getFullName(),
@@ -245,7 +248,7 @@ public class CredentialService {
         // 4. Clean professional role & office
         String title = (request.getTitle() != null && !request.getTitle().trim().isBlank())
                 ? request.getTitle().trim()
-                : "Guidance Counselor";
+                : "Psychometrician";
 
         String baseDept = (request.getDepartment() != null && !request.getDepartment().trim().isBlank())
                 ? request.getDepartment().trim()
@@ -270,6 +273,9 @@ public class CredentialService {
 
         String rawPassword = generateDefaultPassword(cleanFullName, cleanId);
 
+        String assignedRole = "SUPER_ADMIN".equalsIgnoreCase(request.getRole()) || "ADMIN".equalsIgnoreCase(request.getRole())
+                ? "SUPER_ADMIN" : "PROFESSIONAL";
+
         // 7. Save user entity
         User colleague = User.builder()
                 .institutionalId(cleanId)
@@ -280,7 +286,7 @@ public class CredentialService {
                 .phoneNumber(cleanPhone)
                 .department(finalDepartment)
                 .yearLevel(null)
-                .role("PROFESSIONAL")
+                .role(assignedRole)
                 .active(true)
                 .passwordChanged(false)
                 .forcePasswordChange(true)
@@ -298,8 +304,20 @@ public class CredentialService {
                 title
         );
 
-        log.info("Colleague registered successfully: ID={}, name={}, email={}, title={}, by={}",
-                colleague.getInstitutionalId(), colleague.getFullName(), colleague.getEmail(), title, registeredByUsername);
+        eventPublisher.publishEvent(new AdminAuditEvent(
+                registeredByUsername,
+                "STAFF_REGISTERED",
+                "INFO",
+                "Provisioned " + assignedRole + ": " + cleanFullName + " (" + cleanId + ") as " + title,
+                cleanId
+        ));
+
+        log.info("Colleague registered successfully: ID={}, name={}, email={}, role={}, title={}, by={}",
+                colleague.getInstitutionalId(), colleague.getFullName(), colleague.getEmail(), assignedRole, title, registeredByUsername);
+
+        String successMsg = ("SUPER_ADMIN".equals(assignedRole) || "ADMIN".equals(assignedRole))
+                ? "Lead Administrator " + colleague.getFullName() + " was provisioned successfully! A welcome email with temporary sign-in instructions has been sent to " + colleague.getEmail() + "."
+                : "Your colleague " + colleague.getFullName() + " (" + title + ") was registered successfully! A welcome email with temporary sign-in instructions has been sent to " + colleague.getEmail() + ".";
 
         return RegisterUserResponse.builder()
                 .institutionalId(colleague.getInstitutionalId())
@@ -308,16 +326,16 @@ public class CredentialService {
                 .fullName(colleague.getFullName())
                 .email(colleague.getEmail())
                 .role(colleague.getRole())
-                .message("Your colleague " + colleague.getFullName() + " (" + title + ") was registered successfully! A welcome email with temporary sign-in instructions has been sent to " + colleague.getEmail() + ".")
+                .message(successMsg)
                 .build();
     }
 
     /**
-     * Retrieve all registered campus colleagues (Mental Health Professionals).
+     * Retrieve all registered campus colleagues (Mental Health Professionals and Lead Administrators).
      */
     @Transactional(readOnly = true)
     public List<UserProfileResponse> getColleagues() {
-        return userRepository.findByRoleOrderByFullNameAsc("PROFESSIONAL").stream()
+        return userRepository.findByRoleInOrderByFullNameAsc(List.of("PROFESSIONAL", "SUPER_ADMIN", "ADMIN")).stream()
                 .map(this::toProfile)
                 .collect(Collectors.toList());
     }
@@ -330,8 +348,8 @@ public class CredentialService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new NoSuchElementException("Colleague not found with username: " + username));
 
-        if (!"PROFESSIONAL".equalsIgnoreCase(user.getRole())) {
-            throw new IllegalArgumentException("Specified user is not a mental health professional colleague.");
+        if (!"PROFESSIONAL".equalsIgnoreCase(user.getRole()) && !"SUPER_ADMIN".equalsIgnoreCase(user.getRole()) && !"ADMIN".equalsIgnoreCase(user.getRole())) {
+            throw new IllegalArgumentException("Specified user is not a mental health professional colleague or administrator.");
         }
         if (user.getEmail() == null || user.getEmail().isBlank()) {
             throw new IllegalArgumentException("Colleague '" + user.getFullName() + "' does not have a work email recorded.");
@@ -358,6 +376,108 @@ public class CredentialService {
                 "email", user.getEmail(),
                 "institutionalId", user.getInstitutionalId(),
                 "generatedPassword", rawPassword
+        );
+    }
+
+    /**
+     * Transfer or assign administrative authority.
+     * Can transfer primary ownership (caller demotes to PROFESSIONAL)
+     * or appoint as co-admin (both remain ADMIN).
+     */
+    @Transactional
+    public TransferAdminResponse transferAdmin(String targetUsername, boolean relinquishAdmin, String callerUsername) {
+        if (callerUsername == null || callerUsername.isBlank()) {
+            throw new IllegalStateException("Authentication required.");
+        }
+        User caller = userRepository.findByUsername(callerUsername)
+                .orElseThrow(() -> new NoSuchElementException("Current administrator account not found."));
+
+        if (!"SUPER_ADMIN".equalsIgnoreCase(caller.getRole()) && !"ADMIN".equalsIgnoreCase(caller.getRole())) {
+            throw new IllegalStateException("Only the Lead Psychometrician (Super Admin) can transfer administrative roles.");
+        }
+
+        if (callerUsername.equalsIgnoreCase(targetUsername)) {
+            throw new IllegalArgumentException("You are already the Lead Administrator.");
+        }
+
+        User target = userRepository.findByUsername(targetUsername)
+                .orElseThrow(() -> new NoSuchElementException("Colleague not found with username: " + targetUsername));
+
+        if (!target.isActive()) {
+            throw new IllegalArgumentException("Cannot transfer administrative role to an inactive account.");
+        }
+
+        // Promote target to SUPER_ADMIN
+        target.setRole("SUPER_ADMIN");
+        userRepository.save(target);
+
+        // If relinquishing, demote caller to PROFESSIONAL
+        if (relinquishAdmin) {
+            caller.setRole("PROFESSIONAL");
+            userRepository.save(caller);
+        }
+
+        log.info("Admin role transfer: target={}, targetRole=SUPER_ADMIN, caller={}, callerRole={}, relinquish={}",
+                target.getUsername(), caller.getUsername(), caller.getRole(), relinquishAdmin);
+
+        eventPublisher.publishEvent(new AdminAuditEvent(
+                caller.getUsername(),
+                "ADMIN_ROLE_TRANSFERRED",
+                "WARNING",
+                String.format("Lead Admin role transferred to %s (%s). Relinquish=%s",
+                        target.getFullName(), target.getUsername(), relinquishAdmin),
+                target.getUsername()
+        ));
+
+        return TransferAdminResponse.builder()
+                .targetUsername(target.getUsername())
+                .targetFullName(target.getFullName())
+                .targetRole(target.getRole())
+                .callerUsername(caller.getUsername())
+                .callerRole(caller.getRole())
+                .message(relinquishAdmin
+                        ? "Lead Admin role transferred successfully to " + target.getFullName() + ". Your account is now a Professional."
+                        : "Lead Admin privileges granted successfully to " + target.getFullName() + ".")
+                .build();
+    }
+
+    /**
+     * Update a user's role (SUPER_ADMIN, MAINTENANCE, PROFESSIONAL, STUDENT).
+     * Accessible strictly to SUPER_ADMIN, MAINTENANCE, or ADMIN. Primary maintenance account cannot be demoted.
+     */
+    @Transactional
+    public Map<String, String> updateUserRole(String targetUsername, String newRole, String callerUsername) {
+        if (targetUsername == null || targetUsername.isBlank()) {
+            throw new IllegalArgumentException("Target username is required.");
+        }
+        if (("admin".equalsIgnoreCase(targetUsername) || "maintenance".equalsIgnoreCase(targetUsername))
+                && !"MAINTENANCE".equalsIgnoreCase(newRole) && !"ADMIN".equalsIgnoreCase(newRole)) {
+            throw new IllegalArgumentException("Cannot change role of primary system infrastructure account.");
+        }
+        User target = userRepository.findByUsername(targetUsername)
+                .orElseThrow(() -> new NoSuchElementException("User not found with username: " + targetUsername));
+
+        String normalizedRole = normalizeRole(newRole);
+        String oldRole = target.getRole();
+        target.setRole(normalizedRole);
+        userRepository.save(target);
+
+        log.info("Admin updated role for user {}: {} -> {} (by {})",
+                target.getUsername(), oldRole, normalizedRole, callerUsername);
+
+        eventPublisher.publishEvent(new AdminAuditEvent(
+                callerUsername != null ? callerUsername : "SYSTEM",
+                "USER_ROLE_UPDATED",
+                "WARNING",
+                String.format("User %s (%s) role changed from %s to %s",
+                        target.getFullName(), target.getUsername(), oldRole, normalizedRole),
+                target.getUsername()
+        ));
+
+        return Map.of(
+                "message", "User " + target.getFullName() + " role updated to " + normalizedRole + ".",
+                "username", target.getUsername(),
+                "role", normalizedRole
         );
     }
 
@@ -569,7 +689,7 @@ public class CredentialService {
         user.setForcePasswordChange(true);
         userRepository.save(user);
 
-        if ("PROFESSIONAL".equalsIgnoreCase(user.getRole())) {
+        if ("PROFESSIONAL".equalsIgnoreCase(user.getRole()) || "SUPER_ADMIN".equalsIgnoreCase(user.getRole())) {
             emailService.sendProfessionalWelcomeEmail(
                     user.getEmail(),
                     user.getFullName(),
@@ -674,9 +794,9 @@ public class CredentialService {
             String role = (String) row[0];
             long count = ((Number) row[1]).longValue();
             switch (role) {
-                case "STUDENT" -> students = count;
-                case "PROFESSIONAL" -> professionals = count;
-                case "ADMIN" -> admins = count;
+                case "STUDENT" -> students += count;
+                case "PROFESSIONAL" -> professionals += count;
+                case "SUPER_ADMIN", "MAINTENANCE", "ADMIN" -> admins += count;
             }
         }
 
@@ -759,9 +879,11 @@ public class CredentialService {
         if (role == null) return "STUDENT";
         return switch (role.toUpperCase().trim()) {
             case "STUDENT", "S" -> "STUDENT";
-            case "PROFESSIONAL", "PRO", "P", "COUNSELOR", "PSYCHOMETRICIAN", "PSYCHOLOGIST", "GUIDANCE COUNSELOR" -> "PROFESSIONAL";
-            case "ADMIN", "A", "SYSADMIN", "ADMINISTRATOR" -> "ADMIN";
-            default -> throw new IllegalArgumentException("Invalid role: " + role + ". Must be STUDENT, PROFESSIONAL, or ADMIN.");
+            case "PROFESSIONAL", "PRO", "P", "COUNSELOR", "PSYCHOLOGIST", "STAFF" -> "PROFESSIONAL";
+            case "SUPER_ADMIN", "SUPERADMIN", "LEAD", "LEAD_PSYCHOMETRICIAN" -> "SUPER_ADMIN";
+            case "MAINTENANCE", "MAINT", "IT", "DEVOPS" -> "MAINTENANCE";
+            case "ADMIN", "A", "SYSADMIN", "ADMINISTRATOR" -> "SUPER_ADMIN";
+            default -> throw new IllegalArgumentException("Invalid role: " + role + ". Must be STUDENT, PROFESSIONAL, SUPER_ADMIN, or MAINTENANCE.");
         };
     }
 

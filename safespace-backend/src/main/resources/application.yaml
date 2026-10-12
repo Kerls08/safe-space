@@ -2,9 +2,9 @@ spring:
   application:
     name: safe-space
 
-  # ── Database (Cloud PostgreSQL / Local H2 Fallback) ──
+  # ── Database (In-Memory H2 for Testing / Ephemeral Fallback) ──
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:h2:file:./data/safespace;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE}
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:safespace;DB_CLOSE_DELAY=-1;MODE=PostgreSQL}
     username: ${SPRING_DATASOURCE_USERNAME:sa}
     password: ${SPRING_DATASOURCE_PASSWORD:}
     hikari:

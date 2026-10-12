@@ -99,8 +99,8 @@ public class AuthInterceptor implements HandlerInterceptor {
         request.setAttribute("auth.role", role);
         request.setAttribute("auth.user", user);
 
-        // 7. Check maintenance mode (non-admins blocked from mutating endpoints during maintenance)
-        if (maintenanceService.isMaintenanceActive() && !"ADMIN".equalsIgnoreCase(role)) {
+        // 7. Check maintenance mode (non-maintenance/admins blocked from mutating endpoints during maintenance)
+        if (maintenanceService.isMaintenanceActive() && !"MAINTENANCE".equalsIgnoreCase(role) && !"ADMIN".equalsIgnoreCase(role)) {
             if ("POST".equalsIgnoreCase(method) || "PUT".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method)) {
                 log.warn("MAINTENANCE BLOCK: {} {} blocked for user={} role={}", method, path, username, role);
                 sendError(request, response, HttpServletResponse.SC_SERVICE_UNAVAILABLE,

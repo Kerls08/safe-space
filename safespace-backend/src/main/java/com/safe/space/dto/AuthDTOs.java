@@ -57,8 +57,26 @@ public class AuthDTOs {
         private String fullName;        // Colleague's full name
         private String email;           // Official / work email address
         private String phoneNumber;     // Mobile phone (optional)
-        private String title;           // Professional role (Guidance Counselor, Psychometrician, Psychologist, etc.)
+        private String title;           // Professional role (Psychometrician, Psychologist)
         private String department;      // Campus office / department
+        private String role;            // PROFESSIONAL or ADMIN (Admin-only provisioning)
+    }
+
+    // ── Admin Role Transfer ──
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class TransferAdminRequest {
+        private boolean relinquishAdmin; // true to demote caller to PROFESSIONAL; false for co-admin
+    }
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class TransferAdminResponse {
+        private String targetUsername;
+        private String targetFullName;
+        private String targetRole;
+        private String callerUsername;
+        private String callerRole;
+        private String message;
     }
 
     // ── Public Self-Registration ──
@@ -158,15 +176,13 @@ public class AuthDTOs {
     public static class ForgotPasswordLookupResponse {
         private String institutionalId;
         private String maskedEmail;
-        private String maskedPhone;
         private boolean hasEmail;
-        private boolean hasPhone;
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor
     public static class SendOtpRequest {
         private String identifier;
-        private String method; // "EMAIL" or "PHONE"
+        private String method; // "EMAIL"
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder

@@ -7,7 +7,7 @@ import java.util.List;
 
 /**
  * Monthly Psychological & Emotional Climate Situationer DTO.
- * Formatted for Guidance Counselors and Psychometricians at USTP Balubal Campus.
+ * Formatted for Psychometricians and Psychologists at USTP Balubal Campus.
  * Composed strictly with aggregated metrics and anonymized identifiers
  * in compliance with RA 10173 (Data Privacy Act of 2012) and RA 11036 (Mental Health Act).
  */

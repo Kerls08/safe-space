@@ -588,9 +588,11 @@
 
     function redirectAfterLogin(role) {
       switch (role) {
+        case 'MAINTENANCE':
         case 'ADMIN':
-          window.location.href = 'credential-manager.html';
+          window.location.href = 'system-maintenance.html';
           break;
+        case 'SUPER_ADMIN':
         case 'PROFESSIONAL':
           window.location.href = 'pro-dashboard.html';
           break;
@@ -700,9 +702,7 @@
       identifier: '',
       method: 'EMAIL',
       maskedEmail: '',
-      maskedPhone: '',
       hasEmail: false,
-      hasPhone: false,
       resetToken: '',
       timerInterval: null,
       countdownSeconds: 300
@@ -1138,8 +1138,8 @@
       const existingName = localStorage.getItem('ss_fullName') || localStorage.getItem('ss_username');
       if (existingToken && existingRole) {
         let dest = 'rant-board.html';
-        if (existingRole === 'ADMIN') dest = 'credential-manager.html';
-        else if (existingRole === 'PROFESSIONAL') dest = 'pro-dashboard.html';
+        if (existingRole === 'MAINTENANCE' || existingRole === 'ADMIN') dest = 'system-maintenance.html';
+        else if (existingRole === 'SUPER_ADMIN' || existingRole === 'PROFESSIONAL') dest = 'pro-dashboard.html';
 
         const noticeDiv = document.getElementById('activeSessionNotice');
         if (noticeDiv) {

@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="css/profile.css">
 </head>
 <body>
-  <script src="js/auth-guard.js" data-page="profile" data-allowed-roles="STUDENT,PROFESSIONAL,ADMIN"></script>
+  <script src="js/auth-guard.js" data-page="profile" data-allowed-roles="STUDENT,PROFESSIONAL,SUPER_ADMIN,MAINTENANCE,ADMIN"></script>
   <nav class="navbar" id="navbar"></nav>
 
   <div class="profile-layout">
@@ -202,7 +202,7 @@
 
         // Role-based avatar color
         const avatar = document.getElementById('profileAvatar');
-        if (data.role === 'PROFESSIONAL') {
+        if (data.role === 'PROFESSIONAL' || data.role === 'SUPER_ADMIN') {
           avatar.style.background = 'linear-gradient(135deg, #a78bfa, #7c3aed)';
         }
 
@@ -509,7 +509,7 @@
       const deptWrap  = document.getElementById('fieldDeptWrap');
       const yearWrap  = document.getElementById('fieldYearWrap');
 
-      if (role === 'PROFESSIONAL') {
+      if (role === 'PROFESSIONAL' || role === 'SUPER_ADMIN') {
         deptLabel.textContent = 'Specialization';
         deptInput.placeholder = 'e.g. Clinical Psychology';
         yearLabel.textContent = 'License / PRC No.';
@@ -521,7 +521,10 @@
     function formatRole(role) {
       const map = {
         'STUDENT': 'Student',
-        'PROFESSIONAL': 'Psychometrician'
+        'PROFESSIONAL': 'Mental Health Professional',
+        'SUPER_ADMIN': 'Mental Health Professional',
+        'MAINTENANCE': 'System Maintenance (IT Developer)',
+        'ADMIN': 'System Administrator'
       };
       return map[role] || role;
     }

@@ -369,11 +369,10 @@ public class FileImportService {
                 sheet.setColumnWidth(i, 6000);
             }
 
-            // Sample rows for mental health professionals
+            // Sample rows for mental health professionals (Psychologist, Psychometrician)
             String[][] samples = {
                     {"PROF-001", "Dr. Clara Reyes, RPsy", "clara.reyes@ustp.edu.ph", "Psychologist", "PROFESSIONAL"},
-                    {"PROF-002", "Ms. Sarah Santos, RPM", "sarah.santos@ustp.edu.ph", "Psychometrician", "PROFESSIONAL"},
-                    {"PROF-003", "Mr. John Tan", "john.tan@ustp.edu.ph", "Guidance Counselor", "PROFESSIONAL"}
+                    {"PROF-002", "Ms. Sarah Santos, RPM", "sarah.santos@ustp.edu.ph", "Psychometrician", "PROFESSIONAL"}
             };
             for (int r = 0; r < samples.length; r++) {
                 Row row = sheet.createRow(r + 1);
@@ -400,7 +399,6 @@ public class FileImportService {
                 Institutional ID,Full Name,Email,Department,Role
                 PROF-001,Dr. Clara Reyes,clara.reyes@ustp.edu.ph,Psychologist,PROFESSIONAL
                 PROF-002,Ms. Sarah Santos,sarah.santos@ustp.edu.ph,Psychometrician,PROFESSIONAL
-                PROF-003,Mr. John Tan,john.tan@ustp.edu.ph,Guidance Counselor,PROFESSIONAL
                 """;
     }
 }

@@ -48,7 +48,7 @@ public class User {
     @Column(length = 200)
     private String email;
 
-    /** Mobile/Phone number for SMS alerts and account recovery. */
+    /** Contact phone number. */
     @Column(length = 30)
     private String phoneNumber;
 

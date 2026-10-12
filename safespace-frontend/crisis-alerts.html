@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="css/alerts.css">
 </head>
 <body>
-  <script src="js/auth-guard.js" data-page="crisis-alerts" data-allowed-roles="PROFESSIONAL"></script>
+  <script src="js/auth-guard.js" data-page="crisis-alerts" data-allowed-roles="PROFESSIONAL,SUPER_ADMIN,ADMIN"></script>
   <nav class="navbar" id="navbar"></nav>
 
   <div class="alerts-layout">
@@ -96,6 +96,22 @@
     </div>
   </div>
 
+  <!-- Conflict / In-Progress Notice Modal -->
+  <div class="modal-backdrop" id="conflictModal">
+    <div class="modal-box" style="max-width:440px;">
+      <div style="width:48px;height:48px;border-radius:50%;background:#fef3c7;color:#d97706;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto 0.75rem;">
+        <i class="fas fa-user-lock"></i>
+      </div>
+      <h3 id="conflictModalTitle" style="text-align:center;font-size:1.1rem;color:#1e293b;margin-bottom:0.5rem;">Session In Progress</h3>
+      <div style="font-size:0.85rem;color:#475569;line-height:1.5;text-align:center;margin-bottom:1.25rem;" id="conflictModalMessage">
+        Notice text
+      </div>
+      <div class="modal-btns" style="justify-content:center;">
+        <button class="confirm" style="background:#4f46e5;width:100%;" onclick="closeConflictModal()">I Understand</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const API_BASE = window.SAFE_SPACE_API_URL || (window.location.protocol === 'file:' || window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:8080/api' : 'https://safespace-backend-ws0m.onrender.com/api');
     const API = API_BASE + '/alerts';
@@ -130,6 +146,7 @@
         });
       });
 
+      loadColleagueDirectory();
       loadStats();
       loadActiveAlerts();
 
@@ -223,16 +240,65 @@
       } catch (e) { console.warn('History error:', e); }
     }
 
+    // Cache colleagues directory so all assigned professionals display by their real name & credentials
+    const staffDirectory = {
+      'psychologist': 'Dr. Clara Reyes, RPsy',
+      'psychometrician': 'Lead Psychometrician, RPM',
+      'maintenance': 'System Maintenance Engineer'
+    };
+    let colleagueDirectory = { ...staffDirectory };
+
+    async function loadColleagueDirectory() {
+      try {
+        const res = await SafeSpaceAuth.authFetch(API_BASE + '/auth/colleagues');
+        if (res.ok) {
+          const list = await res.json();
+          list.forEach(c => {
+            if (c.username && c.fullName) {
+              colleagueDirectory[c.username] = c.fullName;
+            }
+          });
+        }
+      } catch (e) { /* ignore */ }
+    }
+
+    function formatStaffName(username, fullName) {
+      if (fullName && fullName.trim() && fullName !== username) {
+        return fullName;
+      }
+      if (colleagueDirectory[username]) {
+        return colleagueDirectory[username];
+      }
+      return username ? (username.charAt(0).toUpperCase() + username.slice(1)) : 'Assigned Clinician';
+    }
+
     // ── Alert Card ──
     function buildAlertCard(a, showActions) {
       const sevIcon = { CRITICAL: 'fa-skull-crossbones', HIGH: 'fa-triangle-exclamation', MODERATE: 'fa-exclamation', LOW: 'fa-info-circle', INFO: 'fa-info' };
       const typeLabels = {
-        CRISIS_POST: 'Crisis Post', HIGH_ENERGY_POST: 'High Energy',
+        CRISIS_POST: 'Crisis Post', HIGH_ENERGY_POST: 'High Energy Post',
         CRISIS_CHAT: 'Crisis Chat', REPEAT_CRISIS: 'Repeat Crisis',
-        ENERGY_SPIKE: 'Energy Spike', SYSTEM_EVENT: 'System'
+        ENERGY_SPIKE: 'Energy Spike', SYSTEM_EVENT: 'System Event'
       };
       const canAck = showActions && a.status === 'ACTIVE';
       const canResolve = showActions && (a.status === 'ACTIVE' || a.status === 'ACKNOWLEDGED');
+
+      // Bottom Caseworker Assignment & Student Details Banner
+      let bannerClass = 'unassigned';
+      let assignmentText = '<span><i class="fas fa-triangle-exclamation"></i> <strong>Unassigned</strong> — Awaiting clinician response</span>';
+      let timestampText = '';
+
+      if (a.resolvedBy) {
+        bannerClass = 'resolved';
+        const staffName = formatStaffName(a.resolvedBy, a.resolvedByName);
+        assignmentText = `<span><i class="fas fa-circle-check"></i> Resolved by: <strong>${escapeHtml(staffName)}</strong></span>`;
+        if (a.resolvedAt) timestampText = `<i class="far fa-clock"></i> Resolved ${timeAgo(a.resolvedAt)}`;
+      } else if (a.acknowledgedBy) {
+        bannerClass = 'acknowledged';
+        const staffName = formatStaffName(a.acknowledgedBy, a.acknowledgedByName);
+        assignmentText = `<span><i class="fas fa-user-check"></i> Assigned &amp; Monitored by: <strong>${escapeHtml(staffName)}</strong></span>`;
+        if (a.acknowledgedAt) timestampText = `<i class="far fa-clock"></i> Claimed ${timeAgo(a.acknowledgedAt)}`;
+      }
 
       return `
         <div class="alert-card sev-${a.severity}">
@@ -244,25 +310,48 @@
               <div class="alert-title">${escapeHtml(a.title)}</div>
               <div class="alert-time">${timeAgo(a.createdAt)}</div>
             </div>
-            <div class="alert-msg">${escapeHtml(a.message)}</div>
+
+            <!-- Student Post / Message Excerpt -->
+            ${a.message ? `
+            <div class="alert-msg-box">
+              <div class="alert-msg">"${escapeHtml(a.message)}"</div>
+            </div>` : ''}
+
+            <!-- Clinical Signals & Status Tags -->
             <div class="alert-meta">
               <span class="alert-tag type">${typeLabels[a.alertType] || a.alertType}</span>
               <span class="alert-tag sev-${a.severity?.toLowerCase()}">${a.severity}</span>
               ${a.emotionTag ? `<span class="alert-tag emotion">${getEmoji(a.emotionTag)} ${a.emotionTag}</span>` : ''}
-              ${a.energyScore ? `<span class="alert-tag type">⚡ ${a.energyScore}/10</span>` : ''}
-              ${a.pseudonym ? `<span class="alert-tag type">👤 ${escapeHtml(a.pseudonym)}</span>` : ''}
+              ${a.energyScore ? `<span class="alert-tag type">⚡ ${a.energyScore}/10 Energy</span>` : ''}
               <span class="alert-tag status-${a.status?.toLowerCase()}">${a.status}</span>
-              ${a.acknowledgedBy ? `<span class="alert-tag type">👁 ${a.acknowledgedBy}</span>` : ''}
-              ${a.resolvedBy ? `<span class="alert-tag type">✓ ${a.resolvedBy}</span>` : ''}
             </div>
-            ${a.resolutionNotes ? `<div style="margin-top:0.4rem;font-size:0.72rem;color:#6b7280;font-style:italic;">📝 ${escapeHtml(a.resolutionNotes)}</div>` : ''}
+
+            <!-- Dedicated Bottom Report Details: Student + Assigned Clinician -->
+            <div class="alert-assigned-banner ${bannerClass}">
+              <div class="assigned-lead">
+                <span class="alert-tag student-tag"><i class="fas fa-user-shield"></i> Student: <strong>${escapeHtml(a.pseudonym || 'Anonymous')}</strong></span>
+                ${assignmentText}
+              </div>
+              ${timestampText ? `<div class="assigned-time">${timestampText}</div>` : ''}
+            </div>
+
+            <!-- Resolution Notes (if any) -->
+            ${a.resolutionNotes ? `
+            <div class="alert-notes-box">
+              <i class="fas fa-clipboard-check"></i>
+              <div class="notes-content">
+                <span class="notes-label">Resolution Notes:</span>
+                ${escapeHtml(a.resolutionNotes)}
+              </div>
+            </div>` : ''}
           </div>
+
           ${(canAck || canResolve) ? `
           <div class="alert-actions">
             ${canAck ? `<button class="btn-alert ack" onclick="acknowledgeAlert('${a.alertId}')"><i class="fas fa-eye"></i> Ack</button>` : ''}
             ${canResolve ? `<button class="btn-alert resolve" onclick="openResolve('${a.alertId}','resolve')"><i class="fas fa-check"></i> Resolve</button>` : ''}
             ${canResolve ? `<button class="btn-alert escalate" onclick="openResolve('${a.alertId}','escalate')"><i class="fas fa-arrow-up"></i> Escalate</button>` : ''}
-            ${(canResolve && a.pseudonym) ? `<button class="btn-alert chat" onclick="initiateChatFromAlert('${a.alertId}')"><i class="fas fa-comments"></i> Chat</button>` : ''}
+            ${(canResolve && a.pseudonym) ? `<button class="btn-alert chat" onclick="initiateChatFromAlert('${a.alertId}')"><i class="fas fa-hand-holding-heart"></i> Reach Out</button>` : ''}
           </div>` : ''}
         </div>
       `;
@@ -297,6 +386,16 @@
       pendingAction = null;
     }
 
+    function showConflictModal(title, htmlMessage) {
+      document.getElementById('conflictModalTitle').textContent = title;
+      document.getElementById('conflictModalMessage').innerHTML = htmlMessage;
+      document.getElementById('conflictModal').classList.add('active');
+    }
+
+    function closeConflictModal() {
+      document.getElementById('conflictModal').classList.remove('active');
+    }
+
     async function confirmAction() {
       if (!pendingAction) return;
       const notes = document.getElementById('modalNotes').value;
@@ -313,7 +412,7 @@
       }
     }
 
-    // ── Initiate Chat from Alert ──
+    // ── Initiate Chat / Outreach from Alert ──
     async function initiateChatFromAlert(alertId) {
       try {
         const fullName = SafeSpaceAuth.getFullName() || SafeSpaceAuth.getUsername() || 'Counselor';
@@ -323,18 +422,59 @@
         });
         if (!res.ok) {
           const err = await res.json();
-          showToast(err.error || 'Failed to start chat.');
+          showToast(err.error || 'Failed to reach out.');
           return;
         }
         const data = await res.json();
-        showToast('Chat session created ✓ Redirecting...');
-        // Redirect to the anonymous chat page with the session ID
+
+        if (data.status === 'already_active_with_other') {
+          showConflictModal(
+            'Active Counseling in Progress',
+            `This student is currently in an active 1-on-1 counseling session with <strong>${escapeHtml(data.professionalName)}</strong>.<br><br>To protect student privacy and avoid conflicting guidance, only one professional can conduct a session at a time.`
+          );
+          return;
+        }
+
+        if (data.status === 'already_invited_by_other') {
+          showConflictModal(
+            'Outreach Invitation Pending',
+            `An outreach invitation has already been sent to this student by <strong>${escapeHtml(data.professionalName)}</strong>.<br><br>We are currently awaiting the student's response.`
+          );
+          return;
+        }
+
+        if (data.status === 'invite_sent') {
+          showToast('Outreach invitation sent to student ✓ (Waiting for student to accept)');
+          loadActiveAlerts();
+          loadStats();
+          SafeSpaceAuth.refreshBadges?.();
+          return;
+        }
+
+        if (data.status === 'claimed_waiting') {
+          showToast('Connected to student\'s waiting chat session ✓ Redirecting...');
+          setTimeout(() => {
+            window.location.href = `anon-chat.html?session=${data.sessionId}`;
+          }, 700);
+          return;
+        }
+
+        if (data.status === 'resumed_active') {
+          showToast('Resuming active counseling session ✓ Redirecting...');
+          setTimeout(() => {
+            window.location.href = `anon-chat.html?session=${data.sessionId}`;
+          }, 700);
+          return;
+        }
+
+        // Fallback / legacy status
+        showToast('Connecting to chat session...');
         setTimeout(() => {
           window.location.href = `anon-chat.html?session=${data.sessionId}`;
-        }, 800);
+        }, 700);
       } catch (e) {
         console.warn('Chat initiation error:', e);
-        showToast('Failed to initiate chat. Try again.');
+        showToast('Failed to reach out. Try again.');
       }
     }
 
