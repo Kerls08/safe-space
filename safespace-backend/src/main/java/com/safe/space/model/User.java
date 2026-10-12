@@ -96,4 +96,8 @@ public class User {
     /** Account locked until this timestamp (null = not locked). */
     @Column
     private LocalDateTime lockedUntil;
+
+    /** Persistent active session token (survives dev server restarts). */
+    @Column(length = 100)
+    private String sessionToken;
 }

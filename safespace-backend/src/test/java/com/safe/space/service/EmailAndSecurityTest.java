@@ -251,5 +251,53 @@ class EmailAndSecurityTest {
                 anyString()
         );
     }
+
+    @Test
+    @DisplayName("CredentialService: Session token persistence survives simulated server restart")
+    void testSessionTokenPersistenceAndServerRestartRecovery() {
+        String testToken = "test-token-uuid-1234";
+        User activeUser = User.builder()
+                .institutionalId("2024-STU-003")
+                .username("persistedstudent")
+                .fullName("Alex Rivera")
+                .role("STUDENT")
+                .active(true)
+                .sessionToken(testToken)
+                .build();
+
+        when(userRepository.findBySessionToken(testToken)).thenReturn(Optional.of(activeUser));
+
+        // Create new service instance with EMPTY in-memory token cache (simulating server restart)
+        CredentialService freshService = new CredentialService(userRepository, emailService, null);
+
+        // Before fallback, memory is empty, but validateToken recovers user from DB
+        String validatedUsername = freshService.validateToken(testToken);
+        assertEquals("persistedstudent", validatedUsername);
+
+        // Subsequent lookup hits the re-populated memory cache
+        assertEquals("persistedstudent", freshService.validateToken(testToken));
+    }
+
+    @Test
+    @DisplayName("CredentialService: Logout clears session token from both memory and DB")
+    void testLogoutClearsDatabaseSessionToken() {
+        String testToken = "logout-token-uuid-5678";
+        User activeUser = User.builder()
+                .institutionalId("2024-STU-004")
+                .username("loggingoutstudent")
+                .fullName("Sam Cruz")
+                .role("STUDENT")
+                .active(true)
+                .sessionToken(testToken)
+                .build();
+
+        when(userRepository.findBySessionToken(testToken)).thenReturn(Optional.of(activeUser));
+
+        CredentialService service = new CredentialService(userRepository, emailService, null);
+        service.logout(testToken);
+
+        assertNull(activeUser.getSessionToken());
+        verify(userRepository, times(1)).save(activeUser);
+    }
 }
 

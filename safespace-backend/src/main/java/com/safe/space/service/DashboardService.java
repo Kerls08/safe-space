@@ -204,10 +204,11 @@ public class DashboardService {
             }
         }
 
-        // Sort: critical first, then high, then moderate; within same severity by newest
+        // Sort: newest first by timestamp so incoming alerts appear on top
         alerts.sort((a, b) -> {
-            int sevOrder = severityOrder(a.getSeverity()) - severityOrder(b.getSeverity());
-            if (sevOrder != 0) return sevOrder;
+            if (a.getTimestamp() == null && b.getTimestamp() == null) return 0;
+            if (a.getTimestamp() == null) return 1;
+            if (b.getTimestamp() == null) return -1;
             return b.getTimestamp().compareTo(a.getTimestamp());
         });
 

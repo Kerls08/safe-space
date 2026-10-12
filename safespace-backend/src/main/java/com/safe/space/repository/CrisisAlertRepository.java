@@ -18,18 +18,12 @@ public interface CrisisAlertRepository extends JpaRepository<CrisisAlert, Long> 
 
        List<CrisisAlert> findByStatusInOrderByCreatedAtDesc(List<String> statuses);
 
-       /** Active alerts sorted by severity (CRITICAL first) then newest. */
-       @Query("SELECT a FROM CrisisAlert a WHERE a.status = 'ACTIVE' ORDER BY " +
-                     "CASE a.severity WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MODERATE' THEN 2 WHEN 'LOW' THEN 3 ELSE 4 END, "
-                     +
-                     "a.createdAt DESC")
+       /** Active alerts sorted newest first so incoming crisis notifications always appear on top. */
+       @Query("SELECT a FROM CrisisAlert a WHERE a.status = 'ACTIVE' ORDER BY a.createdAt DESC")
        List<CrisisAlert> findActiveAlertsPrioritized();
 
-       /** All unresolved alerts (ACTIVE + ACKNOWLEDGED). */
-       @Query("SELECT a FROM CrisisAlert a WHERE a.status IN ('ACTIVE','ACKNOWLEDGED') ORDER BY " +
-                     "CASE a.severity WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MODERATE' THEN 2 WHEN 'LOW' THEN 3 ELSE 4 END, "
-                     +
-                     "a.createdAt DESC")
+       /** All unresolved alerts (ACTIVE + ACKNOWLEDGED) sorted newest first. */
+       @Query("SELECT a FROM CrisisAlert a WHERE a.status IN ('ACTIVE','ACKNOWLEDGED') ORDER BY a.createdAt DESC")
        List<CrisisAlert> findUnresolvedAlertsPrioritized();
 
        // ── Counting ──

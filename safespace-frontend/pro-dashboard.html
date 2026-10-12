@@ -280,6 +280,14 @@
       badge.textContent = data.totalAlerts + ' alert' + (data.totalAlerts > 1 ? 's' : '');
       list.innerHTML = '';
 
+      if (Array.isArray(data.alerts)) {
+        data.alerts.sort((a, b) => {
+          const tA = parseDateString(a.timestamp)?.getTime() || 0;
+          const tB = parseDateString(b.timestamp)?.getTime() || 0;
+          return tB - tA;
+        });
+      }
+
       data.alerts.forEach(a => {
         const icon = a.alertType === 'flagged_post' ? 'fa-flag' : a.alertType === 'crisis_chat' ? 'fa-comment-medical' : 'fa-bolt';
         const typeLabel = a.alertType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());

@@ -150,11 +150,11 @@
       loadStats();
       loadActiveAlerts();
 
-      // Auto-refresh every 15 seconds
+      // Auto-refresh every 15 seconds (silent background refresh)
       setInterval(() => {
-        loadStats();
+        loadStats(true);
         const activePanel = document.querySelector('.alert-panel.active');
-        if (activePanel && activePanel.id === 'panelActive') loadActiveAlerts();
+        if (activePanel && activePanel.id === 'panelActive') loadActiveAlerts(true);
       }, 15000);
     });
 
@@ -173,9 +173,9 @@
 
     // ── Load Stats ──
     let cachedActiveAlerts = [];
-    async function loadStats() {
+    async function loadStats(silent = false) {
       try {
-        const res = await SafeSpaceAuth.authFetch(`${API}/stats`);
+        const res = await SafeSpaceAuth.authFetch(`${API}/stats`, { silent });
         const s = await res.json();
         document.getElementById('statActive').textContent = s.active || 0;
         document.getElementById('statCritical').textContent = s.todayCritical || 0;
@@ -184,10 +184,17 @@
     }
 
     // ── Load Active Alerts ──
-    async function loadActiveAlerts() {
+    async function loadActiveAlerts(silent = false) {
       try {
-        const res = await SafeSpaceAuth.authFetch(API);
+        const res = await SafeSpaceAuth.authFetch(API, { silent });
         cachedActiveAlerts = await res.json();
+        if (Array.isArray(cachedActiveAlerts)) {
+          cachedActiveAlerts.sort((a, b) => {
+            const tA = parseDateString(a.createdAt)?.getTime() || 0;
+            const tB = parseDateString(b.createdAt)?.getTime() || 0;
+            return tB - tA;
+          });
+        }
 
         const badge = document.getElementById('activeCount');
         badge.textContent = cachedActiveAlerts.length;
@@ -216,6 +223,13 @@
       try {
         const res = await SafeSpaceAuth.authFetch(`${API}/unresolved`);
         const alerts = await res.json();
+        if (Array.isArray(alerts)) {
+          alerts.sort((a, b) => {
+            const tA = parseDateString(a.createdAt)?.getTime() || 0;
+            const tB = parseDateString(b.createdAt)?.getTime() || 0;
+            return tB - tA;
+          });
+        }
         const container = document.getElementById('unresolvedContainer');
         if (alerts.length === 0) {
           container.innerHTML = '<div class="alerts-empty"><i class="fas fa-check-double" style="color:#10b981;"></i><p>No unresolved alerts</p></div>';
@@ -231,6 +245,13 @@
         const statusParam = currentHistoryFilter !== 'ALL' ? `?status=${currentHistoryFilter}` : '';
         const res = await SafeSpaceAuth.authFetch(`${API}/history${statusParam}`);
         const alerts = await res.json();
+        if (Array.isArray(alerts)) {
+          alerts.sort((a, b) => {
+            const tA = parseDateString(a.createdAt)?.getTime() || 0;
+            const tB = parseDateString(b.createdAt)?.getTime() || 0;
+            return tB - tA;
+          });
+        }
         const container = document.getElementById('historyContainer');
         if (alerts.length === 0) {
           container.innerHTML = '<div class="alerts-empty"><i class="fas fa-clock-rotate-left" style="color:#6366f1;"></i><p>No alert history found</p></div>';

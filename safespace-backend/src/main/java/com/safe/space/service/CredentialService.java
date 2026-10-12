@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -53,8 +54,8 @@ public class CredentialService {
     private static final int GENERATED_PASSWORD_LENGTH = 8;
     private static final int MIN_PASSWORD_LENGTH = 8;
 
-    // Simple in-memory token store (would be JWT/Redis in production)
-    private final Map<String, String> activeTokens = new HashMap<>();
+    // Thread-safe in-memory token store with database fallback
+    private final Map<String, String> activeTokens = new ConcurrentHashMap<>();
 
     // ── 1. Authentication ──
 
@@ -100,10 +101,11 @@ public class CredentialService {
         user.setFailedAttempts(0);
         user.setLockedUntil(null);
         user.setLastLoginAt(LocalDateTime.now());
-        userRepository.save(user);
 
-        // Generate session token
+        // Generate session token & persist to DB to survive server restarts
         String token = UUID.randomUUID().toString();
+        user.setSessionToken(token);
+        userRepository.save(user);
         activeTokens.put(token, user.getUsername());
 
         log.info("Login successful: username={}, role={}, forceChange={}",
@@ -450,7 +452,7 @@ public class CredentialService {
         if (targetUsername == null || targetUsername.isBlank()) {
             throw new IllegalArgumentException("Target username is required.");
         }
-        if (("admin".equalsIgnoreCase(targetUsername) || "maintenance".equalsIgnoreCase(targetUsername))
+        if ("maintenance".equalsIgnoreCase(targetUsername)
                 && !"MAINTENANCE".equalsIgnoreCase(newRole) && !"ADMIN".equalsIgnoreCase(newRole)) {
             throw new IllegalArgumentException("Cannot change role of primary system infrastructure account.");
         }
@@ -638,8 +640,8 @@ public class CredentialService {
     public void deleteUser(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new NoSuchElementException("User not found: " + username));
-        if ("ADMIN".equals(user.getRole()) && "admin".equalsIgnoreCase(user.getUsername())) {
-            throw new IllegalArgumentException("Cannot delete primary system administrator account.");
+        if ("MAINTENANCE".equalsIgnoreCase(user.getRole()) && "maintenance".equalsIgnoreCase(user.getUsername())) {
+            throw new IllegalArgumentException("Cannot delete primary system maintenance account.");
         }
         activeTokens.entrySet().removeIf(entry -> username.equals(entry.getValue()));
         userRepository.delete(user);
@@ -829,11 +831,30 @@ public class CredentialService {
     // ── Token Validation ──
 
     public String validateToken(String token) {
-        return activeTokens.get(token);
+        if (token == null || token.isBlank()) return null;
+        String username = activeTokens.get(token);
+        if (username != null) return username;
+
+        // Fallback to database lookup if server was restarted
+        Optional<User> userOpt = userRepository.findBySessionToken(token);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            if (user.isActive()) {
+                activeTokens.put(token, user.getUsername());
+                return user.getUsername();
+            }
+        }
+        return null;
     }
 
+    @Transactional
     public void logout(String token) {
+        if (token == null || token.isBlank()) return;
         activeTokens.remove(token);
+        userRepository.findBySessionToken(token).ifPresent(user -> {
+            user.setSessionToken(null);
+            userRepository.save(user);
+        });
     }
 
     public int getActiveTokenCount() {

@@ -52,13 +52,17 @@ const SafeSpaceAuth = (() => {
     const res = await fetch(url, options);
 
     if (res.status === 401) {
-      clearSession();
-      window.location.href = 'landing.html';
+      if (!options.silent) {
+        clearSession();
+        window.location.href = 'landing.html';
+      }
       throw new Error('Session expired. Redirecting to login.');
     }
 
     if (res.status === 403) {
-      showAccessDenied();
+      if (!options.silent) {
+        showAccessDenied();
+      }
       throw new Error('Access denied.');
     }
 
@@ -543,6 +547,10 @@ const SafeSpaceAuth = (() => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token })
       });
+      if (!res.ok) {
+        // Server might be temporarily reloading or under maintenance — do not kick user out
+        return;
+      }
       const data = await res.json();
       if (!data.valid) {
         clearSession();

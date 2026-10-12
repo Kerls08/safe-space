@@ -42,6 +42,16 @@ public class DefaultAdminSeeder implements ApplicationRunner {
         String psychometricianEmail = (alertEmailOverride != null && !alertEmailOverride.isBlank()) ? alertEmailOverride.trim() : "psychometrician@safespace.edu";
         String psychologistEmail = (alertEmailOverride != null && !alertEmailOverride.isBlank()) ? alertEmailOverride.trim() : "psychologist@safespace.edu";
 
+        // Purge legacy "admin" / "ADMIN-001" account if present in the database
+        userRepository.findByUsername("admin").ifPresent(legacy -> {
+            log.info("Purging legacy admin account: username={}, id={}", legacy.getUsername(), legacy.getInstitutionalId());
+            userRepository.delete(legacy);
+        });
+        userRepository.findByInstitutionalId("ADMIN-001").ifPresent(legacy -> {
+            log.info("Purging legacy admin account by institutionalId: {}", legacy.getInstitutionalId());
+            userRepository.delete(legacy);
+        });
+
         // 1. Maintenance (IT / Developer - Infrastructure & Telemetry)
         seedUser("IT-DEV-001", "maintenance", "System Maintenance Engineer", "maintenance@safespace.edu",
                 "IT & Platform Services", null, "MAINTENANCE", encodedPassword);
@@ -70,7 +80,19 @@ public class DefaultAdminSeeder implements ApplicationRunner {
                 existing.setInstitutionalId(institutionalId);
                 existing.setUsername(username);
                 existing.setFullName(fullName);
-                existing.setEmail(email);
+                // Preserve custom real email if set by administrator; only overwrite if empty or default placeholder
+                boolean isDefaultPlaceholder = existing.getEmail() == null
+                        || existing.getEmail().isBlank()
+                        || existing.getEmail().endsWith("@safespace.edu");
+                String alertEmailOverride = System.getenv("PROFESSIONAL_ALERT_EMAIL");
+                if (alertEmailOverride == null || alertEmailOverride.isBlank()) {
+                    alertEmailOverride = System.getProperty("PROFESSIONAL_ALERT_EMAIL");
+                }
+                boolean hasExplicitOverride = alertEmailOverride != null && !alertEmailOverride.isBlank();
+
+                if (isDefaultPlaceholder || hasExplicitOverride) {
+                    existing.setEmail(email);
+                }
                 existing.setDepartment(department);
                 existing.setYearLevel(yearLevel);
                 existing.setRole(role);
