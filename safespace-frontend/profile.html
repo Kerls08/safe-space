@@ -271,6 +271,8 @@
         // Update stored session data
         localStorage.setItem('ss_fullName', data.fullName);
         localStorage.setItem('ss_username', data.username);
+        sessionStorage.setItem('ss_fullName', data.fullName);
+        sessionStorage.setItem('ss_username', data.username);
 
         showToast('Profile updated successfully ✓');
       } catch (err) {

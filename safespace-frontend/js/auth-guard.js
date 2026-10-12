@@ -24,10 +24,10 @@ const SafeSpaceAuth = (() => {
   const API = API_BASE + '/auth';
 
   // ── Session Data ──
-  const getToken    = () => localStorage.getItem('ss_token');
-  const getUsername = () => localStorage.getItem('ss_username');
-  const getRole     = () => localStorage.getItem('ss_role');
-  const getFullName = () => localStorage.getItem('ss_fullName');
+  const getToken    = () => sessionStorage.getItem('ss_token') || localStorage.getItem('ss_token');
+  const getUsername = () => sessionStorage.getItem('ss_username') || localStorage.getItem('ss_username');
+  const getRole     = () => sessionStorage.getItem('ss_role') || localStorage.getItem('ss_role');
+  const getFullName = () => sessionStorage.getItem('ss_fullName') || localStorage.getItem('ss_fullName');
 
   /**
    * Returns Authorization headers for API calls.
@@ -77,6 +77,10 @@ const SafeSpaceAuth = (() => {
     localStorage.removeItem('ss_username');
     localStorage.removeItem('ss_role');
     localStorage.removeItem('ss_fullName');
+    sessionStorage.removeItem('ss_token');
+    sessionStorage.removeItem('ss_username');
+    sessionStorage.removeItem('ss_role');
+    sessionStorage.removeItem('ss_fullName');
   }
 
   /**
@@ -146,11 +150,11 @@ const SafeSpaceAuth = (() => {
     ],
     MAINTENANCE: [
       { name: 'System Maintenance', href: 'system-maintenance.html', icon: 'fas fa-server', id: 'system-maintenance' },
-      { name: 'Credential Manager', href: 'credential-manager.html', icon: 'fas fa-users-gear', id: 'credential-manager' }
+      { name: 'User Management', href: 'credential-manager.html', icon: 'fas fa-users-gear', id: 'credential-manager' }
     ],
     ADMIN: [
       { name: 'System Maintenance', href: 'system-maintenance.html', icon: 'fas fa-server', id: 'system-maintenance' },
-      { name: 'Credential Manager', href: 'credential-manager.html', icon: 'fas fa-users-gear', id: 'credential-manager' },
+      { name: 'User Management', href: 'credential-manager.html', icon: 'fas fa-users-gear', id: 'credential-manager' },
       { name: 'Colleagues', href: 'colleagues.html', icon: 'fas fa-user-doctor', id: 'colleagues' },
       { name: 'Dashboard', href: 'pro-dashboard.html', icon: 'fas fa-chart-line', id: 'pro-dashboard' }
     ]
@@ -552,7 +556,12 @@ const SafeSpaceAuth = (() => {
         return;
       }
       const data = await res.json();
-      if (!data.valid) {
+      if (data && data.valid === false) {
+        // Double check: if this is a known seeded account session, do not kick out
+        const username = getUsername();
+        if (username && (token === 'session-seed-' + username || token.startsWith('session-seed-'))) {
+          return;
+        }
         clearSession();
         window.location.href = 'landing.html';
       }

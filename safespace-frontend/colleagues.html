@@ -601,7 +601,7 @@
         </div>
         <div class="colleagues-header-actions">
           <button class="dash-btn-primary" id="btnRegisterColleagueHeader" onclick="openRegisterColleagueModal()" style="display:none;">
-            <i class="fas fa-user-plus"></i> Add Colleague
+            <i class="fas fa-user-plus"></i> Add Team Member
           </button>
           <button class="refresh-btn" id="refreshBtn" onclick="loadColleagues()">
             <i class="fas fa-rotate-right"></i> Refresh
@@ -680,19 +680,19 @@
   <div class="cred-modal-overlay" id="registerColleagueModal" style="display:none;">
     <div class="cred-modal" style="max-width:520px;">
       <div class="cred-modal-header">
-        <h3><i class="fas fa-user-plus" style="color:#161F36;"></i> Register Staff or Administrator</h3>
+        <h3><i class="fas fa-user-plus" style="color:#161F36;"></i> Register Guidance Colleague</h3>
         <button class="cred-modal-close" onclick="closeModal('registerColleagueModal')"><i class="fas fa-xmark"></i></button>
       </div>
       <div class="cred-modal-body" id="colleagueModalBody">
         <div class="auth-form" id="colleagueFormFields">
           <div class="form-group">
-            <label class="form-label">System Access Tier <span class="required-star">*</span></label>
+            <label class="form-label">Guidance Role / Responsibility <span class="required-star">*</span></label>
             <select class="form-input" id="colleagueAccountRole" onchange="handleAccountRoleChange()">
-              <option value="PROFESSIONAL" selected>Campus Professional (Staff Psychologist / Psychometrician)</option>
-              <option value="SUPER_ADMIN">Lead Psychometrician (Super Admin)</option>
+              <option value="PROFESSIONAL" selected>Counseling Staff (Psychologist / Psychometrician)</option>
+              <option value="SUPER_ADMIN">Guidance Supervisor (Lead Psychometrician)</option>
             </select>
             <span style="font-size:0.75rem;color:#64748b;margin-top:0.25rem;display:block;">
-              Lead Psychometricians receive administrative authority to manage colleagues and clinic operations.
+              Guidance Supervisors have clinical oversight authority to manage the team and clinic operations.
             </span>
           </div>
 
@@ -735,7 +735,7 @@
       <div class="cred-modal-footer" id="colleagueModalFooter">
         <button class="cred-btn cred-btn-outline" onclick="closeModal('registerColleagueModal')">Cancel</button>
         <button class="dash-btn-primary" id="colleagueSubmitBtn" onclick="submitRegisterColleague()" style="padding:0.65rem 1.3rem;">
-          <i class="fas fa-user-plus"></i> Register Member
+          <i class="fas fa-user-plus"></i> Add to Team
         </button>
       </div>
     </div>
@@ -1076,7 +1076,7 @@
     function handleAccountRoleChange() {
       const role = document.getElementById('colleagueAccountRole').value;
       const titleSelect = document.getElementById('colleagueTitle');
-      if (role === 'ADMIN' && titleSelect) {
+      if (role === 'SUPER_ADMIN' && titleSelect) {
         titleSelect.value = 'Psychometrician';
       }
     }
@@ -1101,7 +1101,7 @@
 
       const btn = document.getElementById('colleagueSubmitBtn');
       btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-user-plus"></i> Register Member';
+      btn.innerHTML = '<i class="fas fa-user-plus"></i> Add to Team';
 
       document.getElementById('registerColleagueModal').style.display = 'flex';
       setTimeout(() => {
@@ -1146,7 +1146,7 @@
       }
 
       btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Provisioning Member...';
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding to Team...';
 
       try {
         const body = {
@@ -1180,7 +1180,7 @@
             <div style="width:3.5rem;height:3.5rem;border-radius:50%;background:#DCFCE7;color:#15803d;display:inline-flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:0.75rem;">
               <i class="fas fa-circle-check"></i>
             </div>
-            <h4 style="font-size:1.15rem;font-weight:800;color:#166534;margin:0 0 0.4rem 0;">${(accountRole === 'SUPER_ADMIN' || accountRole === 'ADMIN') ? 'Lead Psychometrician' : 'Colleague'} Registered Successfully!</h4>
+            <h4 style="font-size:1.15rem;font-weight:800;color:#166534;margin:0 0 0.4rem 0;">${(accountRole === 'SUPER_ADMIN' || accountRole === 'ADMIN') ? 'Guidance Supervisor' : 'Team Member'} Registered Successfully!</h4>
             <p style="font-size:0.86rem;color:#15803d;margin:0;line-height:1.5;">
               A welcome email with login instructions has been sent to <strong>${escapeHtml(data.email || email)}</strong>.
             </p>
@@ -1235,7 +1235,7 @@
         loadColleagues();
       } catch (err) {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-user-plus"></i> Register Member';
+        btn.innerHTML = '<i class="fas fa-user-plus"></i> Add to Team';
         showCopyToast(err.message || 'Registration failed');
       }
     }

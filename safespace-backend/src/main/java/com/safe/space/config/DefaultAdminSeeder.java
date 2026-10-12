@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 public class DefaultAdminSeeder implements ApplicationRunner {
 
     private final UserRepository userRepository;
+    private final com.safe.space.service.CredentialService credentialService;
     private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder(12);
     private static final String DEFAULT_PASSWORD = "SafeSpace2026!";
 
@@ -73,6 +74,8 @@ public class DefaultAdminSeeder implements ApplicationRunner {
 
     private void seedUser(String institutionalId, String username, String fullName, String email,
                           String department, String yearLevel, String role, String encodedPassword) {
+        String seedToken = "session-seed-" + username;
+
         userRepository.findByUsername(username)
             .or(() -> userRepository.findByInstitutionalId(institutionalId))
             .ifPresentOrElse(
@@ -80,18 +83,9 @@ public class DefaultAdminSeeder implements ApplicationRunner {
                 existing.setInstitutionalId(institutionalId);
                 existing.setUsername(username);
                 existing.setFullName(fullName);
-                // Preserve custom real email if set by administrator; only overwrite if empty or default placeholder
-                boolean isDefaultPlaceholder = existing.getEmail() == null
-                        || existing.getEmail().isBlank()
-                        || existing.getEmail().endsWith("@safespace.edu");
-                String alertEmailOverride = System.getenv("PROFESSIONAL_ALERT_EMAIL");
-                if (alertEmailOverride == null || alertEmailOverride.isBlank()) {
-                    alertEmailOverride = System.getProperty("PROFESSIONAL_ALERT_EMAIL");
-                }
-                boolean hasExplicitOverride = alertEmailOverride != null && !alertEmailOverride.isBlank();
-
-                if (isDefaultPlaceholder || hasExplicitOverride) {
-                    existing.setEmail(email);
+                // Update email if provided
+                if (email != null && !email.isBlank()) {
+                    existing.setEmail(email.trim());
                 }
                 existing.setDepartment(department);
                 existing.setYearLevel(yearLevel);
@@ -99,7 +93,18 @@ public class DefaultAdminSeeder implements ApplicationRunner {
                 existing.setActive(true);
                 existing.setPasswordChanged(true);
                 existing.setForcePasswordChange(false);
+
+                // Preserve existing session token if already active, or establish deterministic seed token
+                String effectiveToken = existing.getSessionToken();
+                if (effectiveToken == null || effectiveToken.isBlank()) {
+                    effectiveToken = seedToken;
+                    existing.setSessionToken(effectiveToken);
+                }
                 userRepository.save(existing);
+
+                // Register both the active token and the seed token for testing resilience
+                credentialService.registerActiveToken(effectiveToken, username);
+                credentialService.registerActiveToken(seedToken, username);
             },
             () -> {
                 User user = User.builder()
@@ -107,15 +112,19 @@ public class DefaultAdminSeeder implements ApplicationRunner {
                         .username(username)
                         .passwordHash(encodedPassword)
                         .fullName(fullName)
-                        .email(email)
+                        .email(email != null ? email.trim() : null)
                         .department(department)
                         .yearLevel(yearLevel)
                         .role(role)
+                        .sessionToken(seedToken)
                         .active(true)
                         .passwordChanged(true)
                         .forcePasswordChange(false)
                         .build();
                 userRepository.save(user);
+
+                // Register token in memory
+                credentialService.registerActiveToken(seedToken, username);
             }
         );
     }

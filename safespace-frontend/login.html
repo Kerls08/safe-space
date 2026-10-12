@@ -456,7 +456,11 @@
         loginToken = data.token;
         loginUsername = data.username;
 
-        // Store session
+        // Store session in both sessionStorage and localStorage for multi-tab incognito resilience
+        sessionStorage.setItem('ss_token', data.token);
+        sessionStorage.setItem('ss_username', data.username);
+        sessionStorage.setItem('ss_role', data.role);
+        sessionStorage.setItem('ss_fullName', data.fullName);
         localStorage.setItem('ss_token', data.token);
         localStorage.setItem('ss_username', data.username);
         localStorage.setItem('ss_role', data.role);
