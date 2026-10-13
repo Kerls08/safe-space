@@ -94,26 +94,25 @@ public class SystemMaintenanceController {
     }
 
     /**
-     * Purge inactive session tokens from memory (Admin only).
+     * Scan database for stale trash and return preview with protected data counts (Admin only).
      */
-    @PostMapping("/purge-sessions")
-    public ResponseEntity<?> purgeSessions(HttpServletRequest request) {
+    @GetMapping("/cleanup/scan")
+    public ResponseEntity<?> scanDatabaseTrash(HttpServletRequest request) {
         String role = (String) request.getAttribute("auth.role");
-        String username = (String) request.getAttribute("auth.username");
         if (!isAdmin(role)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Access denied: System Administrator credentials required."));
         }
 
-        OperationResult result = maintenanceService.purgeInactiveSessions(username);
-        return ResponseEntity.ok(result);
+        DatabaseCleanupScanResponse scan = maintenanceService.scanDatabaseTrash();
+        return ResponseEntity.ok(scan);
     }
 
     /**
-     * Run live database health and integrity check (Admin only).
+     * Execute safe database cleanup of verified trash items (Admin only).
      */
-    @PostMapping("/db-check")
-    public ResponseEntity<?> runDatabaseCheck(HttpServletRequest request) {
+    @PostMapping("/cleanup/execute")
+    public ResponseEntity<?> executeDatabaseCleanup(HttpServletRequest request) {
         String role = (String) request.getAttribute("auth.role");
         String username = (String) request.getAttribute("auth.username");
         if (!isAdmin(role)) {
@@ -121,7 +120,7 @@ public class SystemMaintenanceController {
                     .body(Map.of("error", "Access denied: System Administrator credentials required."));
         }
 
-        OperationResult result = maintenanceService.runDatabaseCheck(username);
+        DatabaseCleanupResult result = maintenanceService.executeDatabaseCleanup(username);
         return ResponseEntity.ok(result);
     }
 
@@ -159,19 +158,21 @@ public class SystemMaintenanceController {
     }
 
     /**
-     * Download comprehensive JSON telemetry and diagnostics report (Admin only).
+     * Download CSV report of audit logs (Admin only).
      */
-    @GetMapping("/export-telemetry")
-    public ResponseEntity<?> exportTelemetry(HttpServletRequest request) {
+    @GetMapping("/audit-logs/export-csv")
+    public ResponseEntity<?> exportAuditLogsCsv(HttpServletRequest request) {
         String role = (String) request.getAttribute("auth.role");
-        String username = (String) request.getAttribute("auth.username");
         if (!isAdmin(role)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Access denied: System Administrator credentials required."));
         }
 
-        Map<String, Object> report = maintenanceService.exportTelemetryReport(username);
-        return ResponseEntity.ok(report);
+        String csvData = maintenanceService.exportAuditLogsCsv();
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"safespace-audit-logs.csv\"")
+                .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .body(csvData);
     }
 
     private boolean isAdmin(String role) {

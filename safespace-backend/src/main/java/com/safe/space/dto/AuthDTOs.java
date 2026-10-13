@@ -11,7 +11,7 @@ public class AuthDTOs {
 
     // ── Login ──
 
-    @Getter @Setter @NoArgsConstructor @AllArgsConstructor
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class LoginRequest {
         private String username;
         private String password;

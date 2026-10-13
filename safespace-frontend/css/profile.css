@@ -104,6 +104,11 @@
   z-index: 2;
 }
 
+body.has-student-bottom-nav .profile-content,
+body.has-pro-bottom-nav .profile-content {
+  margin-bottom: 5.5rem;
+}
+
 /* ── Cards ── */
 .profile-card {
   background: #FFFFFF;

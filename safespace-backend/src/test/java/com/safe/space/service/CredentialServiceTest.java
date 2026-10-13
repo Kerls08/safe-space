@@ -210,4 +210,147 @@ class CredentialServiceTest {
         org.mockito.Mockito.verify(userRepository).save(caller);
         org.mockito.Mockito.verify(eventPublisher).publishEvent(org.mockito.ArgumentMatchers.any(com.safe.space.event.AdminAuditEvent.class));
     }
+
+    @Test
+    @DisplayName("Should track failed attempts, decrement remaining attempts, and lock out for 60 seconds on 5th attempt")
+    void testFailedLoginAttemptsAndLockout() {
+        org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder encoder = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(12);
+        com.safe.space.model.User user = com.safe.space.model.User.builder()
+                .username("student1")
+                .institutionalId("2024-STU-001")
+                .passwordHash(encoder.encode("CorrectPassword1!"))
+                .role("STUDENT")
+                .active(true)
+                .failedAttempts(0)
+                .build();
+
+        org.mockito.Mockito.when(userRepository.findByUsernameIgnoreCase("2024-STU-001"))
+                .thenReturn(java.util.Optional.of(user));
+
+        com.safe.space.dto.AuthDTOs.LoginRequest badRequest = com.safe.space.dto.AuthDTOs.LoginRequest.builder()
+                .username("2024-STU-001")
+                .password("WrongPassword1!")
+                .build();
+
+        // Attempts 1 to 4: check decrements
+        for (int i = 1; i <= 4; i++) {
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                    credentialService.login(badRequest));
+            int expectedRemaining = 5 - i;
+            String word = expectedRemaining == 1 ? "attempt" : "attempts";
+            assertEquals("Invalid credentials. " + expectedRemaining + " " + word + " remaining.", ex.getMessage());
+            assertEquals(i, user.getFailedAttempts());
+            org.mockito.Mockito.verify(userRepository, org.mockito.Mockito.times(i)).saveAndFlush(user);
+        }
+
+        // Attempt 5: triggers lockout
+        com.safe.space.exception.AccountLockedException lockEx = assertThrows(
+                com.safe.space.exception.AccountLockedException.class,
+                () -> credentialService.login(badRequest)
+        );
+        assertEquals(60, lockEx.getSecondsRemaining());
+        assertTrue(lockEx.getMessage().contains("Too many failed attempts. Account locked for 1 minute."));
+        assertEquals(5, user.getFailedAttempts());
+        assertNotNull(user.getLockedUntil());
+
+        // Attempt 6 while still locked: throws AccountLockedException with remaining seconds
+        com.safe.space.exception.AccountLockedException activeLockEx = assertThrows(
+                com.safe.space.exception.AccountLockedException.class,
+                () -> credentialService.login(badRequest)
+        );
+        assertTrue(activeLockEx.getSecondsRemaining() > 0);
+        assertTrue(activeLockEx.getMessage().contains("Account locked. Try again in"));
+    }
+
+    @Test
+    @DisplayName("Should enforce brute force lockout on unknown identifiers after 5 failed attempts")
+    void testUnknownIdentifierBruteForceLockout() {
+        org.mockito.Mockito.when(userRepository.findByUsernameIgnoreCase("unknown-user"))
+                .thenReturn(java.util.Optional.empty());
+        org.mockito.Mockito.when(userRepository.findByInstitutionalIdIgnoreCase("unknown-user"))
+                .thenReturn(java.util.Optional.empty());
+        org.mockito.Mockito.when(userRepository.findByEmailIgnoreCase("unknown-user"))
+                .thenReturn(java.util.Optional.empty());
+
+        com.safe.space.dto.AuthDTOs.LoginRequest req = com.safe.space.dto.AuthDTOs.LoginRequest.builder()
+                .username("unknown-user")
+                .password("anyPassword1!")
+                .build();
+
+        // Attempts 1 to 4
+        for (int i = 1; i <= 4; i++) {
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                    credentialService.login(req));
+            int expectedRemaining = 5 - i;
+            String word = expectedRemaining == 1 ? "attempt" : "attempts";
+            assertEquals("Invalid credentials. " + expectedRemaining + " " + word + " remaining.", ex.getMessage());
+        }
+
+        // Attempt 5: triggers lockout
+        com.safe.space.exception.AccountLockedException lockEx = assertThrows(
+                com.safe.space.exception.AccountLockedException.class,
+                () -> credentialService.login(req)
+        );
+        assertEquals(60, lockEx.getSecondsRemaining());
+        assertTrue(lockEx.getMessage().contains("Too many failed attempts. Account locked for 1 minute."));
+    }
+
+    @Test
+    @DisplayName("Should automatically reset failed attempts and clear lockout after 60-second window expires")
+    void testLockoutExpirationReset() {
+        org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder encoder = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(12);
+        com.safe.space.model.User user = com.safe.space.model.User.builder()
+                .username("student1")
+                .institutionalId("2024-STU-002")
+                .passwordHash(encoder.encode("CorrectPassword1!"))
+                .role("STUDENT")
+                .active(true)
+                .failedAttempts(5)
+                .lockedUntil(java.time.LocalDateTime.now().minusSeconds(5))
+                .build();
+
+        org.mockito.Mockito.when(userRepository.findByUsernameIgnoreCase("2024-STU-002"))
+                .thenReturn(java.util.Optional.of(user));
+
+        com.safe.space.dto.AuthDTOs.LoginRequest badRequest = com.safe.space.dto.AuthDTOs.LoginRequest.builder()
+                .username("2024-STU-002")
+                .password("WrongPassword1!")
+                .build();
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                credentialService.login(badRequest));
+        assertEquals("Invalid credentials. 4 attempts remaining.", ex.getMessage());
+        assertEquals(1, user.getFailedAttempts());
+        assertNull(user.getLockedUntil());
+    }
+
+    @Test
+    @DisplayName("Should reset failed attempts and locked status upon successful login")
+    void testSuccessfulLoginResetsFailedAttempts() {
+        org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder encoder = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(12);
+        com.safe.space.model.User user = com.safe.space.model.User.builder()
+                .username("student1")
+                .institutionalId("2024-STU-003")
+                .passwordHash(encoder.encode("CorrectPassword1!"))
+                .fullName("Test Student")
+                .role("STUDENT")
+                .active(true)
+                .failedAttempts(3)
+                .build();
+
+        org.mockito.Mockito.when(userRepository.findByUsernameIgnoreCase("2024-STU-003"))
+                .thenReturn(java.util.Optional.of(user));
+
+        com.safe.space.dto.AuthDTOs.LoginRequest goodRequest = com.safe.space.dto.AuthDTOs.LoginRequest.builder()
+                .username("2024-STU-003")
+                .password("CorrectPassword1!")
+                .build();
+
+        com.safe.space.dto.AuthDTOs.LoginResponse res = credentialService.login(goodRequest);
+        assertNotNull(res);
+        assertNotNull(res.getToken());
+        assertEquals(0, user.getFailedAttempts());
+        assertNull(user.getLockedUntil());
+        assertNotNull(user.getLastLoginAt());
+    }
 }

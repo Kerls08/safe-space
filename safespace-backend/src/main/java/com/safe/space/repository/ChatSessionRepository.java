@@ -45,4 +45,8 @@ public interface ChatSessionRepository extends JpaRepository<ChatSession, Long> 
 
     /** Crisis sessions waiting (priority queue). */
     List<ChatSession> findByStatusAndCrisisFlagTrueOrderByCreatedAtAsc(String status);
+
+    /** Find abandoned sessions (0 messages, not crisis-flagged, status WAITING or DECLINED, older than cutoff). */
+    @Query("SELECT s FROM ChatSession s WHERE s.messageCount = 0 AND s.crisisFlag = false AND s.status IN ('WAITING', 'DECLINED') AND s.createdAt < :cutoff")
+    List<ChatSession> findAbandonedSessions(@Param("cutoff") LocalDateTime cutoff);
 }

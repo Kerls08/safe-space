@@ -144,4 +144,33 @@ public class SystemMaintenanceDTOs {
         private long latencyMs;
         private Object data;
     }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DatabaseCleanupScanResponse {
+        private long protectedPosts;
+        private long protectedChatSessions;
+        private long protectedCrisisAlerts;
+        private long protectedUsers;
+        private int abandonedEmptySessions;
+        private int staleTokens;
+        private int expiredLockouts;
+        private int totalTrashItems;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DatabaseCleanupResult {
+        private boolean success;
+        private String message;
+        private int purgedAbandonedSessions;
+        private int purgedStaleTokens;
+        private int purgedExpiredLockouts;
+        private int totalPurged;
+        private long latencyMs;
+    }
 }

@@ -2,6 +2,7 @@ package com.safe.space.service;
 
 import com.safe.space.dto.AuthDTOs.*;
 import com.safe.space.event.AdminAuditEvent;
+import com.safe.space.exception.AccountLockedException;
 import com.safe.space.model.User;
 import com.safe.space.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,8 +39,8 @@ import java.util.stream.Collectors;
  *   - Forced change on first login
  *
  * Lockout Policy:
- *   - 5 consecutive failed attempts → 15-minute lockout
- *   - Lockout resets after successful login
+ *   - 5 consecutive failed attempts → 1-minute lockout (60 seconds)
+ *   - Lockout resets after successful login or upon expiration
  */
 @Service
 @RequiredArgsConstructor
@@ -52,16 +54,19 @@ public class CredentialService {
     private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder(12);
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final int MAX_FAILED_ATTEMPTS = 5;
-    private static final int LOCKOUT_MINUTES = 15;
+    private static final int LOCKOUT_SECONDS = 60; // 1-minute lockout
     private static final int GENERATED_PASSWORD_LENGTH = 8;
     private static final int MIN_PASSWORD_LENGTH = 8;
 
     // Thread-safe in-memory token store with database fallback
     private final Map<String, String> activeTokens = new ConcurrentHashMap<>();
 
+    // In-memory brute force tracker for rate limiting (identifier -> BruteForceEntry)
+    private record BruteForceEntry(int count, LocalDateTime lockedUntil) {}
+    private final Map<String, BruteForceEntry> bruteForceTracker = new ConcurrentHashMap<>();
+
     // ── 1. Authentication ──
 
-    @Transactional
     public LoginResponse login(LoginRequest request) {
         if (request.getUsername() == null || request.getUsername().isBlank()) {
             throw new IllegalArgumentException("Username is required.");
@@ -70,44 +75,105 @@ public class CredentialService {
             throw new IllegalArgumentException("Password is required.");
         }
 
-        User user = userRepository.findByUsername(request.getUsername())
-                .or(() -> userRepository.findByInstitutionalId(request.getUsername()))
-                .orElseThrow(() -> new NoSuchElementException("Invalid credentials."));
+        String rawId = request.getUsername().trim();
+        String normalizedKey = rawId.toLowerCase();
 
-        // Check account active
+        // 1. Check in-memory brute force lockout
+        BruteForceEntry bfEntry = bruteForceTracker.get(normalizedKey);
+        if (bfEntry != null && bfEntry.lockedUntil() != null) {
+            if (bfEntry.lockedUntil().isAfter(LocalDateTime.now())) {
+                long secsLeft = Math.max(1, Duration.between(LocalDateTime.now(), bfEntry.lockedUntil()).toSeconds());
+                throw new AccountLockedException("Too many failed attempts. Account locked. Try again in " + secsLeft + " seconds.", secsLeft);
+            } else {
+                bruteForceTracker.remove(normalizedKey);
+            }
+        }
+
+        // 2. Lookup user case-insensitively by username, institutional ID, or email
+        User user = userRepository.findByUsernameIgnoreCase(rawId)
+                .or(() -> userRepository.findByInstitutionalIdIgnoreCase(rawId))
+                .or(() -> userRepository.findByEmailIgnoreCase(rawId))
+                .orElse(null);
+
+        // 3. If user doesn't exist, track brute force attempt on the identifier
+        if (user == null) {
+            int attempts = (bfEntry != null ? bfEntry.count() : 0) + 1;
+            if (attempts >= MAX_FAILED_ATTEMPTS) {
+                bruteForceTracker.put(normalizedKey, new BruteForceEntry(attempts, LocalDateTime.now().plusSeconds(LOCKOUT_SECONDS)));
+                log.warn("Brute force threshold reached for unknown identifier={}", rawId);
+                eventPublisher.publishEvent(new AdminAuditEvent(
+                        "SECURITY",
+                        "LOGIN_LOCKOUT_UNKNOWN_ID",
+                        "WARN",
+                        "Repeated failed login attempts on unknown identifier: " + rawId,
+                        rawId
+                ));
+                throw new AccountLockedException("Too many failed attempts. Account locked for 1 minute.", LOCKOUT_SECONDS);
+            } else {
+                bruteForceTracker.put(normalizedKey, new BruteForceEntry(attempts, null));
+                int remaining = MAX_FAILED_ATTEMPTS - attempts;
+                String attemptWord = remaining == 1 ? "attempt" : "attempts";
+                throw new IllegalArgumentException("Invalid credentials. " + remaining + " " + attemptWord + " remaining.");
+            }
+        }
+
+        // 4. Check account active
         if (!user.isActive()) {
             throw new IllegalStateException("Account is deactivated. Contact your administrator.");
         }
 
-        // Check lockout
-        if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
-            long minsLeft = java.time.Duration.between(LocalDateTime.now(), user.getLockedUntil()).toMinutes() + 1;
-            throw new IllegalStateException("Account locked. Try again in " + minsLeft + " minutes.");
-        }
-
-        // Validate password
-        if (!ENCODER.matches(request.getPassword(), user.getPasswordHash())) {
-            user.setFailedAttempts(user.getFailedAttempts() + 1);
-            if (user.getFailedAttempts() >= MAX_FAILED_ATTEMPTS) {
-                user.setLockedUntil(LocalDateTime.now().plusMinutes(LOCKOUT_MINUTES));
-                userRepository.save(user);
-                log.warn("Account locked due to {} failed attempts: username={}", user.getFailedAttempts(), user.getUsername());
-                throw new IllegalStateException("Too many failed attempts. Account locked for " + LOCKOUT_MINUTES + " minutes.");
+        // 5. Check persistent user lockout from database
+        if (user.getLockedUntil() != null) {
+            if (user.getLockedUntil().isAfter(LocalDateTime.now())) {
+                long secsLeft = Math.max(1, Duration.between(LocalDateTime.now(), user.getLockedUntil()).toSeconds());
+                throw new AccountLockedException("Account locked. Try again in " + secsLeft + " seconds.", secsLeft);
+            } else {
+                // Lockout period has elapsed: clear lockout timestamp and reset failed attempts
+                user.setLockedUntil(null);
+                user.setFailedAttempts(0);
+                userRepository.saveAndFlush(user);
+                bruteForceTracker.remove(normalizedKey);
             }
-            userRepository.save(user);
-            int remaining = MAX_FAILED_ATTEMPTS - user.getFailedAttempts();
-            throw new IllegalArgumentException("Invalid credentials. " + remaining + " attempts remaining.");
         }
 
-        // Success — reset failed attempts
+        // 6. Validate password
+        if (!ENCODER.matches(request.getPassword(), user.getPasswordHash())) {
+            int newAttempts = user.getFailedAttempts() + 1;
+            user.setFailedAttempts(newAttempts);
+
+            if (newAttempts >= MAX_FAILED_ATTEMPTS) {
+                LocalDateTime lockTime = LocalDateTime.now().plusSeconds(LOCKOUT_SECONDS);
+                user.setLockedUntil(lockTime);
+                userRepository.saveAndFlush(user);
+                bruteForceTracker.put(normalizedKey, new BruteForceEntry(newAttempts, lockTime));
+                log.warn("Account locked due to {} failed attempts: username={}", newAttempts, user.getUsername());
+                eventPublisher.publishEvent(new AdminAuditEvent(
+                        "SECURITY",
+                        "ACCOUNT_LOCKED_BRUTE_FORCE",
+                        "WARN",
+                        "Account locked for 60 seconds after 5 consecutive failed login attempts.",
+                        user.getUsername()
+                ));
+                throw new AccountLockedException("Too many failed attempts. Account locked for 1 minute.", LOCKOUT_SECONDS);
+            }
+
+            userRepository.saveAndFlush(user);
+            bruteForceTracker.put(normalizedKey, new BruteForceEntry(newAttempts, null));
+            int remaining = MAX_FAILED_ATTEMPTS - newAttempts;
+            String attemptWord = remaining == 1 ? "attempt" : "attempts";
+            throw new IllegalArgumentException("Invalid credentials. " + remaining + " " + attemptWord + " remaining.");
+        }
+
+        // 7. Success — reset failed attempts and clear brute force tracker
         user.setFailedAttempts(0);
         user.setLockedUntil(null);
         user.setLastLoginAt(LocalDateTime.now());
+        bruteForceTracker.remove(normalizedKey);
 
         // Generate session token & persist to DB to survive server restarts
         String token = UUID.randomUUID().toString();
         user.setSessionToken(token);
-        userRepository.save(user);
+        userRepository.saveAndFlush(user);
         activeTokens.put(token, user.getUsername());
         activeTokens.put("session-seed-" + user.getUsername(), user.getUsername());
 
@@ -635,6 +701,15 @@ public class CredentialService {
         user.setActive(!user.isActive());
         userRepository.save(user);
         log.info("User {} {}", user.getUsername(), user.isActive() ? "activated" : "deactivated");
+
+        eventPublisher.publishEvent(new AdminAuditEvent(
+                "ADMIN",
+                user.isActive() ? "USER_ACTIVATED" : "USER_DEACTIVATED",
+                "INFO",
+                "User account " + (user.isActive() ? "activated" : "deactivated") + ": " + user.getFullName() + " (" + user.getUsername() + ")",
+                user.getUsername()
+        ));
+
         return Map.of("message", "User " + (user.isActive() ? "activated" : "deactivated") + ".",
                 "active", String.valueOf(user.isActive()));
     }
@@ -649,6 +724,14 @@ public class CredentialService {
         activeTokens.entrySet().removeIf(entry -> username.equals(entry.getValue()));
         userRepository.delete(user);
         log.info("User deleted by admin: username={}", username);
+
+        eventPublisher.publishEvent(new AdminAuditEvent(
+                "ADMIN",
+                "USER_DELETED",
+                "CRITICAL",
+                "User permanently deleted: " + user.getFullName() + " (" + user.getUsername() + ")",
+                user.getUsername()
+        ));
     }
 
     @Transactional
@@ -673,6 +756,14 @@ public class CredentialService {
         }
 
         log.info("Password reset by admin: username={}, hasEmail={}", user.getUsername(), hasEmail);
+
+        eventPublisher.publishEvent(new AdminAuditEvent(
+                "ADMIN",
+                "PASSWORD_RESET_ADMIN",
+                "WARN",
+                "Admin reset temporary password for user: " + user.getFullName() + " (" + user.getUsername() + ")",
+                user.getUsername()
+        ));
 
         String statusMessage = hasEmail
                 ? "Password reset successfully. A notification with sign-in instructions has been dispatched to " + user.getEmail() + "."
@@ -907,6 +998,48 @@ public class CredentialService {
     public int purgeTokensExcept(String keepUsername) {
         int initial = activeTokens.size();
         activeTokens.entrySet().removeIf(entry -> keepUsername != null && !entry.getValue().equalsIgnoreCase(keepUsername));
+        return initial - activeTokens.size();
+    }
+
+    public int countStaleLockoutEntries() {
+        LocalDateTime now = LocalDateTime.now();
+        return (int) bruteForceTracker.values().stream()
+                .filter(bf -> bf != null && bf.lockedUntil() != null && bf.lockedUntil().isBefore(now))
+                .count();
+    }
+
+    public int cleanExpiredLockoutEntries() {
+        int initial = bruteForceTracker.size();
+        LocalDateTime now = LocalDateTime.now();
+        bruteForceTracker.entrySet().removeIf(entry -> {
+            BruteForceEntry bf = entry.getValue();
+            return bf != null && bf.lockedUntil() != null && bf.lockedUntil().isBefore(now);
+        });
+        return initial - bruteForceTracker.size();
+    }
+
+    public int countStaleSessionTokens() {
+        return (int) activeTokens.entrySet().stream()
+                .filter(entry -> {
+                    String token = entry.getKey();
+                    String username = entry.getValue();
+                    User user = userRepository.findByUsername(username).orElse(null);
+                    return user == null || !user.isActive() || user.getSessionToken() == null || !user.getSessionToken().equals(token);
+                })
+                .count();
+    }
+
+    public int cleanStaleSessionTokens() {
+        int initial = activeTokens.size();
+        activeTokens.entrySet().removeIf(entry -> {
+            String token = entry.getKey();
+            String username = entry.getValue();
+            User user = userRepository.findByUsername(username).orElse(null);
+            if (user == null || !user.isActive()) {
+                return true;
+            }
+            return user.getSessionToken() == null || !user.getSessionToken().equals(token);
+        });
         return initial - activeTokens.size();
     }
 

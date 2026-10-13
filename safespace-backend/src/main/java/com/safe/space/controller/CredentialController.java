@@ -2,6 +2,7 @@ package com.safe.space.controller;
 
 import com.safe.space.config.RbacPermissions;
 import com.safe.space.dto.AuthDTOs.*;
+import com.safe.space.exception.AccountLockedException;
 import com.safe.space.model.User;
 import com.safe.space.service.CredentialService;
 import com.safe.space.service.FileImportService;
@@ -464,6 +465,15 @@ public class CredentialController {
     }
 
     // ── Exception Handlers ──
+
+    @ExceptionHandler(AccountLockedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccountLocked(AccountLockedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                "error", ex.getMessage(),
+                "locked", true,
+                "secondsRemaining", ex.getSecondsRemaining()
+        ));
+    }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleValidation(IllegalArgumentException ex) {

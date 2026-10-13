@@ -2,23 +2,25 @@ package com.safe.space.service;
 
 import com.safe.space.dto.SystemMaintenanceDTOs.*;
 import com.safe.space.event.AdminAuditEvent;
+import com.safe.space.model.AuditLog;
+import com.safe.space.model.ChatSession;
 import com.safe.space.repository.*;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
  * Service for System Administrator maintenance operations, telemetry diagnostics,
- * maintenance mode, system-wide broadcast banners, and security audit logging.
+ * maintenance mode, system-wide broadcast banners, and persistent security audit logging.
  */
 @Service
 @RequiredArgsConstructor
@@ -32,8 +34,8 @@ public class SystemMaintenanceService {
     private final WellnessResourceRepository wellnessResourceRepository;
     private final EmailService emailService;
     private final CredentialService credentialService;
+    private final AuditLogRepository auditLogRepository;
 
-    private static final int MAX_AUDIT_LOGS = 100;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final long appStartTime = System.currentTimeMillis();
@@ -52,17 +54,16 @@ public class SystemMaintenanceService {
     private volatile LocalDateTime broadcastUpdatedAt = null;
     private volatile String broadcastUpdatedBy = null;
 
-    // ── In-Memory Circular Audit Trail ──
-    private final Deque<AuditLogResponse> auditLogs = new ConcurrentLinkedDeque<>();
-
     @PostConstruct
     public void init() {
-        logAudit("SYSTEM", "SYSTEM_STARTUP", "SUCCESS",
-                "Safe Space backend initialized on Java " + System.getProperty("java.version") + " (" + System.getProperty("os.name") + ").",
-                "system");
-        logAudit("SYSTEM", "SECURITY_VERIFIED", "INFO",
-                "Default RBAC security active. H2 database and token stores ready.",
-                "security");
+        if (auditLogRepository.count() == 0) {
+            logAudit("SYSTEM", "SYSTEM_STARTUP", "SUCCESS",
+                    "Safe Space backend initialized on Java " + System.getProperty("java.version") + " (" + System.getProperty("os.name") + ").",
+                    "system");
+            logAudit("SYSTEM", "SECURITY_VERIFIED", "INFO",
+                    "Default RBAC security active. H2 database and token stores ready.",
+                    "security");
+        }
     }
 
     @EventListener
@@ -71,20 +72,15 @@ public class SystemMaintenanceService {
     }
 
     public void logAudit(String actor, String action, String severity, String details, String target) {
-        AuditLogResponse entry = AuditLogResponse.builder()
-                .id(UUID.randomUUID().toString().substring(0, 8))
-                .timestamp(LocalDateTime.now().format(FORMATTER))
+        AuditLog entry = AuditLog.builder()
+                .timestamp(LocalDateTime.now())
                 .actor(actor != null && !actor.isBlank() ? actor : "admin")
                 .action(action)
                 .severity(severity != null ? severity.toUpperCase() : "INFO")
                 .details(details)
                 .target(target != null ? target : "—")
                 .build();
-
-        auditLogs.addFirst(entry);
-        while (auditLogs.size() > MAX_AUDIT_LOGS) {
-            auditLogs.removeLast();
-        }
+        auditLogRepository.save(entry);
     }
 
     // ── Live System Health & Telemetry Diagnostics ──
@@ -259,50 +255,68 @@ public class SystemMaintenanceService {
                 .build();
     }
 
-    // ── Admin Actions: Housekeeping Utilities ──
+    // ── Admin Actions: Database Hygiene with Safeguards ──
 
-    public OperationResult purgeInactiveSessions(String adminUsername) {
-        long start = System.currentTimeMillis();
-        int initialTokens = credentialService.getActiveTokenCount();
-        int purged = credentialService.purgeTokensExcept(adminUsername);
-        long latency = System.currentTimeMillis() - start;
+    public DatabaseCleanupScanResponse scanDatabaseTrash() {
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(14);
+        List<ChatSession> abandoned = chatSessionRepository.findAbandonedSessions(cutoff);
 
-        logAudit(adminUsername, "SESSIONS_PURGED", "INFO",
-                "Purged " + purged + " inactive session tokens from memory (initial: " + initialTokens + ").",
-                "security");
+        // Filter with strict safeguards
+        long safeAbandonedCount = abandoned.stream()
+                .filter(s -> s.getMessageCount() == 0 && !s.isCrisisFlag()
+                        && crisisAlertRepository.findFirstByChatSessionIdOrderByCreatedAtDesc(s.getSessionId()).isEmpty())
+                .count();
 
-        return OperationResult.builder()
-                .success(true)
-                .message("Successfully purged " + purged + " inactive session tokens.")
-                .latencyMs(latency)
-                .data(Map.of("purgedTokens", purged, "remainingTokens", credentialService.getActiveTokenCount()))
+        int staleTokens = credentialService.countStaleSessionTokens();
+        int expiredLockouts = credentialService.countStaleLockoutEntries();
+
+        return DatabaseCleanupScanResponse.builder()
+                .protectedPosts(postRepository.count())
+                .protectedChatSessions(Math.max(0, chatSessionRepository.count() - safeAbandonedCount))
+                .protectedCrisisAlerts(crisisAlertRepository.count())
+                .protectedUsers(userRepository.count())
+                .abandonedEmptySessions((int) safeAbandonedCount)
+                .staleTokens(staleTokens)
+                .expiredLockouts(expiredLockouts)
+                .totalTrashItems((int) safeAbandonedCount + staleTokens + expiredLockouts)
                 .build();
     }
 
-    public OperationResult runDatabaseCheck(String adminUsername) {
+    @Transactional
+    public DatabaseCleanupResult executeDatabaseCleanup(String adminUsername) {
         long start = System.currentTimeMillis();
 
-        long users = userRepository.count();
-        long posts = postRepository.count();
-        long alerts = crisisAlertRepository.count();
-        long chats = chatSessionRepository.count();
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(14);
+        List<ChatSession> abandoned = chatSessionRepository.findAbandonedSessions(cutoff);
 
+        int purgedSessions = 0;
+        for (ChatSession s : abandoned) {
+            // Strict safeguard checks:
+            if (s.getMessageCount() == 0 && !s.isCrisisFlag()
+                    && crisisAlertRepository.findFirstByChatSessionIdOrderByCreatedAtDesc(s.getSessionId()).isEmpty()) {
+                chatSessionRepository.delete(s);
+                purgedSessions++;
+            }
+        }
+
+        int purgedTokens = credentialService.cleanStaleSessionTokens();
+        int purgedLockouts = credentialService.cleanExpiredLockoutEntries();
+        int total = purgedSessions + purgedTokens + purgedLockouts;
         long latency = System.currentTimeMillis() - start;
 
-        logAudit(adminUsername, "DATABASE_CHECK", "SUCCESS",
-                "Database integrity verified in " + latency + "ms. Queried " + (users + posts + alerts + chats) + " total entities without errors.",
+        logAudit(adminUsername, "DATABASE_CLEANED", "WARN",
+                String.format("Safe database hygiene executed: %d empty ghost sessions, %d stale tokens, %d expired lockouts purged.",
+                        purgedSessions, purgedTokens, purgedLockouts),
                 "database");
 
-        return OperationResult.builder()
+        return DatabaseCleanupResult.builder()
                 .success(true)
-                .message("Database integrity verified. All tables and relationship constraints responsive.")
+                .message(String.format("Safe cleanup completed. Purged %d trash items without touching real user data.", total))
+                .purgedAbandonedSessions(purgedSessions)
+                .purgedStaleTokens(purgedTokens)
+                .purgedExpiredLockouts(purgedLockouts)
+                .totalPurged(total)
                 .latencyMs(latency)
-                .data(Map.of(
-                        "status", "HEALTHY",
-                        "latencyMs", latency,
-                        "verifiedTables", List.of("USERS", "POSTS", "CRISIS_ALERTS", "CHAT_SESSIONS", "WELLNESS_RESOURCES"),
-                        "timestamp", LocalDateTime.now().format(FORMATTER)
-                ))
                 .build();
     }
 
@@ -336,22 +350,39 @@ public class SystemMaintenanceService {
         }
     }
 
-    public Map<String, Object> exportTelemetryReport(String adminUsername) {
-        logAudit(adminUsername, "TELEMETRY_EXPORT", "INFO",
-                "Exported full system telemetry & diagnostics report.", "diagnostics");
-
-        SystemHealthResponse health = getSystemHealth();
-        return Map.of(
-                "exportTimestamp", LocalDateTime.now().format(FORMATTER),
-                "exportedBy", adminUsername,
-                "system", "Safe Space Campus Mental Health & Wellbeing Platform",
-                "diagnostics", health,
-                "recentAuditLogs", auditLogs.stream().limit(25).toList()
-        );
+    public List<AuditLogResponse> getAuditLogs() {
+        return auditLogRepository.findTop200ByOrderByTimestampDesc().stream()
+                .map(log -> AuditLogResponse.builder()
+                        .id(String.valueOf(log.getId()))
+                        .timestamp(log.getTimestamp() != null ? log.getTimestamp().format(FORMATTER) : "—")
+                        .actor(log.getActor())
+                        .action(log.getAction())
+                        .severity(log.getSeverity())
+                        .details(log.getDetails())
+                        .target(log.getTarget())
+                        .build())
+                .toList();
     }
 
-    public List<AuditLogResponse> getAuditLogs() {
-        return new ArrayList<>(auditLogs);
+    public String exportAuditLogsCsv() {
+        List<AuditLog> logs = auditLogRepository.findAllByOrderByTimestampDesc();
+        StringBuilder csv = new StringBuilder();
+        csv.append("ID,Timestamp,Actor,Action,Severity,Target,Details\n");
+        for (AuditLog l : logs) {
+            csv.append(escapeCsv(String.valueOf(l.getId()))).append(",")
+               .append(escapeCsv(l.getTimestamp() != null ? l.getTimestamp().format(FORMATTER) : "")).append(",")
+               .append(escapeCsv(l.getActor())).append(",")
+               .append(escapeCsv(l.getAction())).append(",")
+               .append(escapeCsv(l.getSeverity())).append(",")
+               .append(escapeCsv(l.getTarget())).append(",")
+               .append(escapeCsv(l.getDetails())).append("\n");
+        }
+        return csv.toString();
+    }
+
+    private String escapeCsv(String val) {
+        if (val == null) return "\"\"";
+        return "\"" + val.replace("\"", "\"\"").replace("\n", " ") + "\"";
     }
 
     private String formatUptime(long seconds) {

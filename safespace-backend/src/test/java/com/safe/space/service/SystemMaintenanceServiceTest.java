@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -22,12 +23,23 @@ class SystemMaintenanceServiceTest {
     @Mock private WellnessResourceRepository wellnessResourceRepository;
     @Mock private EmailService emailService;
     @Mock private CredentialService credentialService;
+    @Mock private AuditLogRepository auditLogRepository;
 
     private SystemMaintenanceService maintenanceService;
+    private final List<com.safe.space.model.AuditLog> mockLogs = new java.util.ArrayList<>();
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        mockLogs.clear();
+        when(auditLogRepository.save(any(com.safe.space.model.AuditLog.class))).thenAnswer(inv -> {
+            com.safe.space.model.AuditLog log = inv.getArgument(0);
+            mockLogs.add(0, log);
+            return log;
+        });
+        when(auditLogRepository.findTop200ByOrderByTimestampDesc()).thenReturn(mockLogs);
+        when(auditLogRepository.findAllByOrderByTimestampDesc()).thenReturn(mockLogs);
+
         maintenanceService = new SystemMaintenanceService(
                 userRepository,
                 postRepository,
@@ -35,7 +47,8 @@ class SystemMaintenanceServiceTest {
                 crisisAlertRepository,
                 wellnessResourceRepository,
                 emailService,
-                credentialService
+                credentialService,
+                auditLogRepository
         );
         maintenanceService.init();
     }
@@ -121,39 +134,79 @@ class SystemMaintenanceServiceTest {
     }
 
     @Test
-    @DisplayName("Should purge inactive tokens and record audit")
-    void testPurgeInactiveSessions() {
-        when(credentialService.getActiveTokenCount()).thenReturn(5, 1);
-        when(credentialService.purgeTokensExcept("admin")).thenReturn(4);
+    @DisplayName("Should scan database trash with protected data breakdown")
+    void testScanDatabaseTrash() {
+        when(postRepository.count()).thenReturn(50L);
+        when(chatSessionRepository.count()).thenReturn(10L);
+        when(crisisAlertRepository.count()).thenReturn(5L);
+        when(userRepository.count()).thenReturn(20L);
 
-        OperationResult result = maintenanceService.purgeInactiveSessions("admin");
+        com.safe.space.model.ChatSession abandoned = com.safe.space.model.ChatSession.builder()
+                .sessionId("chat-abandoned-1")
+                .messageCount(0)
+                .crisisFlag(false)
+                .status("WAITING")
+                .build();
+        when(chatSessionRepository.findAbandonedSessions(any())).thenReturn(List.of(abandoned));
+        when(crisisAlertRepository.findFirstByChatSessionIdOrderByCreatedAtDesc("chat-abandoned-1")).thenReturn(Optional.empty());
+
+        when(credentialService.countStaleSessionTokens()).thenReturn(2);
+        when(credentialService.countStaleLockoutEntries()).thenReturn(1);
+
+        DatabaseCleanupScanResponse scan = maintenanceService.scanDatabaseTrash();
+
+        assertNotNull(scan);
+        assertEquals(50L, scan.getProtectedPosts());
+        assertEquals(9L, scan.getProtectedChatSessions());
+        assertEquals(5L, scan.getProtectedCrisisAlerts());
+        assertEquals(20L, scan.getProtectedUsers());
+        assertEquals(1, scan.getAbandonedEmptySessions());
+        assertEquals(2, scan.getStaleTokens());
+        assertEquals(1, scan.getExpiredLockouts());
+        assertEquals(4, scan.getTotalTrashItems());
+    }
+
+    @Test
+    @DisplayName("Should execute safe database cleanup without deleting real user data")
+    void testExecuteDatabaseCleanup() {
+        com.safe.space.model.ChatSession abandoned = com.safe.space.model.ChatSession.builder()
+                .sessionId("chat-abandoned-2")
+                .messageCount(0)
+                .crisisFlag(false)
+                .status("WAITING")
+                .build();
+        when(chatSessionRepository.findAbandonedSessions(any())).thenReturn(List.of(abandoned));
+        when(crisisAlertRepository.findFirstByChatSessionIdOrderByCreatedAtDesc("chat-abandoned-2")).thenReturn(Optional.empty());
+
+        when(credentialService.cleanStaleSessionTokens()).thenReturn(3);
+        when(credentialService.cleanExpiredLockoutEntries()).thenReturn(2);
+
+        DatabaseCleanupResult result = maintenanceService.executeDatabaseCleanup("admin");
 
         assertTrue(result.isSuccess());
-        verify(credentialService).purgeTokensExcept("admin");
-        assertTrue(maintenanceService.getAuditLogs().stream().anyMatch(l -> "SESSIONS_PURGED".equals(l.getAction())));
+        assertEquals(1, result.getPurgedAbandonedSessions());
+        assertEquals(3, result.getPurgedStaleTokens());
+        assertEquals(2, result.getPurgedExpiredLockouts());
+        assertEquals(6, result.getTotalPurged());
+
+        verify(chatSessionRepository, times(1)).delete(abandoned);
+        verify(postRepository, never()).delete(any());
+        verify(userRepository, never()).delete(any());
+        verify(crisisAlertRepository, never()).delete(any());
+
+        assertTrue(mockLogs.stream().anyMatch(l -> "DATABASE_CLEANED".equals(l.getAction())));
     }
 
     @Test
-    @DisplayName("Should run database integrity check successfully")
-    void testRunDatabaseCheck() {
-        when(userRepository.count()).thenReturn(10L);
-        when(postRepository.count()).thenReturn(20L);
-        when(crisisAlertRepository.count()).thenReturn(1L);
-        when(chatSessionRepository.count()).thenReturn(3L);
+    @DisplayName("Should persist audit log and export CSV format")
+    void testExportAuditLogsCsv() {
+        maintenanceService.logAudit("admin", "TEST_ACTION", "INFO", "Testing audit CSV export", "target-user");
 
-        OperationResult res = maintenanceService.runDatabaseCheck("admin");
-
-        assertTrue(res.isSuccess());
-        assertEquals("Database integrity verified. All tables and relationship constraints responsive.", res.getMessage());
-    }
-
-    @Test
-    @DisplayName("Should export system diagnostics report")
-    void testExportTelemetryReport() {
-        var report = maintenanceService.exportTelemetryReport("admin");
-        assertNotNull(report);
-        assertEquals("admin", report.get("exportedBy"));
-        assertNotNull(report.get("diagnostics"));
-        assertNotNull(report.get("recentAuditLogs"));
+        String csv = maintenanceService.exportAuditLogsCsv();
+        assertNotNull(csv);
+        assertTrue(csv.contains("ID,Timestamp,Actor,Action,Severity,Target,Details"));
+        assertTrue(csv.contains("TEST_ACTION"));
+        assertTrue(csv.contains("admin"));
+        assertTrue(csv.contains("target-user"));
     }
 }

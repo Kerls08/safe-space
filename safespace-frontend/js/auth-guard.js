@@ -130,36 +130,11 @@ const SafeSpaceAuth = (() => {
   // ── Navigation Configuration ──
 
   const NAV_CONFIG = {
-    STUDENT: [
-      { name: 'Rant Board', href: 'rant-board.html', icon: 'fas fa-comment-dots', id: 'rant-board' },
-      { name: 'Chat', href: 'anon-chat.html', icon: 'fas fa-comments', id: 'anon-chat' }
-    ],
-    PROFESSIONAL: [
-      { name: 'Rant Board', href: 'rant-board.html', icon: 'fas fa-comment-dots', id: 'rant-board' },
-      { name: 'Chat', href: 'anon-chat.html', icon: 'fas fa-comments', id: 'anon-chat' },
-      { name: 'Dashboard', href: 'pro-dashboard.html', icon: 'fas fa-chart-line', id: 'pro-dashboard' },
-      { name: 'Crisis Alerts', href: 'crisis-alerts.html', icon: 'fas fa-bell', id: 'crisis-alerts' },
-      { name: 'Resources', href: 'resource-manager.html', icon: 'fas fa-hand-holding-heart', id: 'resource-manager' },
-      { name: 'Colleagues', href: 'colleagues.html', icon: 'fas fa-user-doctor', id: 'colleagues' }
-    ],
-    SUPER_ADMIN: [
-      { name: 'Rant Board', href: 'rant-board.html', icon: 'fas fa-comment-dots', id: 'rant-board' },
-      { name: 'Chat', href: 'anon-chat.html', icon: 'fas fa-comments', id: 'anon-chat' },
-      { name: 'Dashboard', href: 'pro-dashboard.html', icon: 'fas fa-chart-line', id: 'pro-dashboard' },
-      { name: 'Crisis Alerts', href: 'crisis-alerts.html', icon: 'fas fa-bell', id: 'crisis-alerts' },
-      { name: 'Resources', href: 'resource-manager.html', icon: 'fas fa-hand-holding-heart', id: 'resource-manager' },
-      { name: 'Colleagues', href: 'colleagues.html', icon: 'fas fa-user-doctor', id: 'colleagues' }
-    ],
-    MAINTENANCE: [
-      { name: 'System Maintenance', href: 'system-maintenance.html', icon: 'fas fa-server', id: 'system-maintenance' },
-      { name: 'User Management', href: 'credential-manager.html', icon: 'fas fa-users-gear', id: 'credential-manager' }
-    ],
-    ADMIN: [
-      { name: 'System Maintenance', href: 'system-maintenance.html', icon: 'fas fa-server', id: 'system-maintenance' },
-      { name: 'User Management', href: 'credential-manager.html', icon: 'fas fa-users-gear', id: 'credential-manager' },
-      { name: 'Colleagues', href: 'colleagues.html', icon: 'fas fa-user-doctor', id: 'colleagues' },
-      { name: 'Dashboard', href: 'pro-dashboard.html', icon: 'fas fa-chart-line', id: 'pro-dashboard' }
-    ]
+    STUDENT: [],
+    PROFESSIONAL: [],
+    SUPER_ADMIN: [],
+    MAINTENANCE: [],
+    ADMIN: []
   };
 
   /**
@@ -224,9 +199,6 @@ const SafeSpaceAuth = (() => {
             </div>
           </div>
         </div>
-        <button id="navToggle" class="navbar-toggle" aria-label="Open navigation" onclick="document.getElementById('navMenu').classList.toggle('open')">
-          <span></span><span></span><span></span>
-        </button>
       </div>
     `;
 
@@ -264,9 +236,119 @@ const SafeSpaceAuth = (() => {
     // Check for broadcast announcements and maintenance mode
     checkSystemStatusBanner();
 
+    // Render mobile-style bottom navigation based on role
+    renderProfessionalBottomNav(activePage);
+    renderStudentBottomNav(activePage);
+
     // Start notification badge polling
     pollNavBadges();
     _badgeInterval = setInterval(pollNavBadges, 10000);
+  }
+
+  /**
+   * Render mobile-style bottom navigation for Professionals & Guidance Staff.
+   * Provides 5 core tools docked at the bottom of the viewport:
+   *   1. Dashboard (pro-dashboard.html)
+   *   2. Crisis Alerts (crisis-alerts.html)
+   *   3. Support Chat (anon-chat.html)
+   *   4. Resources (resource-manager.html)
+   *   5. Colleagues (colleagues.html)
+   */
+  function renderProfessionalBottomNav(activePage) {
+    const role = getRole();
+    const isPro = (role === 'PROFESSIONAL' || role === 'SUPER_ADMIN' || (role === 'ADMIN' && activePage !== 'system-maintenance'));
+
+    const existing = document.getElementById('proBottomNav');
+    if (!isPro) {
+      if (existing) existing.remove();
+      document.body.classList.remove('has-pro-bottom-nav');
+      return;
+    }
+
+    document.body.classList.add('has-pro-bottom-nav');
+
+    const proLinks = [
+      { name: 'Dashboard', href: 'pro-dashboard.html', icon: 'fas fa-chart-line', id: 'pro-dashboard', hasBadge: 'badge-amber', title: 'Psychometrician Dashboard' },
+      { name: 'Alerts', href: 'crisis-alerts.html', icon: 'fas fa-bell', id: 'crisis-alerts', hasBadge: 'badge-red', title: 'Crisis Alerts' },
+      { name: 'Rant Board', href: 'rant-board.html', icon: 'fas fa-comment-dots', id: 'rant-board', title: 'Student Rant Board' },
+      { name: 'Chat', href: 'anon-chat.html', icon: 'fas fa-comments', id: 'anon-chat', hasBadge: 'badge-blue', title: 'Anonymous Support Chat' },
+      { name: 'Resources', href: 'resource-manager.html', icon: 'fas fa-hand-holding-heart', id: 'resource-manager', title: 'Campus Resources' },
+      { name: 'Colleagues', href: 'colleagues.html', icon: 'fas fa-user-doctor', id: 'colleagues', title: 'Counseling Colleagues' }
+    ];
+
+    const navHtml = `
+      <div class="pro-bottom-nav-inner">
+        ${proLinks.map(l => `
+          <a href="${l.href}" class="pro-nav-btn${l.id === activePage ? ' active' : ''}" data-nav-id="${l.id}" id="proBtn-${l.id}" title="${l.name}">
+            <span class="pro-nav-icon-wrap">
+              <i class="${l.icon}"></i>
+              ${l.hasBadge ? `<span class="pro-nav-badge ${l.hasBadge}" id="badge-bottom-${l.id}" style="display:none;"></span>` : ''}
+            </span>
+            <span>${l.name}</span>
+          </a>
+        `).join('')}
+      </div>
+    `;
+
+    if (existing) {
+      existing.innerHTML = navHtml;
+    } else {
+      const bottomNav = document.createElement('nav');
+      bottomNav.className = 'pro-bottom-nav';
+      bottomNav.id = 'proBottomNav';
+      bottomNav.setAttribute('aria-label', 'Professional Navigation');
+      bottomNav.innerHTML = navHtml;
+      document.body.appendChild(bottomNav);
+    }
+  }
+
+  /**
+   * Render mobile-style bottom navigation for Students.
+   * Provides 2 core destinations docked at the bottom of the viewport:
+   *   1. Rant Board (rant-board.html)
+   *   2. Chat (anon-chat.html)
+   */
+  function renderStudentBottomNav(activePage) {
+    const role = getRole();
+    if (role !== 'STUDENT') {
+      const existing = document.getElementById('studentBottomNav');
+      if (existing) existing.remove();
+      document.body.classList.remove('has-student-bottom-nav');
+      return;
+    }
+
+    document.body.classList.add('has-student-bottom-nav');
+
+    const studentLinks = [
+      { name: 'Rant Board', href: 'rant-board.html', icon: 'fas fa-comment-dots', id: 'rant-board', title: 'Anonymous Rant Board' },
+      { name: 'Chat', href: 'anon-chat.html', icon: 'fas fa-comments', id: 'anon-chat', hasBadge: 'badge-blue', title: 'Anonymous Support Chat' }
+    ];
+
+    const navHtml = `
+      <div class="student-bottom-nav-inner">
+        ${studentLinks.map(l => `
+          <a href="${l.href}" class="student-nav-btn${l.id === activePage ? ' active' : ''}" data-nav-id="${l.id}" id="studentBtn-${l.id}" title="${l.title || l.name}">
+            <span class="student-nav-icon-wrap">
+              <i class="${l.icon}"></i>
+              ${l.hasBadge ? `<span class="student-nav-badge ${l.hasBadge}" id="badge-bottom-${l.id}" style="display:none;"></span>` : ''}
+            </span>
+            <span>${l.name}</span>
+          </a>
+        `).join('')}
+      </div>
+    `;
+
+    const existing = document.getElementById('studentBottomNav');
+    if (existing) {
+      existing.innerHTML = navHtml;
+    } else {
+      const bottomNav = document.createElement('nav');
+      bottomNav.className = 'student-bottom-nav';
+      bottomNav.id = 'studentBottomNav';
+      bottomNav.setAttribute('aria-label', 'Student Navigation');
+      bottomNav.innerHTML = navHtml;
+      document.body.appendChild(bottomNav);
+    }
   }
 
   async function checkSystemStatusBanner() {
@@ -314,27 +396,34 @@ const SafeSpaceAuth = (() => {
   let _badgeInterval = null;
 
   /**
-   * Update a navbar badge count.
+   * Update a navbar and bottom nav badge count.
    */
   function updateBadge(navId, count) {
     const el = document.getElementById('badge-' + navId);
-    if (!el) return;
-    if (count === '!') {
-      el.textContent = '!';
-      el.style.display = 'inline-flex';
-      el.style.alignItems = 'center';
-      el.style.justifyContent = 'center';
-      return;
-    }
-    const n = typeof count === 'number' ? count : 0;
-    if (n > 0) {
-      el.textContent = n > 99 ? '99+' : n;
-      el.style.display = 'inline-flex';
-      el.style.alignItems = 'center';
-      el.style.justifyContent = 'center';
-    } else {
-      el.style.display = 'none';
-    }
+    const bottomEl = document.getElementById('badge-bottom-' + navId);
+
+    const applyBadge = (elem) => {
+      if (!elem) return;
+      if (count === '!') {
+        elem.textContent = '!';
+        elem.style.display = 'inline-flex';
+        elem.style.alignItems = 'center';
+        elem.style.justifyContent = 'center';
+        return;
+      }
+      const n = typeof count === 'number' ? count : 0;
+      if (n > 0) {
+        elem.textContent = n > 99 ? '99+' : n;
+        elem.style.display = 'inline-flex';
+        elem.style.alignItems = 'center';
+        elem.style.justifyContent = 'center';
+      } else {
+        elem.style.display = 'none';
+      }
+    };
+
+    applyBadge(el);
+    applyBadge(bottomEl);
   }
 
   /**

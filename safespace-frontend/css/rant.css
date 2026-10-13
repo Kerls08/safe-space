@@ -11,6 +11,11 @@
   max-width: 100vw;
 }
 
+body.has-pro-bottom-nav .rant-layout,
+body.has-student-bottom-nav .rant-layout {
+  padding-bottom: 5.5rem;
+}
+
 /* ── Welcome Banner ── */
 .rant-welcome {
   background: linear-gradient(135deg, #161F36 0%, #1E2B4A 55%, #223152 100%);

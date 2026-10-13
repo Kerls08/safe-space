@@ -28,10 +28,10 @@
         <p>Sign in with your credentials</p>
       </div>
 
-      <!-- Error Banner -->
-      <div class="login-error" id="loginError">
-        <i class="fas fa-exclamation-circle"></i>
-        <span id="loginErrorText"></span>
+      <!-- Error / Status Alert Banner -->
+      <div class="login-alert alert-danger" id="loginError" role="alert" aria-live="polite">
+        <i class="login-alert-icon fas fa-circle-exclamation" id="loginErrorIcon"></i>
+        <span class="login-alert-text" id="loginErrorText"></span>
       </div>
 
       <div id="activeSessionNotice" style="display:none;margin-bottom:1rem;"></div>
@@ -94,9 +94,9 @@
         <p>You must set a new password before continuing</p>
       </div>
 
-      <div class="login-error" id="pwChangeError">
-        <i class="fas fa-exclamation-circle"></i>
-        <span id="pwChangeErrorText"></span>
+      <div class="login-alert alert-danger" id="pwChangeError" role="alert" aria-live="polite">
+        <i class="login-alert-icon fas fa-circle-exclamation" id="pwChangeErrorIcon"></i>
+        <span class="login-alert-text" id="pwChangeErrorText"></span>
       </div>
 
       <form class="auth-form" onsubmit="handlePasswordChange(event)" novalidate>
@@ -184,9 +184,9 @@
 
       <div class="auth-form" style="width:100%;">
         <!-- Error / Notice Banner -->
-        <div class="login-error" id="forgotError">
-          <i class="fas fa-exclamation-circle"></i>
-          <span id="forgotErrorText"></span>
+        <div class="login-alert alert-danger" id="forgotError" role="alert" aria-live="polite">
+          <i class="login-alert-icon fas fa-circle-exclamation" id="forgotErrorIcon"></i>
+          <span class="login-alert-text" id="forgotErrorText"></span>
         </div>
 
         <!-- ── STEP 1: Account Lookup ── -->
@@ -353,7 +353,15 @@
   </div>
 
   <script>
-    const API_BASE = window.SAFE_SPACE_API_URL || (window.location.protocol === 'file:' || window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:8080/api' : 'https://safespace-backend-ws0m.onrender.com/api');
+    const _host = window.location.hostname || '';
+    const _isLocal = window.location.protocol === 'file:' ||
+                     _host === 'localhost' ||
+                     _host === '127.0.0.1' ||
+                     _host.startsWith('192.168.') ||
+                     _host.startsWith('10.') ||
+                     _host.startsWith('172.') ||
+                     window.location.port === '5500';
+    const API_BASE = window.SAFE_SPACE_API_URL || (_isLocal ? `http://${_host || 'localhost'}:8080/api` : 'https://safespace-backend-ws0m.onrender.com/api');
     const API = API_BASE + '/auth';
     let loginToken = null;
     let loginUsername = null;
@@ -372,6 +380,38 @@
       }
     }
 
+    function setLoginAlert(type, messageHtml, iconClass) {
+      const errDiv = document.getElementById('loginError');
+      const errIcon = document.getElementById('loginErrorIcon');
+      const errText = document.getElementById('loginErrorText');
+      if (!errDiv || !errText) return;
+
+      errDiv.removeAttribute('style');
+      errDiv.classList.remove('alert-danger', 'alert-warning', 'alert-success');
+
+      if (type === 'warning') {
+        errDiv.classList.add('alert-warning');
+        if (errIcon) errIcon.className = (iconClass || 'fas fa-lock') + ' login-alert-icon';
+      } else if (type === 'success') {
+        errDiv.classList.add('alert-success');
+        if (errIcon) errIcon.className = (iconClass || 'fas fa-circle-check') + ' login-alert-icon';
+      } else {
+        errDiv.classList.add('alert-danger');
+        if (errIcon) errIcon.className = (iconClass || 'fas fa-circle-exclamation') + ' login-alert-icon';
+      }
+
+      errText.innerHTML = messageHtml;
+      errDiv.classList.add('visible');
+    }
+
+    function hideLoginAlert() {
+      const errDiv = document.getElementById('loginError');
+      if (errDiv) {
+        errDiv.classList.remove('visible', 'alert-danger', 'alert-warning', 'alert-success');
+        errDiv.removeAttribute('style');
+      }
+    }
+
     function clearLoginFeedback(inputId) {
       const input = document.getElementById(inputId);
       if (input) {
@@ -383,16 +423,21 @@
       if (fb) {
         fb.classList.remove('visible');
       }
+      if (!isCurrentlyLocked && !isLockoutActive()) {
+        hideLoginAlert();
+      }
     }
 
     function clearLoginFeedbacks() {
       ['loginUsername', 'loginPassword', 'pwCurrent', 'pwNew', 'pwConfirm'].forEach(id => {
         clearLoginFeedback(id);
       });
-      const err1 = document.getElementById('loginError');
-      if (err1) err1.classList.remove('visible');
+      hideLoginAlert();
       const err2 = document.getElementById('pwChangeError');
-      if (err2) err2.classList.remove('visible');
+      if (err2) {
+        err2.classList.remove('visible');
+        err2.removeAttribute('style');
+      }
       const pwRules = document.getElementById('pwRules');
       if (pwRules) pwRules.classList.remove('has-error');
     }
@@ -404,18 +449,104 @@
       return div.innerHTML;
     }
 
+    let lockoutTimer = null;
+    let isCurrentlyLocked = false;
+
+    function isLockoutActive() {
+      const untilStr = localStorage.getItem('ss_lockout_until');
+      if (!untilStr) return false;
+      const until = parseInt(untilStr, 10);
+      return !isNaN(until) && until > Date.now();
+    }
+
+    function checkAndRestoreLockout() {
+      const untilStr = localStorage.getItem('ss_lockout_until');
+      if (!untilStr) return;
+      const until = parseInt(untilStr, 10);
+      const remaining = Math.ceil((until - Date.now()) / 1000);
+      if (remaining > 0) {
+        startLockoutCountdown(remaining);
+      } else {
+        localStorage.removeItem('ss_lockout_until');
+      }
+    }
+
+    function startLockoutCountdown(secondsRemaining) {
+      if (lockoutTimer) {
+        clearInterval(lockoutTimer);
+        lockoutTimer = null;
+      }
+
+      isCurrentlyLocked = true;
+      const targetTime = Date.now() + (secondsRemaining * 1000);
+      localStorage.setItem('ss_lockout_until', targetTime.toString());
+
+      const btn = document.getElementById('loginBtn');
+      const uInput = document.getElementById('loginUsername');
+      const pInput = document.getElementById('loginPassword');
+
+      if (uInput) uInput.disabled = true;
+      if (pInput) {
+        pInput.disabled = true;
+        pInput.value = '';
+        pInput.classList.remove('has-error');
+        pInput.closest('.input-wrapper')?.classList.remove('has-error');
+      }
+      if (btn) btn.disabled = true;
+
+      const pFb = document.getElementById('loginPasswordFeedback');
+      if (pFb) pFb.classList.remove('visible');
+
+      function updateCountdown() {
+        const msLeft = targetTime - Date.now();
+        const secsLeft = Math.max(0, Math.ceil(msLeft / 1000));
+
+        if (secsLeft <= 0) {
+          clearInterval(lockoutTimer);
+          lockoutTimer = null;
+          isCurrentlyLocked = false;
+          localStorage.removeItem('ss_lockout_until');
+
+          if (uInput) uInput.disabled = false;
+          if (pInput) {
+            pInput.disabled = false;
+            pInput.value = '';
+            pInput.focus();
+          }
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> Sign In';
+          }
+
+          setLoginAlert('success', 'Lockout period expired. You can try signing in again.', 'fas fa-circle-check');
+          return;
+        }
+
+        if (btn) {
+          btn.innerHTML = `<i class="fas fa-lock"></i> Locked · Try again in ${secsLeft}s`;
+        }
+
+        const pill = `<span class="lockout-timer-pill"><i class="fas fa-hourglass-half"></i> ${secsLeft}s</span>`;
+        setLoginAlert('warning', `Too many failed attempts. Account locked. ${pill}`, 'fas fa-lock');
+      }
+
+      updateCountdown();
+      lockoutTimer = setInterval(updateCountdown, 1000);
+    }
+
     async function handleLogin(e) {
       e.preventDefault();
-      const btn = document.getElementById('loginBtn');
-      const errDiv = document.getElementById('loginError');
-      const errText = document.getElementById('loginErrorText');
+      if (isLockoutActive() || isCurrentlyLocked) {
+        return;
+      }
 
+      const btn = document.getElementById('loginBtn');
       clearLoginFeedbacks();
 
       const usernameInput = document.getElementById('loginUsername');
       const passwordInput = document.getElementById('loginPassword');
-      const username = usernameInput.value.trim();
-      const password = passwordInput.value;
+      const username = usernameInput ? usernameInput.value.trim() : '';
+      const password = passwordInput ? passwordInput.value : '';
 
       let firstInvalid = null;
       if (!username) {
@@ -427,15 +558,14 @@
         if (!firstInvalid) firstInvalid = passwordInput;
       }
       if (firstInvalid) {
-        errText.textContent = 'Please provide both your username and password.';
-        errDiv.classList.add('visible');
+        setLoginAlert('danger', 'Please provide both your username and password.', 'fas fa-circle-exclamation');
         firstInvalid.focus();
         return;
       }
 
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
-      errDiv.classList.remove('visible');
+      hideLoginAlert();
 
       try {
         const res = await fetch(`${API}/login`, {
@@ -447,10 +577,19 @@
           })
         });
 
-        const data = await res.json();
+        let data = {};
+        try {
+          data = await res.json();
+        } catch (jsonErr) {
+          data = { error: 'Server response error' };
+        }
 
         if (!res.ok) {
-          throw new Error(data.error || 'Login failed');
+          const err = new Error(data.error || 'Login failed');
+          err.status = res.status;
+          err.locked = data.locked === true || res.status === 403 || res.status === 423;
+          err.secondsRemaining = data.secondsRemaining || 0;
+          throw err;
         }
 
         loginToken = data.token;
@@ -477,17 +616,51 @@
         redirectAfterLogin(data.role);
 
       } catch (err) {
+        const errMsg = (err.message || '').toLowerCase();
+        const isLockoutError = err.locked || 
+                               err.secondsRemaining > 0 || 
+                               errMsg.includes('locked') || 
+                               errMsg.includes('too many failed attempts');
+
+        if (isLockoutError) {
+          let secs = err.secondsRemaining;
+          if (!secs) {
+            const secMatch = (err.message || '').match(/(\d+)\s*(?:second|sec)/i);
+            if (secMatch) secs = parseInt(secMatch[1], 10);
+            const minMatch = (err.message || '').match(/(\d+)\s*(?:minute|min)/i);
+            if (minMatch) secs = parseInt(minMatch[1], 10) * 60;
+          }
+          startLockoutCountdown(secs || 60);
+          return;
+        }
+
         const isNetworkError = err.message === 'Failed to fetch' || err.name === 'TypeError' || (err.message && err.message.toLowerCase().includes('network'));
         if (isNetworkError) {
-          errText.textContent = 'Unable to connect to the SafeSpace server. Please check that the backend is running.';
+          setLoginAlert('danger', 'Unable to connect to the SafeSpace server. Please check that the backend is running.', 'fas fa-triangle-exclamation');
         } else {
-          errText.textContent = err.message || 'Login failed. Please check your credentials.';
-          showLoginFeedback('loginPassword', err.message || 'Invalid credentials. Please verify your password.');
+          // Highlight password input without printing duplicate text below it
+          if (passwordInput) {
+            passwordInput.classList.add('has-error');
+            const wrapper = passwordInput.closest('.input-wrapper');
+            if (wrapper) wrapper.classList.add('has-error');
+            passwordInput.focus();
+          }
+
+          const rawMsg = err.message || 'Invalid credentials. Please verify your password.';
+          const attemptMatch = rawMsg.match(/(\d+)\s+(?:attempt|attempts)\s+remaining/i);
+          let bannerHtml = escapeHtml(rawMsg);
+          if (attemptMatch) {
+            const count = attemptMatch[1];
+            const badge = `<span class="attempts-badge">${count} attempt${count === '1' ? '' : 's'} remaining</span>`;
+            bannerHtml = `Invalid credentials. ${badge}`;
+          }
+          setLoginAlert('danger', bannerHtml, 'fas fa-circle-exclamation');
         }
-        errDiv.classList.add('visible');
       } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> Sign In';
+        if (!isCurrentlyLocked && !isLockoutActive()) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> Sign In';
+        }
       }
     }
 
@@ -1156,6 +1329,9 @@
         }
       }
     }
+
+    // Check for any ongoing account lockout from previous attempt / page refresh
+    checkAndRestoreLockout();
   </script>
 </body>
 </html>

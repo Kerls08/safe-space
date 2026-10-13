@@ -12,6 +12,17 @@
   background: #FAF7F2;
 }
 
+body.has-pro-bottom-nav .chat-layout,
+body.has-student-bottom-nav .chat-layout {
+  height: calc(100vh - 3.5rem - 4.25rem);
+}
+@media (max-width: 640px) {
+  body.has-pro-bottom-nav .chat-layout,
+  body.has-student-bottom-nav .chat-layout {
+    height: calc(100vh - 3.5rem - 3.85rem);
+  }
+}
+
 /* ── Sidebar ── */
 .chat-sidebar {
   background: #FFFFFF;
