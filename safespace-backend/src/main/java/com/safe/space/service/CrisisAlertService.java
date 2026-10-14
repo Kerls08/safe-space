@@ -399,9 +399,7 @@ public class CrisisAlertService {
         if (statusFilter != null && !statusFilter.isBlank() && !"ALL".equalsIgnoreCase(statusFilter)) {
             alerts = alertRepository.findByStatusOrderByCreatedAtDesc(statusFilter);
         } else {
-            alerts = alertRepository.findAll().stream()
-                    .sorted(Comparator.comparing((CrisisAlert a) -> a.getCreatedAt()).reversed())
-                    .collect(Collectors.toList());
+            alerts = alertRepository.findByStatusInOrderByCreatedAtDesc(List.of("RESOLVED", "ESCALATED"));
         }
         return alerts.stream().map(this::toMap).collect(Collectors.toList());
     }
@@ -706,6 +704,19 @@ public class CrisisAlertService {
                 outreachStatus = "DECLINED";
             } else if (notes != null && notes.toLowerCase().contains("invite")) {
                 outreachStatus = "INVITED";
+            }
+        }
+        if (a.getChatSessionId() != null && !a.getChatSessionId().isBlank()) {
+            Optional<com.safe.space.model.ChatSession> optSession = sessionRepository.findBySessionId(a.getChatSessionId());
+            if (optSession.isPresent()) {
+                String sessStatus = optSession.get().getStatus();
+                if ("ACTIVE".equals(sessStatus) && !"DECLINED".equals(outreachStatus)) {
+                    outreachStatus = "ACTIVE";
+                } else if ("DECLINED".equals(sessStatus)) {
+                    outreachStatus = "DECLINED";
+                } else if ("CLOSED".equals(sessStatus) && !"DECLINED".equals(outreachStatus)) {
+                    outreachStatus = "CONCLUDED";
+                }
             }
         }
         map.put("outreachStatus", outreachStatus);

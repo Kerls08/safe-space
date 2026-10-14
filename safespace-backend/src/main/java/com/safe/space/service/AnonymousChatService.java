@@ -186,6 +186,16 @@ public class AnonymousChatService {
         messageRepository.save(sysMsg);
 
         log.info("Outreach invite accepted: sessionId={}, student={}", sessionId, studentUserId);
+
+        try {
+            CrisisAlertService alertSvc = crisisAlertServiceProvider.getIfAvailable();
+            if (alertSvc != null) {
+                alertSvc.updateAlertOutreachStatus(sessionId, "ACTIVE", "Student accepted outreach check-in. In active counseling.");
+            }
+        } catch (Exception e) {
+            log.warn("Could not update linked alert on accept: {}", e.getMessage());
+        }
+
         return toSessionResponse(session, 0);
     }
 

@@ -1,0 +1,565 @@
+    /* Layout & Page Header */
+    .dash-layout {
+      margin-top: 4.5rem;
+      min-height: calc(100vh - 4.5rem);
+      background: #FAF7F2;
+      padding: 1.75rem 1.5rem 5.5rem 1.5rem;
+    }
+    @media (max-width: 640px) {
+      .dash-layout {
+        padding: 1rem 0.75rem 5.5rem 0.75rem;
+      }
+    }
+    .dash-container {
+      max-width: 1320px;
+      margin: 0 auto;
+    }
+
+    .colleagues-page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1.75rem;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+    }
+    .colleagues-header-info h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #161F36;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin: 0 0 0.4rem 0;
+      letter-spacing: -0.02em;
+    }
+    .colleagues-header-info h1 i {
+      color: #161F36;
+    }
+    .colleagues-header-desc {
+      font-size: 0.88rem;
+      color: #64748b;
+      margin: 0;
+      max-width: 680px;
+      line-height: 1.5;
+    }
+    .colleagues-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .dash-btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.25rem;
+      background: #161F36;
+      color: #FFFFFF;
+      border: 1.5px solid #161F36;
+      border-radius: 0.75rem;
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: var(--font-sans);
+      box-shadow: 0 3px 10px rgba(22, 31, 54, 0.15);
+      text-decoration: none;
+    }
+    .dash-btn-primary:hover {
+      background: #243356;
+      border-color: #243356;
+      transform: translateY(-1.5px);
+      box-shadow: 0 6px 18px rgba(22, 31, 54, 0.22);
+      color: #FFFFFF;
+    }
+    .dash-btn-primary i {
+      color: #BACBD8;
+      font-size: 0.88rem;
+    }
+
+    /* Stat Cards Row */
+    .colleagues-stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.15rem;
+      margin-bottom: 1.75rem;
+    }
+    @media (max-width: 900px) {
+      .colleagues-stats-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .stat-card.interactive {
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .stat-card.interactive:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(22, 31, 54, 0.08);
+      border-color: #BACBD8;
+    }
+    .stat-card.interactive.active-filter {
+      border-color: #161F36;
+      box-shadow: 0 0 0 2px #161F36, 0 6px 20px rgba(22, 31, 54, 0.1);
+      background: #FFFFFF;
+    }
+
+    /* Directory Toolbar */
+    .directory-toolbar {
+      background: #FFFFFF;
+      border: 1.5px solid #E0D7C6;
+      border-radius: 1rem;
+      padding: 0.85rem 1.25rem;
+      margin-bottom: 1.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+      box-shadow: 0 2px 8px rgba(22, 31, 54, 0.04);
+    }
+    .directory-search {
+      position: relative;
+      flex: 1;
+      min-width: 280px;
+    }
+    .directory-search i.search-icon {
+      position: absolute;
+      left: 1.1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+      font-size: 0.92rem;
+      pointer-events: none;
+    }
+    .directory-search input {
+      width: 100%;
+      padding: 0.65rem 2.6rem 0.65rem 2.75rem;
+      border-radius: 0.75rem;
+      border: 1.5px solid #E0D7C6;
+      background: #FAF7F2;
+      font-size: 0.86rem;
+      color: #161F36;
+      font-family: var(--font-sans);
+      box-sizing: border-box;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .directory-search input:focus {
+      background: #FFFFFF;
+      border-color: #161F36;
+      box-shadow: 0 0 0 3px rgba(22, 31, 54, 0.08);
+    }
+    .clear-search-btn {
+      position: absolute;
+      right: 0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #E8EFF4;
+      border: none;
+      color: #475569;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .clear-search-btn:hover {
+      background: #161F36;
+      color: #FFFFFF;
+    }
+
+    .directory-filters {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+    .directory-filter-btn {
+      background: #FAF7F2;
+      border: 1.5px solid #E0D7C6;
+      color: #475569;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.5rem 0.9rem;
+      border-radius: 0.75rem;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      font-family: var(--font-sans);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .directory-filter-btn:hover {
+      background: #F2EDE2;
+      border-color: #BACBD8;
+      color: #161F36;
+    }
+    .directory-filter-btn.active {
+      background: #161F36;
+      color: #FFFFFF;
+      border-color: #161F36;
+      box-shadow: 0 2px 8px rgba(22, 31, 54, 0.15);
+    }
+    .filter-count {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      background: #E8EFF4;
+      color: #161F36;
+      line-height: 1;
+    }
+    .directory-filter-btn.active .filter-count {
+      background: rgba(255, 255, 255, 0.22);
+      color: #FFFFFF;
+    }
+
+    /* Colleagues Grid */
+    .colleagues-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    @media (max-width: 480px) {
+      .colleagues-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .colleague-card {
+      background: #FFFFFF;
+      border: 1.5px solid #E0D7C6;
+      border-radius: 1.15rem;
+      padding: 1.5rem;
+      box-shadow: 0 2px 10px rgba(22, 31, 54, 0.04);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      position: relative;
+    }
+    .colleague-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 28px rgba(22, 31, 54, 0.08);
+      border-color: #BACBD8;
+    }
+
+    .colleague-card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: 1.15rem;
+    }
+    .colleague-avatar {
+      width: 3.25rem;
+      height: 3.25rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #161F36 0%, #243356 100%);
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      font-weight: 800;
+      flex-shrink: 0;
+      box-shadow: 0 4px 10px rgba(22, 31, 54, 0.15);
+      letter-spacing: 0.5px;
+    }
+    .colleague-avatar.self {
+      box-shadow: 0 0 0 2.5px #FFFFFF, 0 0 0 4.5px #BACBD8;
+    }
+    .colleague-meta {
+      flex: 1;
+      min-width: 0;
+    }
+    .colleague-name-row {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.35rem;
+    }
+    .colleague-name {
+      font-size: 1.08rem;
+      font-weight: 800;
+      color: #161F36;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+    .colleague-you-pill {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #161F36;
+      background: #E8EFF4;
+      border: 1px solid #BACBD8;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      line-height: 1.2;
+    }
+
+    .colleague-role-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+    .colleague-role-badge.psychometrician {
+      background: #F3E8FF;
+      color: #7E22CE;
+      border: 1px solid #E9D5FF;
+    }
+    .colleague-role-badge.psychologist {
+      background: #FEF3C7;
+      color: #B45309;
+      border: 1px solid #FDE68A;
+    }
+
+    /* Colleague Details Card Box */
+    .colleague-details-box {
+      background: #FAF7F2;
+      border: 1px solid #E0D7C6;
+      border-radius: 0.85rem;
+      padding: 0.85rem 1rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .colleague-detail-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      font-size: 0.83rem;
+      line-height: 1.45;
+      color: #475569;
+    }
+    .colleague-detail-icon {
+      width: 1.1rem;
+      color: #64748b;
+      font-size: 0.85rem;
+      margin-top: 0.15rem;
+      flex-shrink: 0;
+      text-align: center;
+    }
+    .colleague-detail-content {
+      flex: 1;
+      min-width: 0;
+      word-break: break-word;
+      white-space: normal; /* CRITICAL FIX: allow natural multi-line wrapping so department names are never sliced mid-word! */
+    }
+    .colleague-detail-content strong {
+      color: #161F36;
+      font-weight: 700;
+    }
+    .colleague-detail-content a {
+      color: #0369A1;
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .colleague-detail-content a:hover {
+      text-decoration: underline;
+      color: #0284C7;
+    }
+
+    /* Quick Copy Staff ID Pill */
+    .staff-id-pill {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 700;
+      font-size: 0.82rem;
+      color: #161F36;
+    }
+    .btn-copy-id {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 0.1rem 0.35rem;
+      margin-left: 0.35rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      transition: all 0.15s ease;
+    }
+    .btn-copy-id:hover {
+      color: #161F36;
+      background: #E8EFF4;
+    }
+
+    /* Colleague Card Footer */
+    .colleague-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 0.9rem;
+      border-top: 1px solid #EFEAE1;
+      gap: 0.75rem;
+      margin-top: auto;
+    }
+    .colleague-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #15803d;
+    }
+    .colleague-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 0 2.5px rgba(34, 197, 94, 0.25);
+      animation: pulse-live 2.5s ease-in-out infinite;
+    }
+
+    .btn-resend-welcome {
+      background: #FAF7F2;
+      border: 1.5px solid #E0D7C6;
+      color: #161F36;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.45rem 0.85rem;
+      border-radius: 0.65rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: all 0.18s ease;
+      font-family: var(--font-sans);
+    }
+    .btn-resend-welcome:hover {
+      background: #161F36;
+      color: #FFFFFF;
+      border-color: #161F36;
+      transform: translateY(-1px);
+    }
+    .btn-resend-welcome i {
+      color: #0284C7;
+      transition: color 0.18s ease;
+    }
+    .btn-resend-welcome:hover i {
+      color: #BACBD8;
+    }
+
+    /* Quick Add Invitation Card (Gracefully fills space when 1 colleague exists) */
+    .colleague-add-card {
+      border: 2px dashed #BACBD8;
+      border-radius: 1.15rem;
+      background: rgba(255, 255, 255, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2.25rem 1.75rem;
+      transition: all 0.2s ease;
+      min-height: 290px;
+    }
+    .colleague-add-card:hover {
+      border-color: #161F36;
+      background: #FFFFFF;
+      box-shadow: 0 8px 24px rgba(22, 31, 54, 0.06);
+      transform: translateY(-2px);
+    }
+    .colleague-add-icon {
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 50%;
+      background: #E8EFF4;
+      color: #161F36;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      margin-bottom: 1rem;
+      transition: transform 0.2s ease;
+    }
+    .colleague-add-card:hover .colleague-add-icon {
+      transform: scale(1.08);
+      background: #161F36;
+      color: #FFFFFF;
+    }
+    .colleague-add-card h4 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #161F36;
+      margin: 0 0 0.4rem 0;
+    }
+    .colleague-add-card p {
+      font-size: 0.84rem;
+      color: #64748b;
+      margin: 0 0 1.25rem 0;
+      max-width: 280px;
+      line-height: 1.45;
+    }
+
+    /* Transfer Admin Button & Admin Badges */
+    .btn-transfer-admin {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.45rem 0.75rem;
+      border-radius: 0.55rem;
+      border: 1.5px solid #DDD6FE;
+      background: #F5F3FF;
+      color: #6D28D9;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-transfer-admin:hover {
+      background: #EDE9FE;
+      border-color: #C4B5FD;
+      color: #5B21B6;
+    }
+    .colleague-admin-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: #EDE9FE;
+      color: #5B21B6;
+      border: 1px solid #DDD6FE;
+    }
+
+    /* Toast Notification */
+    .copy-toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #161F36;
+      color: #FFFFFF;
+      padding: 0.8rem 1.25rem;
+      border-radius: 0.75rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      z-index: 99999;
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
