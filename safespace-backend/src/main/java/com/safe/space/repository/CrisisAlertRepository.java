@@ -14,6 +14,8 @@ public interface CrisisAlertRepository extends JpaRepository<CrisisAlert, Long> 
 
        Optional<CrisisAlert> findFirstByChatSessionIdOrderByCreatedAtDesc(String chatSessionId);
 
+       List<CrisisAlert> findByChatSessionIdOrderByCreatedAtDesc(String chatSessionId);
+
        /** In-progress alerts (ACKNOWLEDGED / active casework) sorted newest first. */
        @Query("SELECT a FROM CrisisAlert a WHERE a.status = 'ACKNOWLEDGED' ORDER BY a.createdAt DESC")
        List<CrisisAlert> findInProgressAlertsPrioritized();
@@ -23,6 +25,18 @@ public interface CrisisAlertRepository extends JpaRepository<CrisisAlert, Long> 
        List<CrisisAlert> findByStatusOrderByCreatedAtDesc(String status);
 
        List<CrisisAlert> findByStatusInOrderByCreatedAtDesc(List<String> statuses);
+
+       /** Archived alerts (soft-deleted/hidden from active history view). */
+       List<CrisisAlert> findByArchivedTrueOrderByCreatedAtDesc();
+
+       /** Unarchived alerts matching a specific status (e.g. RESOLVED or ESCALATED). */
+       List<CrisisAlert> findByStatusAndArchivedFalseOrderByCreatedAtDesc(String status);
+
+       /** Unarchived alerts matching any of the given statuses. */
+       List<CrisisAlert> findByStatusInAndArchivedFalseOrderByCreatedAtDesc(List<String> statuses);
+
+       /** Unarchived alerts for a specific student pseudonym matching any of the given statuses. */
+       List<CrisisAlert> findByPseudonymAndStatusInAndArchivedFalseOrderByCreatedAtDesc(String pseudonym, List<String> statuses);
 
        /** Active alerts sorted newest first so incoming crisis notifications always appear on top. */
        @Query("SELECT a FROM CrisisAlert a WHERE a.status = 'ACTIVE' ORDER BY a.createdAt DESC")
@@ -54,6 +68,9 @@ public interface CrisisAlertRepository extends JpaRepository<CrisisAlert, Long> 
        List<CrisisAlert> findByReferenceIdAndReferenceType(String referenceId, String referenceType);
 
        // ── Pattern detection ──
+
+       /** Find alerts by pseudonym and status list for case consolidation. */
+       List<CrisisAlert> findByPseudonymAndStatusInOrderByCreatedAtDesc(String pseudonym, List<String> statuses);
 
        /** Count active alerts for the same pseudonym (repeat crisis detection). */
        @Query("SELECT COUNT(a) FROM CrisisAlert a WHERE a.pseudonym = :pseudonym AND a.status IN ('ACTIVE','ACKNOWLEDGED') AND a.alertType IN ('CRISIS_POST','HIGH_ENERGY_POST')")

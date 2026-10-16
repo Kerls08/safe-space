@@ -68,15 +68,17 @@ public class PostController {
     }
 
     /**
-     * Get the current user's own posts.
+     * Get the current user's own posts (supports optional filter=ACTIVE|ARCHIVED|ALL).
      */
     @GetMapping("/mine")
-    public ResponseEntity<List<PostResponse>> getMyPosts(HttpServletRequest httpRequest) {
+    public ResponseEntity<List<PostResponse>> getMyPosts(
+            @RequestParam(required = false, defaultValue = "ALL") String filter,
+            HttpServletRequest httpRequest) {
         String username = (String) httpRequest.getAttribute("auth.username");
         if (username == null) {
             return ResponseEntity.ok(List.of());
         }
-        return ResponseEntity.ok(postService.getMyPosts(username));
+        return ResponseEntity.ok(postService.getMyPosts(username, filter));
     }
 
     private boolean isStaffOrAdmin(String role) {
@@ -153,19 +155,61 @@ public class PostController {
     }
 
     /**
-     * Delete a post (professional only).
+     * Archive a post (author student or professional/admin).
+     */
+    @PutMapping("/{postId}/archive")
+    public ResponseEntity<?> archivePost(
+            @PathVariable String postId,
+            HttpServletRequest httpRequest) {
+        String role = (String) httpRequest.getAttribute("auth.role");
+        String username = (String) httpRequest.getAttribute("auth.username");
+        if (username == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
+        }
+        try {
+            return ResponseEntity.ok(postService.archivePost(postId, username, role));
+        } catch (SecurityException se) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", se.getMessage()));
+        }
+    }
+
+    /**
+     * Restore / unarchive a post (author student or professional/admin).
+     */
+    @PutMapping("/{postId}/unarchive")
+    public ResponseEntity<?> unarchivePost(
+            @PathVariable String postId,
+            HttpServletRequest httpRequest) {
+        String role = (String) httpRequest.getAttribute("auth.role");
+        String username = (String) httpRequest.getAttribute("auth.username");
+        if (username == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
+        }
+        try {
+            return ResponseEntity.ok(postService.unarchivePost(postId, username, role));
+        } catch (SecurityException se) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", se.getMessage()));
+        }
+    }
+
+    /**
+     * Delete a post (author student or professional/admin).
      */
     @DeleteMapping("/{postId}")
     public ResponseEntity<?> deletePost(
             @PathVariable String postId,
             HttpServletRequest httpRequest) {
         String role = (String) httpRequest.getAttribute("auth.role");
-        if (!isStaffOrAdmin(role)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Only professionals can delete posts."));
+        String username = (String) httpRequest.getAttribute("auth.username");
+        if (username == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
         }
-        postService.deletePost(postId);
-        return ResponseEntity.noContent().build();
+        try {
+            postService.deletePost(postId, username, role);
+            return ResponseEntity.ok(Map.of("message", "Post permanently deleted", "postId", postId));
+        } catch (SecurityException se) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", se.getMessage()));
+        }
     }
 
     // ── Exception handlers ──

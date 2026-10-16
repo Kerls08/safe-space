@@ -162,6 +162,780 @@
 .stat-card-sub.down { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
 .stat-card-sub.neutral { background: #FAF7F2; color: #6b7280; border: 1px solid #E0D7C6; }
 
+/* ==========================================================
+   Tier 1: Clinical Domain Pulse & Intensity Metrics
+   ========================================================== */
+
+.dash-pulse-section {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.kpi-domain-group {
+  background: #FFFFFF;
+  border: 1.5px solid #E0D7C6;
+  border-radius: 1rem;
+  padding: 1.15rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  box-shadow: 0 1px 4px rgba(22, 31, 54, 0.03);
+  transition: all 0.25s ease;
+}
+
+.kpi-domain-group:hover {
+  border-color: #BACBD8;
+  box-shadow: 0 4px 14px rgba(22, 31, 54, 0.06);
+}
+
+.domain-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px dashed #EAE3D5;
+}
+
+.domain-group-tag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.domain-group-tag.climate {
+  background: #EEF2FF;
+  color: #3730A3;
+  border: 1px solid #C7D2FE;
+}
+
+.domain-group-tag.triage {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FDE68A;
+}
+
+.domain-group-hint {
+  font-size: 0.72rem;
+  color: #8C8270;
+  font-weight: 500;
+}
+
+.kpi-domain-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.kpi-domain-cards .stat-card {
+  background: #FAF7F2;
+  border: 1.5px solid #EAE3D5;
+  border-radius: 0.85rem;
+  padding: 1rem 1.1rem;
+  box-shadow: none;
+}
+
+.kpi-domain-cards .stat-card:hover {
+  background: #FFFFFF;
+  border-color: #BACBD8;
+  box-shadow: 0 4px 12px rgba(22, 31, 54, 0.05);
+}
+
+.stat-card-top-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.scale-denominator {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #8C8270;
+}
+
+.clinical-band-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.stat-card-label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ethical-info-tooltip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #8C8270;
+  font-size: 0.75rem;
+  cursor: help;
+  transition: color 0.15s ease;
+}
+
+.ethical-info-tooltip:hover {
+  color: #161F36;
+}
+
+/* Automated Clinical Pulse Banner */
+.dash-pulse-banner {
+  display: flex;
+  align-items: stretch;
+  background: #FFFFFF;
+  border: 1.5px solid #E0D7C6;
+  border-radius: 0.85rem;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 1px 4px rgba(22, 31, 54, 0.03);
+}
+
+.pulse-banner-indicator {
+  width: 6px;
+  flex-shrink: 0;
+}
+
+.pulse-banner-content {
+  padding: 0.85rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.pulse-banner-title {
+  font-size: 0.85rem;
+  color: #161F36;
+}
+
+.pulse-banner-text {
+  font-size: 0.76rem;
+  color: #524B3D;
+  line-height: 1.45;
+}
+
+/* ==========================================================
+   Tier 2: Primary Visual Analytics (50/50 Grid & SVG Charts)
+   ========================================================== */
+
+.dash-charts-grid {
+  display: grid;
+  grid-template-columns: 1.12fr 0.88fr;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.card-subtitle {
+  font-size: 0.73rem;
+  color: #8C8270;
+  font-weight: 500;
+  margin-top: 0.15rem;
+}
+
+/* Svg Donut Chart */
+.svg-donut-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  padding-top: 0.35rem;
+}
+
+.donut-chart-container {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.donut-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.donut-slice {
+  cursor: pointer;
+  transition: stroke-width 0.2s ease, opacity 0.2s ease;
+}
+
+.donut-slice:hover {
+  opacity: 0.95;
+}
+
+.donut-center-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.donut-center-val {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #161F36;
+  line-height: 1;
+}
+
+.donut-center-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8C8270;
+  margin-top: 0.25rem;
+}
+
+.donut-center-sub {
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-top: 0.2rem;
+  color: #4B5563;
+}
+
+.svg-donut-legend {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 185px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.donut-empty-legend {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #8C8270;
+  padding: 1rem;
+}
+
+.donut-legend-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.5rem;
+  background: #FAF7F2;
+  border: 1px solid #EFE9DE;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.donut-legend-item:hover,
+.donut-legend-item.is-active {
+  background: #F3EFE6;
+  border-color: #D6CEBE;
+  transform: translateX(2px);
+}
+
+.donut-legend-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.donut-color-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.donut-emotion-name {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #161F36;
+}
+
+.donut-legend-right {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.donut-count {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #161F36;
+}
+
+.donut-pct {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #8C8270;
+}
+
+.donut-band-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid transparent;
+}
+
+/* Svg Line Trend Chart */
+.svg-trend-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.trend-empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #8C8270;
+  font-size: 0.8rem;
+}
+
+.trend-chart-container {
+  position: relative;
+  width: 100%;
+}
+
+.trend-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.trend-point {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.svg-chart-tooltip {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  background: #161F36;
+  color: #FFFFFF;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.5rem;
+  pointer-events: none;
+  z-index: 20;
+  box-shadow: 0 4px 14px rgba(22, 31, 54, 0.25);
+  font-size: 0.72rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  white-space: nowrap;
+}
+
+.tooltip-date {
+  color: #94A3B8;
+  font-weight: 600;
+  font-size: 0.68rem;
+}
+
+.tooltip-score {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+}
+
+.tooltip-score strong {
+  color: #FFFFFF;
+}
+
+.tooltip-band {
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.tooltip-volume {
+  color: #CBD5E1;
+  font-size: 0.68rem;
+}
+
+.trend-legend-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1.25rem;
+  margin-top: 0.75rem;
+  font-size: 0.72rem;
+  color: #6B7280;
+}
+
+.trend-legend-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.legend-indicator-line {
+  display: inline-block;
+  width: 16px;
+  height: 2.5px;
+  background: #DC2626;
+  border-radius: 2px;
+}
+
+.legend-indicator-dashed {
+  display: inline-block;
+  width: 16px;
+  height: 0;
+  border-top: 1.5px dashed #DC2626;
+}
+
+/* ==========================================================
+   Tier 3: Severity Spectrum & Priority Triage Widget
+   ========================================================== */
+
+.dash-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Severity Spectrum */
+.severity-spectrum-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 0.25rem;
+}
+
+.severity-segmented-bar {
+  display: flex;
+  height: 22px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #F3EFE6;
+  border: 1px solid #E0D7C6;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.severity-segment {
+  height: 100%;
+  transition: width 0.4s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.severity-segment.low { background: #059669; }
+.severity-segment.mod { background: #F59E0B; }
+.severity-segment.high { background: #DC2626; }
+
+.severity-legend-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.severity-legend-card {
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: #FAF7F2;
+  border: 1px solid #EFE9DE;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.severity-legend-card.low { border-top: 3px solid #059669; }
+.severity-legend-card.mod { border-top: 3px solid #F59E0B; }
+.severity-legend-card.high { border-top: 3px solid #DC2626; }
+
+.severity-legend-card .card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.severity-legend-card .tier-name {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #161F36;
+}
+
+.severity-legend-card .card-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #161F36;
+  line-height: 1.1;
+}
+
+.severity-legend-card .card-pct {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #8C8270;
+}
+
+.severity-legend-card .card-desc {
+  font-size: 0.68rem;
+  color: #6B7280;
+  line-height: 1.35;
+  margin-top: 0.2rem;
+}
+
+/* Priority Triage Widget */
+.triage-widget {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.triage-widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.9rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.btn-open-alerts {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #161F36;
+  text-decoration: none;
+  padding: 0.4rem 0.8rem;
+  background: #FAF7F2;
+  border: 1.5px solid #E0D7C6;
+  border-radius: 0.55rem;
+  transition: all 0.2s ease;
+}
+
+.btn-open-alerts:hover {
+  background: #161F36;
+  color: #FFFFFF;
+  border-color: #161F36;
+  transform: translateY(-1px);
+}
+
+.triage-count-badge {
+  background: #FEE2E2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+}
+
+.triage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  flex-grow: 1;
+  max-height: 245px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: #D6CEBE transparent;
+}
+
+.triage-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.triage-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.triage-list::-webkit-scrollbar-thumb {
+  background: #D6CEBE;
+  border-radius: 999px;
+}
+
+.triage-list::-webkit-scrollbar-thumb:hover {
+  background: #BACBD8;
+}
+
+.triage-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1rem;
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  border-radius: 0.75rem;
+  color: #047857;
+}
+
+.triage-empty strong {
+  display: block;
+  font-size: 0.85rem;
+  color: #065F46;
+}
+
+.triage-empty p {
+  margin: 0;
+  font-size: 0.74rem;
+  color: #047857;
+}
+
+.triage-mini-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.65rem 0.85rem;
+  background: #FAF7F2;
+  border: 1px solid #EADBCE;
+  border-radius: 0.65rem;
+  transition: all 0.15s ease;
+}
+
+.triage-mini-item:hover {
+  background: #FFFFFF;
+  border-color: #BACBD8;
+  transform: translateX(2px);
+  box-shadow: 0 2px 8px rgba(22, 31, 54, 0.04);
+}
+
+.triage-mini-item.critical {
+  border-left: 3.5px solid #DC2626;
+  background: #FFF5F5;
+}
+
+.triage-mini-item.high {
+  border-left: 3.5px solid #EA580C;
+  background: #FFF7ED;
+}
+
+.triage-mini-item.elevated {
+  border-left: 3.5px solid #D97706;
+  background: #FFFBEB;
+}
+
+.triage-mini-item.moderate {
+  border-left: 3.5px solid #2563EB;
+  background: #EFF6FF;
+}
+
+.mini-item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.7rem;
+}
+
+.mini-item-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+}
+
+.mini-item-badge.critical {
+  background: #FEE2E2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
+}
+
+.mini-item-badge.high {
+  background: #FFEDD5;
+  color: #C2410C;
+  border: 1px solid #FED7AA;
+}
+
+.mini-item-badge.elevated {
+  background: #FEF3C7;
+  color: #B45309;
+  border: 1px solid #FDE68A;
+}
+
+.mini-item-badge.moderate {
+  background: #DBEAFE;
+  color: #1E40AF;
+  border: 1px solid #BFDBFE;
+}
+
+.mini-item-score-pill {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #161F36;
+  background: #FFFFFF;
+  border: 1px solid #D6CEBE;
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  letter-spacing: -0.01em;
+}
+
+.mini-item-type {
+  font-weight: 700;
+  color: #161F36;
+  text-transform: capitalize;
+}
+
+.mini-item-time {
+  margin-left: auto;
+  color: #8C8270;
+  font-size: 0.68rem;
+}
+
+.mini-item-summary {
+  font-size: 0.75rem;
+  color: #4B5563;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.triage-ops-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed #E0D7C6;
+}
+
+.triage-op-pill {
+  font-size: 0.7rem;
+  color: #6B7280;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.triage-op-pill .op-title {
+  font-weight: 700;
+  color: #161F36;
+  font-size: 0.72rem;
+}
+
+.triage-op-pill strong {
+  color: #161F36;
+}
+
 /* Dashboard Grid */
 .dash-grid {
   display: grid;
@@ -299,18 +1073,24 @@
 .emotion-bars { display: flex; flex-direction: column; gap: 0.6rem; }
 
 .emotion-bar-row {
-  display: flex; align-items: center; gap: 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .emotion-bar-label {
   width: 80px; font-size: 0.75rem; font-weight: 600; color: #161F36;
   text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .emotion-bar-track {
   flex: 1; height: 1.35rem; background: #FAF7F2;
   border: 1px solid #E0D7C6;
   border-radius: 999px; overflow: hidden;
+  min-width: 0;
 }
 
 .emotion-bar-fill {
@@ -322,8 +1102,15 @@
 }
 
 .emotion-bar-energy {
-  width: 3rem; text-align: center; font-size: 0.7rem; font-weight: 700;
-  padding: 0.15rem 0.35rem; border-radius: 0.3rem;
+  min-width: 3.4rem;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.18rem 0.45rem;
+  border-radius: 0.35rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 /* Energy Distribution */
@@ -392,6 +1179,12 @@
   .stats-row { grid-template-columns: repeat(3, 1fr); }
   .dash-grid { grid-template-columns: 1fr; }
   .dash-bottom { grid-template-columns: 1fr; }
+  .dash-charts-grid { grid-template-columns: 1fr; }
+  .dash-bottom-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 860px) {
+  .dash-pulse-section { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {
@@ -422,6 +1215,9 @@
   .energy-segment .val { font-size: 1.2rem; }
 
   .chart-bars { height: 80px; }
+
+  .severity-legend-grid { grid-template-columns: 1fr; }
+  .trend-legend-bar { justify-content: flex-start; flex-wrap: wrap; gap: 0.75rem; }
 }
 
 @media (max-width: 480px) {
@@ -430,6 +1226,10 @@
   .stat-card-value { font-size: 1.15rem; }
   .stat-card-label { font-size: 0.65rem; }
   .refresh-btn { font-size: 0.7rem; padding: 0.38rem 0.65rem; }
+
+  .kpi-domain-cards { grid-template-columns: 1fr; gap: 0.6rem; }
+  .donut-chart-container { width: 180px; height: 180px; }
+  .donut-center-val { font-size: 1.5rem; }
 }
 
 /* ============================================

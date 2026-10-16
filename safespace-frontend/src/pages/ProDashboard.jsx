@@ -1,7 +1,22 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { dashboardApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import '../styles/dashboard.css';
+
+export function getClinicalBand(score) {
+  const val = parseFloat(score) || 0;
+  if (val >= 8.5) {
+    return { label: 'Acute Intensity', tier: 'ACUTE', color: '#DC2626', bg: '#FEE2E2', border: '#FECACA', dot: '🔴', desc: 'Crisis threshold — priority psychological triage triggered' };
+  }
+  if (val >= 7.0) {
+    return { label: 'Elevated Tension', tier: 'ELEVATED', color: '#EA580C', bg: '#FFEDD5', border: '#FED7AA', dot: '🟠', desc: 'Heightened affective arousal — professional observation advised' };
+  }
+  if (val >= 4.0) {
+    return { label: 'Moderate Stress', tier: 'MODERATE', color: '#D97706', bg: '#FEF3C7', border: '#FDE68A', dot: '🟡', desc: 'Situational strain — adaptive wellness resources recommended' };
+  }
+  return { label: 'Balanced / Low', tier: 'BALANCED', color: '#059669', bg: '#D1FAE5', border: '#A7F3D0', dot: '🟢', desc: 'Baseline emotional state — routine psychological observation' };
+}
 
 const EMOTION_COLORS = {
   'Anxious': '#f59e0b',
@@ -10,16 +25,518 @@ const EMOTION_COLORS = {
   'Lonely': '#8b5cf6',
   'Frustrated': '#f97316',
   'Neutral': '#6b7280',
-  'Relieved': '#3b82f6',
-  'Happy': '#161F36'
+  'Relieved': '#10b981',
+  'Happy': '#059669'
 };
 
 const TIER_COLORS = {
-  'low': '#161F36',
+  'low': '#059669',
   'mid': '#f59e0b',
   'high': '#ef4444',
   'crisis': '#7f1d1d'
 };
+
+function SvgDonutChart({ emotions = [], total = 0 }) {
+  const [hoveredIdx, setHoveredIdx] = useState(null);
+
+  const validTotal = total > 0 ? total : emotions.reduce((acc, e) => acc + (e.count || 0), 0);
+  const size = 220;
+  const strokeWidth = 26;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  const sorted = [...emotions].sort((a, b) => (b.count || 0) - (a.count || 0));
+
+  let accumulated = 0;
+  const slices = sorted.map((e, idx) => {
+    const count = e.count || 0;
+    const ratio = validTotal > 0 ? count / validTotal : 0;
+    const strokeDasharray = `${ratio * circumference} ${circumference}`;
+    const strokeDashoffset = -accumulated * circumference;
+    accumulated += ratio;
+    const pct = validTotal > 0 ? Math.round(ratio * 100) : 0;
+    const color = EMOTION_COLORS[e.emotion] || '#6B7280';
+    const band = getClinicalBand(e.avgEnergy || 5);
+    return {
+      ...e,
+      idx,
+      ratio,
+      pct,
+      color,
+      band,
+      strokeDasharray,
+      strokeDashoffset
+    };
+  });
+
+  const dominant = slices.length > 0 ? slices[0] : null;
+
+  return (
+    <div className="svg-donut-wrap">
+      <div className="donut-chart-container">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="donut-svg">
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="#F3EFE6"
+            strokeWidth={strokeWidth}
+          />
+          {slices.map((s) => (
+            <circle
+              key={s.emotion}
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke={s.color}
+              strokeWidth={hoveredIdx === s.idx ? strokeWidth + 4 : strokeWidth}
+              strokeDasharray={s.strokeDasharray}
+              strokeDashoffset={s.strokeDashoffset}
+              strokeLinecap="round"
+              className="donut-slice"
+              transform={`rotate(-90 ${size / 2} ${size / 2})`}
+              onMouseEnter={() => setHoveredIdx(s.idx)}
+              onMouseLeave={() => setHoveredIdx(null)}
+            />
+          ))}
+        </svg>
+        <div className="donut-center-text">
+          <div className="donut-center-val">
+            {hoveredIdx !== null ? slices[hoveredIdx]?.count : validTotal}
+          </div>
+          <div className="donut-center-label">
+            {hoveredIdx !== null ? slices[hoveredIdx]?.emotion : 'Total Expressions'}
+          </div>
+          {hoveredIdx !== null ? (
+            <div className="donut-center-sub" style={{ color: slices[hoveredIdx]?.color }}>
+              {slices[hoveredIdx]?.pct}% • {slices[hoveredIdx]?.band.label}
+            </div>
+          ) : dominant ? (
+            <div className="donut-center-sub">
+              {dominant.emotion} ({dominant.pct}%)
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="svg-donut-legend">
+        {slices.length === 0 ? (
+          <div className="donut-empty-legend">No emotion reflections logged yet</div>
+        ) : (
+          slices.map((s) => (
+            <div
+              key={s.emotion}
+              className={`donut-legend-item ${hoveredIdx === s.idx ? 'is-active' : ''}`}
+              onMouseEnter={() => setHoveredIdx(s.idx)}
+              onMouseLeave={() => setHoveredIdx(null)}
+            >
+              <div className="donut-legend-left">
+                <span className="donut-color-dot" style={{ background: s.color }}></span>
+                <span className="donut-emotion-name">{s.emotion}</span>
+              </div>
+              <div className="donut-legend-right">
+                <span className="donut-count">{s.count}</span>
+                <span className="donut-pct">{s.pct}%</span>
+                <span
+                  className="donut-band-tag"
+                  style={{ background: s.band.bg, color: s.band.color, borderColor: s.band.border }}
+                >
+                  {s.avgEnergy ? (Number.isInteger(s.avgEnergy) ? s.avgEnergy : s.avgEnergy.toFixed(1)) : '—'}/10
+                </span>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SvgLineTrendChart({ snapshots = [] }) {
+  const [hoveredPoint, setHoveredPoint] = useState(null);
+
+  if (!snapshots || snapshots.length === 0) {
+    return (
+      <div className="trend-empty-state">
+        <p>No 7-day longitudinal telemetry recorded yet.</p>
+      </div>
+    );
+  }
+
+  const width = 540;
+  const height = 220;
+  const paddingLeft = 45;
+  const paddingRight = 20;
+  const paddingTop = 25;
+  const paddingBottom = 35;
+
+  const chartW = width - paddingLeft - paddingRight;
+  const chartH = height - paddingTop - paddingBottom;
+
+  const getY = (val) => {
+    const clamped = Math.max(1, Math.min(10, val));
+    return paddingTop + ((10 - clamped) / 9) * chartH;
+  };
+
+  const getX = (index) => {
+    if (snapshots.length <= 1) return paddingLeft + chartW / 2;
+    return paddingLeft + (index / (snapshots.length - 1)) * chartW;
+  };
+
+  const points = snapshots.map((s, idx) => ({
+    ...s,
+    x: getX(idx),
+    y: getY(s.avgEnergy || 5),
+    band: getClinicalBand(s.avgEnergy || 5)
+  }));
+
+  let pathD = '';
+  if (points.length === 1) {
+    pathD = `M ${points[0].x - 20} ${points[0].y} L ${points[0].x + 20} ${points[0].y}`;
+  } else {
+    pathD = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i];
+      const p1 = points[i + 1];
+      const cpX1 = p0.x + (p1.x - p0.x) / 2;
+      const cpY1 = p0.y;
+      const cpX2 = p0.x + (p1.x - p0.x) / 2;
+      const cpY2 = p1.y;
+      pathD += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${p1.x} ${p1.y}`;
+    }
+  }
+
+  const bottomY = paddingTop + chartH;
+  const areaD = points.length > 1
+    ? `${pathD} L ${points[points.length - 1].x} ${bottomY} L ${points[0].x} ${bottomY} Z`
+    : '';
+
+  const thresholdY = getY(8.0);
+
+  return (
+    <div className="svg-trend-wrap">
+      <div className="trend-chart-container">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          className="trend-svg"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <defs>
+            <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#DC2626" stopOpacity="0.22" />
+              <stop offset="60%" stopColor="#F59E0B" stopOpacity="0.08" />
+              <stop offset="100%" stopColor="#FAF7F2" stopOpacity="0.0" />
+            </linearGradient>
+          </defs>
+
+          {[10, 8, 6, 4, 2].map((val) => {
+            const y = getY(val);
+            return (
+              <g key={val}>
+                <line
+                  x1={paddingLeft}
+                  y1={y}
+                  x2={width - paddingRight}
+                  y2={y}
+                  stroke="#E8E2D5"
+                  strokeWidth="1"
+                  strokeDasharray="2 3"
+                />
+                <text
+                  x={paddingLeft - 8}
+                  y={y + 3.5}
+                  fontSize="10"
+                  textAnchor="end"
+                  fill="#8C8270"
+                  fontWeight="600"
+                >
+                  {val}.0
+                </text>
+              </g>
+            );
+          })}
+
+          <line
+            x1={paddingLeft}
+            y1={thresholdY}
+            x2={width - paddingRight}
+            y2={thresholdY}
+            stroke="#DC2626"
+            strokeWidth="1.5"
+            strokeDasharray="4 4"
+          />
+          <text
+            x={width - paddingRight - 4}
+            y={thresholdY - 5}
+            fontSize="9"
+            textAnchor="end"
+            fill="#DC2626"
+            fontWeight="700"
+          >
+            Clinical Threshold (8.0)
+          </text>
+
+          {areaD && <path d={areaD} fill="url(#areaGradient)" />}
+
+          <path
+            d={pathD}
+            fill="none"
+            stroke="#DC2626"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          />
+
+          {points.map((p, idx) => (
+            <g key={idx}>
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r="14"
+                fill="transparent"
+                style={{ cursor: 'pointer' }}
+                onMouseEnter={() => setHoveredPoint(p)}
+                onMouseLeave={() => setHoveredPoint(null)}
+              />
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={hoveredPoint?.date === p.date ? "6" : "4.5"}
+                fill="#FFFFFF"
+                stroke={p.band.color}
+                strokeWidth="2.5"
+                className="trend-point"
+              />
+              <text
+                x={p.x}
+                y={height - 12}
+                fontSize="10"
+                textAnchor="middle"
+                fill="#6B7280"
+                fontWeight="600"
+              >
+                {p.date ? p.date.substring(5) : ''}
+              </text>
+              <text
+                x={p.x}
+                y={height - 2}
+                fontSize="8.5"
+                textAnchor="middle"
+                fill="#8C8270"
+              >
+                {p.postCount} posts
+              </text>
+            </g>
+          ))}
+        </svg>
+
+        {hoveredPoint && (
+          <div
+            className="svg-chart-tooltip"
+            style={{
+              left: `${(hoveredPoint.x / width) * 100}%`,
+              top: `${Math.max(10, (hoveredPoint.y / height) * 100 - 30)}%`
+            }}
+          >
+            <div className="tooltip-date">{hoveredPoint.date}</div>
+            <div className="tooltip-score">
+              <strong>{hoveredPoint.avgEnergy ? hoveredPoint.avgEnergy.toFixed(1) : '—'} / 10</strong>
+              <span className="tooltip-band" style={{ color: hoveredPoint.band.color }}>
+                {hoveredPoint.band.label}
+              </span>
+            </div>
+            <div className="tooltip-volume">{hoveredPoint.postCount} student expressions</div>
+          </div>
+        )}
+      </div>
+
+      <div className="trend-legend-bar">
+        <div className="trend-legend-pill">
+          <span className="legend-indicator-line"></span>
+          <span>Affective Intensity Curve</span>
+        </div>
+        <div className="trend-legend-pill alert-thresh">
+          <span className="legend-indicator-dashed"></span>
+          <span>Acute Threshold (≥ 8.0)</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SeveritySpectrumBar({ low = 0, mod = 0, high = 0, total = 0 }) {
+  const effectiveTotal = total > 0 ? total : Math.max(1, low + mod + high);
+  const lowPct = Math.round((low / effectiveTotal) * 100);
+  const modPct = Math.round((mod / effectiveTotal) * 100);
+  const highPct = Math.max(0, 100 - lowPct - modPct);
+
+  return (
+    <div className="severity-spectrum-wrap">
+      <div className="severity-segmented-bar">
+        {lowPct > 0 && (
+          <div
+            className="severity-segment low"
+            style={{ width: `${lowPct}%` }}
+            title={`Balanced / Low (1–3): ${low} students (${lowPct}%)`}
+          >
+            {lowPct >= 10 && <span>{lowPct}%</span>}
+          </div>
+        )}
+        {modPct > 0 && (
+          <div
+            className="severity-segment mod"
+            style={{ width: `${modPct}%` }}
+            title={`Moderate Strain (4–7): ${mod} students (${modPct}%)`}
+          >
+            {modPct >= 10 && <span>{modPct}%</span>}
+          </div>
+        )}
+        {highPct > 0 && (
+          <div
+            className="severity-segment high"
+            style={{ width: `${highPct}%` }}
+            title={`Acute Distress (8–10): ${high} students (${highPct}%)`}
+          >
+            {highPct >= 10 && <span>{highPct}%</span>}
+          </div>
+        )}
+      </div>
+
+      <div className="severity-legend-grid">
+        <div className="severity-legend-card low">
+          <div className="card-top">
+            <span className="tier-dot">🟢</span>
+            <span className="tier-name">Balanced (1–3)</span>
+          </div>
+          <div className="card-val">{low} <span className="card-pct">({lowPct}%)</span></div>
+          <div className="card-desc">Baseline psychological state; routine peer mirror support.</div>
+        </div>
+
+        <div className="severity-legend-card mod">
+          <div className="card-top">
+            <span className="tier-dot">🟡</span>
+            <span className="tier-name">Moderate (4–7)</span>
+          </div>
+          <div className="card-val">{mod} <span className="card-pct">({modPct}%)</span></div>
+          <div className="card-desc">Situational strain; self-directed calm-down kit recommended.</div>
+        </div>
+
+        <div className="severity-legend-card high">
+          <div className="card-top">
+            <span className="tier-dot">🔴</span>
+            <span className="tier-name">Acute (8–10)</span>
+          </div>
+          <div className="card-val">{high} <span className="card-pct">({highPct}%)</span></div>
+          <div className="card-desc">Acute distress threshold; active psychological triage monitoring.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PriorityTriageWidget({ alerts = [], totalAlerts = 0, overview }) {
+  // Show all unresolved alerts in a smoothly scrollable list (3-4 visible in frame)
+  const displayAlerts = alerts;
+
+  return (
+    <div className="triage-widget">
+      <div className="triage-widget-header">
+        <div>
+          <h3>Clinical Triage Priority</h3>
+          <p className="card-subtitle">Active psychological alerts requiring professional review</p>
+        </div>
+        <Link to="/crisis-alerts" className="btn-open-alerts" title="Open full triage room">
+          <span>Alerts Console</span>
+          {totalAlerts > 0 && <span className="triage-count-badge">{totalAlerts}</span>}
+          <i className="fas fa-arrow-right"></i>
+        </Link>
+      </div>
+
+      <div className="triage-list">
+        {displayAlerts.length === 0 ? (
+          <div className="triage-empty">
+            <span className="triage-empty-dot">🟢</span>
+            <div>
+              <strong>All Clear</strong>
+              <p>No unreviewed crisis alerts. Campus affective climate is steady.</p>
+            </div>
+          </div>
+        ) : (
+          displayAlerts.map((a, idx) => {
+            const severityStr = (a.severity || '').toLowerCase();
+            const energyVal = a.energyScore ? parseInt(a.energyScore, 10) : null;
+
+            const isCritical =
+              severityStr === 'critical' ||
+              (energyVal !== null && energyVal >= 10) ||
+              (a.alertType || '').toLowerCase().includes('crisis');
+
+            const isHigh =
+              !isCritical &&
+              (severityStr === 'high' || (energyVal !== null && energyVal === 9));
+
+            const isElevated =
+              !isCritical &&
+              !isHigh &&
+              (severityStr === 'elevated' || (energyVal !== null && energyVal === 8));
+
+            const badgeClass = isCritical
+              ? 'critical'
+              : isHigh
+              ? 'high'
+              : isElevated
+              ? 'elevated'
+              : 'moderate';
+
+            const badgeLabel = isCritical
+              ? 'CRITICAL'
+              : isHigh
+              ? 'HIGH'
+              : isElevated
+              ? 'ELEVATED'
+              : 'MODERATE';
+
+            const typeLabel = (a.alertType || '').replace(/_/g, ' ');
+
+            return (
+              <div key={a.id || a.referenceId || idx} className={`triage-mini-item ${badgeClass}`}>
+                <div className="mini-item-header">
+                  <span className={`mini-item-badge ${badgeClass}`}>
+                    {badgeLabel}
+                  </span>
+                  <span className="mini-item-type">{typeLabel}</span>
+                  {energyVal !== null && (
+                    <span className="mini-item-score-pill">
+                      {energyVal}/10
+                    </span>
+                  )}
+                  <span className="mini-item-time">{timeAgo(a.timestamp)}</span>
+                </div>
+                <div className="mini-item-summary">{a.summary || a.message || 'Crisis reflection flagged'}</div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      <div className="triage-ops-footer">
+        <div className="triage-op-pill">
+          <span className="op-title">Support Dialogues</span>
+          <span className="op-stat">
+            <strong>{overview?.chatSessionsActive || 0}</strong> active • <strong>{overview?.chatSessionsWaiting || 0}</strong> waiting
+          </span>
+        </div>
+        <div className="triage-op-pill">
+          <span className="op-title">Grounding Exercises</span>
+          <span className="op-stat">
+            <strong>{overview?.totalKitPrescriptions || 0}</strong> prescribed ({overview?.kitCompletionRate || 0}% completed)
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function parseDateString(ds) {
   if (!ds) return null;
@@ -90,15 +607,13 @@ export default function ProDashboard() {
       ]);
       if (!isMountedRef.current) return;
       setOverview(ov);
+      if (ov && ov.flaggedPosts !== undefined) {
+        localStorage.setItem('safespace_seen_flagged_posts', String(ov.flaggedPosts));
+      }
+      updateBadge('pro-dashboard', 0);
       setAlertsData(al);
       setTrendsData(tr);
       setLastUpdated('just now');
-      if (al && typeof al.totalAlerts === 'number') {
-        updateBadge('crisis-alerts', al.totalAlerts);
-      }
-      if (ov && typeof ov.flaggedPosts === 'number') {
-        updateBadge('pro-dashboard', ov.flaggedPosts);
-      }
     } catch (err) {
       console.error('Dashboard load error:', err);
     } finally {
@@ -106,6 +621,15 @@ export default function ProDashboard() {
         setIsSpinning(false);
       }
     }
+  }, [updateBadge]);
+
+  // Clear pro-dashboard badge on mount & record last seen timestamp
+  useEffect(() => {
+    updateBadge('pro-dashboard', 0);
+    localStorage.setItem('safespace_last_seen_dashboard', new Date().toISOString());
+    return () => {
+      updateBadge('pro-dashboard', 0);
+    };
   }, [updateBadge]);
 
   useEffect(() => {
@@ -229,15 +753,26 @@ export default function ProDashboard() {
     return tB - tA;
   });
 
+  const avgEnergyScore = overview?.averageEnergyScore || 0;
+  const energyBand = getClinicalBand(avgEnergyScore);
+  const formattedEnergyScore = typeof avgEnergyScore === 'number'
+    ? (Number.isInteger(avgEnergyScore) ? avgEnergyScore : avgEnergyScore.toFixed(1))
+    : (parseFloat(avgEnergyScore) ? parseFloat(avgEnergyScore).toFixed(1) : '—');
+
+  const dominantEmotion = overview?.emotionBreakdown?.length > 0
+    ? [...overview.emotionBreakdown].sort((a, b) => (b.count || 0) - (a.count || 0))[0]
+    : null;
+  const dominantPct = overview?.totalPosts > 0 && dominantEmotion
+    ? Math.round((dominantEmotion.count / overview.totalPosts) * 100)
+    : 0;
+
   return (
     <div className="dash-layout">
       <div className="dash-container">
         {/* Header */}
         <div className="dash-header">
           <div>
-            <h1>
-              <i className="fas fa-chart-line"></i> Monitoring Dashboard
-            </h1>
+            <h1>Monitoring Dashboard</h1>
             <div className="last-updated">
               <span className="live-dot"></span>
               <span>
@@ -263,471 +798,163 @@ export default function ProDashboard() {
           </div>
         </div>
 
-        {/* 5 Stat Cards */}
-        <div className="stats-row" id="statsRow">
-          <div className="stat-card">
-            <div className="stat-card-icon">
-              <i className="fas fa-comment-dots"></i>
+        {/* ── TIER 1: EXECUTIVE CLINICAL PULSE (Grouped into 2 Clean Domains) ── */}
+        <div className="dash-pulse-section">
+          {/* Domain 1: Campus Affective Climate */}
+          <div className="kpi-domain-group">
+            <div className="domain-group-header">
+              <span className="domain-group-tag climate">Campus Affective Climate</span>
+              <span className="domain-group-hint">Aggregated student self-report telemetry</span>
             </div>
-            <div className="stat-card-value" id="statPosts">
-              {overview ? overview.totalPosts : '—'}
-            </div>
-            <div className="stat-card-label">Total Expressions</div>
-            <div className="stat-card-sub neutral" id="statPostsToday">
-              <i className="fas fa-clock"></i> {overview ? overview.totalPostsToday : '—'} today
-            </div>
-          </div>
-
-          <div className="stat-card blue">
-            <div className="stat-card-icon">
-              <i className="fas fa-heart-pulse"></i>
-            </div>
-            <div className="stat-card-value" id="statEnergy">
-              {overview ? overview.averageEnergyScore : '—'}
-            </div>
-            <div className="stat-card-label">Campus Emotional Energy</div>
-            <div className={`stat-card-sub ${eClass}`} id="statEnergyToday">
-              <i
-                className={`fas fa-${
-                  eClass === 'down' ? 'arrow-up' : eClass === 'up' ? 'arrow-down' : 'minus'
-                }`}
-              ></i>{' '}
-              {overview ? overview.averageEnergyToday : '—'} today
-            </div>
-          </div>
-
-          <div className="stat-card red">
-            <div className="stat-card-icon">
-              <i className="fas fa-shield-halved"></i>
-            </div>
-            <div className="stat-card-value" id="statCrisis">
-              {overview ? overview.totalCrisisEvents : '—'}
-            </div>
-            <div className="stat-card-label">Crisis Triggers</div>
-            <div className="stat-card-sub down" id="statFlagged">
-              <i className="fas fa-flag"></i> {overview ? overview.flaggedPosts : '—'} flagged
-            </div>
-          </div>
-
-          <div className="stat-card amber">
-            <div className="stat-card-icon">
-              <i className="fas fa-comments"></i>
-            </div>
-            <div className="stat-card-value" id="statChats">
-              {overview ? overview.chatSessionsTotal : '—'}
-            </div>
-            <div className="stat-card-label">Support Dialogues</div>
-            <div className="stat-card-sub neutral" id="statChatWaiting">
-              <i className="fas fa-clock"></i> {overview ? overview.chatSessionsWaiting : '—'} waiting
-            </div>
-          </div>
-
-          <div className="stat-card purple">
-            <div className="stat-card-icon">
-              <i className="fas fa-spa"></i>
-            </div>
-            <div className="stat-card-value" id="statKits">
-              {overview ? overview.totalKitPrescriptions : '—'}
-            </div>
-            <div className="stat-card-label">Grounding Exercises</div>
-            <div className="stat-card-sub up" id="statKitRate">
-              <i className="fas fa-check"></i> {overview ? overview.kitCompletionRate : '—'}% done
-            </div>
-          </div>
-        </div>
-
-        {/* Main Grid: Alerts + Emotions */}
-        <div className="dash-grid">
-          {/* Alerts */}
-          <div className="dash-card">
-            <div className="dash-card-header">
-              <h3>
-                <i className="fas fa-bell icon-alerts"></i> Crisis Alerts
-              </h3>
-              {alertsData.totalAlerts > 0 && (
-                <span className="badge badge-red" id="alertCount">
-                  {alertsData.totalAlerts} alert{alertsData.totalAlerts > 1 ? 's' : ''}
-                </span>
-              )}
-            </div>
-            <div className="alert-list" id="alertList">
-              {alertsData.totalAlerts === 0 ? (
-                <div className="alert-empty">
-                  <i className="fas fa-check-circle"></i>
-                  <br />
-                  No active alerts — campus is calm
+            <div className="kpi-domain-cards">
+              {/* Card 1: Total Expressions */}
+              <div className="stat-card">
+                <div className="stat-card-value">{overview ? overview.totalPosts : '—'}</div>
+                <div className="stat-card-label">Total Expressions</div>
+                <div className="stat-card-sub neutral">
+                  <span>+{overview ? overview.totalPostsToday : 0} shared today</span>
                 </div>
-              ) : (
-                sortedAlerts.map((a, i) => {
-                  const icon =
-                    a.alertType === 'flagged_post'
-                      ? 'fa-flag'
-                      : a.alertType === 'crisis_chat'
-                      ? 'fa-comment-medical'
-                      : 'fa-bolt';
-                  const typeLabel = (a.alertType || '')
-                    .replace(/_/g, ' ')
-                    .replace(/\b\w/g, (l) => l.toUpperCase());
-                  const time = a.timestamp ? timeAgo(a.timestamp) : '';
+              </div>
 
-                  return (
-                    <div key={a.id || i} className={`alert-item ${a.severity}`}>
-                      <div className="alert-icon">
-                        <i className={`fas ${icon}`}></i>
-                      </div>
-                      <div className="alert-content">
-                        <div className="alert-title">
-                          {typeLabel} — {(a.severity || '').toUpperCase()}
-                        </div>
-                        <div className="alert-summary">{a.summary}</div>
-                        <div className="alert-meta">
-                          {a.emotionTag && <span className="tag emotion">{a.emotionTag}</span>}
-                          {a.energyScore && <span className="tag energy">⚡{a.energyScore}</span>}
-                          {a.flaggedKeywords && (
-                            <span className="tag keywords">{a.flaggedKeywords}</span>
-                          )}
-                          <span>{time}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          {/* Emotion Breakdown */}
-          <div className="dash-card">
-            <div className="dash-card-header">
-              <h3>
-                <i className="fas fa-heart-pulse icon-emotions"></i> Emotion Breakdown
-              </h3>
-            </div>
-            <div className="emotion-bars" id="emotionBars">
-              {overview?.emotionBreakdown?.map((e) => {
-                const pct = (e.count / maxEmotionCount) * 100;
-                const color = EMOTION_COLORS[e.emotion] || '#6b7280';
-                const energyColor =
-                  e.avgEnergy >= 7 ? '#dc2626' : e.avgEnergy >= 4 ? '#d97706' : '#161F36';
-                return (
-                  <div key={e.emotion} className="emotion-bar-row">
-                    <div className="emotion-bar-label">{e.emotion}</div>
-                    <div className="emotion-bar-track">
-                      <div
-                        className="emotion-bar-fill"
-                        style={{ width: `${Math.max(pct, 8)}%`, background: color }}
-                      >
-                        {e.count}
-                      </div>
-                    </div>
-                    <div
-                      className="emotion-bar-energy"
-                      style={{ background: `${energyColor}15`, color: energyColor }}
-                    >
-                      ⚡{e.avgEnergy}
-                    </div>
+              {/* Card 2: Campus Emotional Intensity */}
+              <div className="stat-card intensity-card">
+                <div className="stat-card-top-row">
+                  <div className="stat-card-value">
+                    {formattedEnergyScore} <span className="scale-denominator">/ 10</span>
                   </div>
-                );
-              })}
-            </div>
-
-            <div className="dash-card-header" style={{ marginTop: '1.25rem' }}>
-              <h3>
-                <i className="fas fa-chart-pie icon-energy"></i> Energy Distribution
-              </h3>
-            </div>
-            <div className="energy-dist" id="energyDist">
-              <div className="energy-segment low">
-                <div className="val" id="distLow">
-                  {overview ? overview.energyLow : '—'}
-                </div>
-                <div className="lbl">Low (1-3)</div>
-              </div>
-              <div className="energy-segment mod">
-                <div className="val" id="distMod">
-                  {overview ? overview.energyModerate : '—'}
-                </div>
-                <div className="lbl">Moderate (4-7)</div>
-              </div>
-              <div className="energy-segment high">
-                <div className="val" id="distHigh">
-                  {overview ? overview.energyHigh : '—'}
-                </div>
-                <div className="lbl">High (8-10)</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Row: Trends + Reply Tiers + Emotion Trend */}
-        <div className="dash-bottom">
-          {/* Daily Activity Chart */}
-          <div className="dash-card">
-            <div className="dash-card-header">
-              <h3>
-                <i className="fas fa-chart-bar icon-activity"></i> Daily Activity
-              </h3>
-              <span className="badge badge-gray" id="trendDays">
-                7 days
-              </span>
-            </div>
-            <div className="chart-bars" id="trendChart">
-              {trendsData.dailySnapshots.length === 0 ? (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                    color: 'var(--gray)',
-                    fontSize: '0.8rem'
-                  }}
-                >
-                  No data yet
-                </div>
-              ) : (
-                trendsData.dailySnapshots.map((s, idx) => {
-                  const h = (s.postCount / maxPosts) * 100;
-                  const eH = (s.avgEnergy / 10) * 100;
-                  return (
-                    <React.Fragment key={idx}>
-                      <div
-                        className="chart-bar"
-                        style={{
-                          height: `${Math.max(h, 5)}%`,
-                          background: 'var(--primary)',
-                          opacity: 0.8
-                        }}
-                      >
-                        <div className="tooltip">
-                          {s.postCount} posts, avg ⚡{s.avgEnergy}
-                        </div>
-                      </div>
-                      <div
-                        className="chart-bar"
-                        style={{
-                          height: `${Math.max(eH, 5)}%`,
-                          background: 'var(--accent)',
-                          opacity: 0.6
-                        }}
-                      >
-                        <div className="tooltip">Avg Energy: {s.avgEnergy}</div>
-                      </div>
-                    </React.Fragment>
-                  );
-                })
-              )}
-            </div>
-            <div className="chart-labels" id="trendLabels">
-              {trendsData.dailySnapshots.map((s, idx) => (
-                <React.Fragment key={idx}>
-                  <span>{s.date ? s.date.substring(5) : ''}</span>
-                  <span></span>
-                </React.Fragment>
-              ))}
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                gap: '0.75rem',
-                marginTop: '0.5rem',
-                fontSize: '0.65rem',
-                color: 'var(--gray)'
-              }}
-            >
-              <span>
-                <span
-                  style={{
-                    display: 'inline-block',
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '2px',
-                    background: '#4F46E5',
-                    marginRight: '3px'
-                  }}
-                ></span>
-                Posts
-              </span>
-              <span>
-                <span
-                  style={{
-                    display: 'inline-block',
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '2px',
-                    background: '#38BDF8',
-                    marginRight: '3px'
-                  }}
-                ></span>
-                Avg Energy
-              </span>
-            </div>
-          </div>
-
-          {/* Reply Tier Distribution */}
-          <div className="dash-card">
-            <div className="dash-card-header">
-              <h3>
-                <i className="fas fa-robot icon-tiers"></i> Reply Tiers
-              </h3>
-              <span className="badge badge-green" id="totalReplies">
-                {totalReplies} total
-              </span>
-            </div>
-            <div id="tierBars" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {overview?.replyTierDistribution?.length > 0 ? (
-                overview.replyTierDistribution.map((t) => {
-                  const pct = totalReplies > 0 ? (t.count / totalReplies) * 100 : 0;
-                  return (
-                    <div key={t.tier} className="emotion-bar-row">
-                      <div
-                        className="emotion-bar-label"
-                        style={{ width: '50px', textTransform: 'uppercase' }}
-                      >
-                        {t.tier}
-                      </div>
-                      <div className="emotion-bar-track">
-                        <div
-                          className="emotion-bar-fill"
-                          style={{
-                            width: `${Math.max(pct, 5)}%`,
-                            background: TIER_COLORS[t.tier] || '#6b7280'
-                          }}
-                        >
-                          {t.count}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div
-                  style={{
-                    fontSize: '0.75rem',
-                    color: 'var(--gray)',
-                    textAlign: 'center',
-                    padding: '0.5rem'
-                  }}
-                >
-                  No replies yet
-                </div>
-              )}
-            </div>
-
-            <div
-              style={{
-                marginTop: '1rem',
-                paddingTop: '0.75rem',
-                borderTop: '1px solid var(--gray-light)'
-              }}
-            >
-              <div className="dash-card-header" style={{ marginBottom: '0.5rem' }}>
-                <h3>
-                  <i className="fas fa-comments icon-chat"></i> Chat Status
-                </h3>
-              </div>
-              <div
-                id="chatStatusBars"
-                style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}
-              >
-                {chatData.map((c) => (
-                  <div key={c.label} className="emotion-bar-row">
-                    <div className="emotion-bar-label" style={{ width: '55px' }}>
-                      {c.label}
-                    </div>
-                    <div className="emotion-bar-track" style={{ height: '1rem' }}>
-                      <div
-                        className="emotion-bar-fill"
-                        style={{
-                          width: `${Math.max((c.count / maxChat) * 100, 5)}%`,
-                          background: c.color,
-                          fontSize: '0.55rem'
-                        }}
-                      >
-                        {c.count}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Emotion Trend */}
-          <div className="dash-card">
-            <div className="dash-card-header">
-              <h3>
-                <i className="fas fa-wave-square icon-trends"></i> Emotion Trend
-              </h3>
-            </div>
-            <div className="chart-bars" id="emotionTrendChart" style={{ height: '100px' }}>
-              {trendsData.emotionTrend.length === 0 ? (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                    color: 'var(--gray)',
-                    fontSize: '0.8rem'
-                  }}
-                >
-                  No data
-                </div>
-              ) : (
-                trendsData.emotionTrend.map((e, idx) => {
-                  const h = (e.count / maxEmo) * 100;
-                  const color = EMOTION_COLORS[e.emotion] || '#6b7280';
-                  const dateSub = e.date ? e.date.substring(5) : '';
-                  return (
-                    <div
-                      key={idx}
-                      className="chart-bar"
-                      style={{ height: `${Math.max(h, 8)}%`, background: color }}
-                    >
-                      <div className="tooltip">
-                        {e.emotion}: {e.count} ({dateSub})
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-            <div className="chart-labels" id="emotionTrendLabels">
-              {trendsData.emotionTrend.map((e, idx) => (
-                <span key={idx}>{e.emotion ? e.emotion.substring(0, 3) : ''}</span>
-              ))}
-            </div>
-            <div
-              id="emotionTrendLegend"
-              style={{
-                display: 'flex',
-                gap: '0.5rem',
-                marginTop: '0.5rem',
-                flexWrap: 'wrap',
-                fontSize: '0.6rem',
-                color: 'var(--gray)'
-              }}
-            >
-              {uniqueEmotions.map((em) => {
-                const color = EMOTION_COLORS[em] || '#6b7280';
-                return (
-                  <span key={em}>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        width: '6px',
-                        height: '6px',
-                        borderRadius: '2px',
-                        background: color,
-                        marginRight: '2px'
-                      }}
-                    ></span>
-                    {em}
+                  <span
+                    className="clinical-band-pill"
+                    style={{ background: energyBand.bg, color: energyBand.color, borderColor: energyBand.border }}
+                  >
+                    {energyBand.dot} {energyBand.label}
                   </span>
-                );
-              })}
+                </div>
+                <div className="stat-card-label-row">
+                  <span className="stat-card-label">Campus Emotional Intensity</span>
+                  <span
+                    className="ethical-info-tooltip"
+                    title="Scale 1.0–10.0: Calculated from voluntary, anonymous student self-ratings at submission time. Measures momentary affective arousal, not a clinical diagnosis. Scores ≥ 8.0 trigger automated crisis safety resources."
+                  >
+                    <i className="fas fa-circle-info"></i>
+                  </span>
+                </div>
+                <div className={`stat-card-sub ${eClass}`}>
+                  <span>{overview ? overview.averageEnergyToday : '—'} / 10 recorded today</span>
+                </div>
+              </div>
             </div>
+          </div>
+
+          {/* Domain 2: Professional Triage & Operations */}
+          <div className="kpi-domain-group">
+            <div className="domain-group-header">
+              <span className="domain-group-tag triage">Professional Triage & Operations</span>
+              <span className="domain-group-hint">Real-time alerts & psychological care queue</span>
+            </div>
+            <div className="kpi-domain-cards">
+              {/* Card 3: Flagged Reflections */}
+              <div className="stat-card alert-kpi-card">
+                <div
+                  className="stat-card-value"
+                  style={{ color: (overview?.flaggedPosts || 0) > 0 ? '#DC2626' : '#161F36' }}
+                >
+                  {overview ? overview.flaggedPosts : '—'}
+                </div>
+                <div className="stat-card-label">Flagged Reflections</div>
+                <div className={`stat-card-sub ${(overview?.flaggedPosts || 0) > 0 ? 'down' : 'neutral'}`}>
+                  <span>{(overview?.flaggedPosts || 0) > 0 ? 'Review required in triage' : 'All clear — no flags'}</span>
+                </div>
+              </div>
+
+              {/* Card 4: Psychological Support Dialogues */}
+              <div className="stat-card">
+                <div className="stat-card-value">{overview ? overview.chatSessionsTotal : '—'}</div>
+                <div className="stat-card-label">Support Dialogues</div>
+                <div className="stat-card-sub neutral">
+                  <span>{overview ? overview.chatSessionsWaiting : 0} waiting in queue</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── AUTOMATED CLINICAL PULSE BANNER ── */}
+        <div className="dash-pulse-banner">
+          <div className="pulse-banner-indicator" style={{ background: energyBand.color }}></div>
+          <div className="pulse-banner-content">
+            <div className="pulse-banner-title">
+              <strong>Campus Affective Climate:</strong> {energyBand.label} ({formattedEnergyScore} / 10)
+            </div>
+            <div className="pulse-banner-text">
+              {dominantEmotion
+                ? `${dominantEmotion.emotion} represents the primary student sentiment (${dominantPct}% of reflections), with an average intensity of ${
+                    dominantEmotion.avgEnergy
+                      ? Number.isInteger(dominantEmotion.avgEnergy)
+                        ? dominantEmotion.avgEnergy
+                        : dominantEmotion.avgEnergy.toFixed(1)
+                      : '—'
+                  }/10.`
+                : 'Aggregating live student reflections across campus.'}
+              {energyBand.tier === 'ACUTE' || energyBand.tier === 'ELEVATED'
+                ? ' Elevated affective intensity observed across campus. Psychological services triage vigilance is recommended.'
+                : ' Student emotional expression remains within balanced clinical bounds.'}
+            </div>
+          </div>
+        </div>
+
+        {/* ── TIER 2: PRIMARY VISUAL ANALYTICS (Balanced 50/50 Grid) ── */}
+        <div className="dash-charts-grid">
+          {/* Chart 1: 7-Day Continuous Line/Area Chart */}
+          <div className="dash-card chart-card">
+            <div className="dash-card-header">
+              <div>
+                <h3>7-Day Emotional Intensity & Volume</h3>
+                <p className="card-subtitle">Continuous affective arousal curve with Clinical Alert Threshold at 8.0 / 10</p>
+              </div>
+            </div>
+            <SvgLineTrendChart snapshots={trendsData.dailySnapshots} />
+          </div>
+
+          {/* Chart 2: Campus Emotion Share Donut Chart */}
+          <div className="dash-card chart-card">
+            <div className="dash-card-header">
+              <div>
+                <h3>Campus Emotion Breakdown</h3>
+                <p className="card-subtitle">Proportional distribution of student sentiments with qualitative intensity tiers</p>
+              </div>
+            </div>
+            <SvgDonutChart
+              emotions={overview?.emotionBreakdown || []}
+              total={overview?.totalPosts || 0}
+            />
+          </div>
+        </div>
+
+        {/* ── TIER 3: SEVERITY SPECTRUM & ACTIONABLE TRIAGE ── */}
+        <div className="dash-bottom-grid">
+          {/* Severity Spectrum Bar Graph */}
+          <div className="dash-card">
+            <div className="dash-card-header">
+              <div>
+                <h3>Emotional Severity Spectrum</h3>
+                <p className="card-subtitle">Student population distribution across low, moderate, and acute clinical tiers</p>
+              </div>
+            </div>
+            <SeveritySpectrumBar
+              low={overview ? overview.energyLow : 0}
+              mod={overview ? overview.energyModerate : 0}
+              high={overview ? overview.energyHigh : 0}
+              total={overview ? overview.totalPosts : 0}
+            />
+          </div>
+
+          {/* Streamlined Priority Triage & Operations Widget */}
+          <div className="dash-card">
+            <PriorityTriageWidget
+              alerts={sortedAlerts}
+              totalAlerts={alertsData.totalAlerts}
+              overview={overview}
+            />
           </div>
         </div>
       </div>
@@ -747,7 +974,7 @@ export default function ProDashboard() {
               <i className="fas fa-file-invoice"></i>
               <div>
                 <h2>Monthly Student Situationer</h2>
-                <p>USTP Balubal Campus — Guidance and Counseling Emotional Climate Analysis</p>
+                <p>USTP Balubal Campus — Mental Health & Psychological Services Unit</p>
               </div>
             </div>
             <div className="report-modal-controls">
@@ -812,7 +1039,7 @@ export default function ProDashboard() {
                       <div className="rep-inst-titles">
                         <h3>University of Science and Technology of Southern Philippines</h3>
                         <h4>USTP Balubal Campus — Cagayan de Oro City</h4>
-                        <p>Office of Student Affairs & Services • Guidance and Counseling Center • SafeSpace System</p>
+                        <p>Office of Student Affairs & Services • Mental Health & Psychological Services Unit • SafeSpace System</p>
                       </div>
                     </div>
                     <div className="rep-doc-meta-badge">
@@ -847,7 +1074,7 @@ export default function ProDashboard() {
                   <i className="fas fa-shield-halved"></i>
                   <div>
                     <strong>DATA PRIVACY ACT (RA 10173) & MENTAL HEALTH ACT (RA 11036) COMPLIANCE:</strong>{' '}
-                    All student reflections, emotional indices, and support interactions are presented in de-identified, cryptographically pseudonymized form. This administrative situationer is issued strictly for psychological climate assessment, wellness resource allocation, and clinical guidance triage.
+                    All student reflections, emotional indices, and support interactions are presented in de-identified, cryptographically pseudonymized form. This administrative situationer is issued strictly for psychological climate assessment, wellness resource allocation, and clinical psychological triage.
                   </div>
                 </div>
 
@@ -890,7 +1117,7 @@ export default function ProDashboard() {
                     </div>
                     <div className="rep-kpi-card">
                       <div className="rep-kpi-val">{reportData.totalSupportDialogues}</div>
-                      <div className="rep-kpi-label">Counseling Dialogues</div>
+                      <div className="rep-kpi-label">Psychological Dialogues</div>
                       <div className="rep-kpi-sub">
                         {reportData.activeSupportDialogues} active, {reportData.closedSupportDialogues} completed
                       </div>
@@ -1153,7 +1380,7 @@ export default function ProDashboard() {
                 {/* Section V: Support Dialogues */}
                 <section className="rep-section">
                   <div className="rep-section-header">
-                    <i className="fas fa-comments"></i> V. Guidance Counseling Support Dialogues
+                    <i className="fas fa-comments"></i> V. Psychological Support Dialogues
                   </div>
                   <div className="rep-table-wrap">
                     <table className="rep-table">
@@ -1161,7 +1388,7 @@ export default function ProDashboard() {
                         <tr>
                           <th>Session ID</th>
                           <th>Student Pseudonym</th>
-                          <th>Assigned Counselor</th>
+                          <th>Assigned Professional (RPM/RPsy)</th>
                           <th>Dialogue Topic / Presenting Concern</th>
                           <th style={{ textAlign: 'center' }}>Status</th>
                           <th style={{ textAlign: 'center' }}>Messages</th>
@@ -1190,7 +1417,7 @@ export default function ProDashboard() {
                         ) : (
                           <tr>
                             <td colSpan="7" style={{ textAlign: 'center', color: '#64748B', padding: '0.75rem' }}>
-                              No counseling dialogues recorded in this cycle.
+                              No psychological support dialogues recorded in this cycle.
                             </td>
                           </tr>
                         )}
@@ -1286,12 +1513,12 @@ export default function ProDashboard() {
                     <div className="rep-sig-line"></div>
                     <div className="rep-sig-name">{reportData.generatedBy}</div>
                     <div className="rep-sig-role">
-                      Evaluating Psychometrician / Psychologist<br />Guidance and Counseling Center
+                      Evaluating Psychometrician (RPM) / Psychologist (RPsy)<br />Mental Health & Psychological Services Unit
                     </div>
                   </div>
                   <div className="rep-sig-box">
                     <div className="rep-sig-line"></div>
-                    <div className="rep-sig-name">Guidance Coordinator</div>
+                    <div className="rep-sig-name">Head, Psychological Services</div>
                     <div className="rep-sig-role">
                       Office of Student Affairs & Services<br />USTP Balubal Campus
                     </div>

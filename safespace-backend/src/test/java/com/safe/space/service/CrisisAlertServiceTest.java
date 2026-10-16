@@ -100,7 +100,7 @@ class CrisisAlertServiceTest {
 
         assertEquals("DECLINED", alert.getOutreachStatus());
         assertTrue(alert.getResolutionNotes().contains("Student declined counseling outreach"));
-        verify(alertRepository, times(1)).save(alert);
+        verify(alertRepository, times(1)).saveAll(anyList());
     }
 
     @Test
@@ -113,6 +113,7 @@ class CrisisAlertServiceTest {
                 alertService.updateAlertOutreachStatus("non-existent", "DECLINED", "Notes")
         );
         verify(alertRepository, never()).save(any());
+        verify(alertRepository, never()).saveAll(any());
     }
 
     @Test
@@ -196,4 +197,116 @@ class CrisisAlertServiceTest {
         assertTrue(resolved.getResolutionNotes().contains("autonomy to vent only"));
         verify(alertRepository, times(1)).save(alert);
     }
+
+    @Test
+    @DisplayName("initiateChatFromAlert returns recently_declined status when student declined within cooldown")
+    void testInitiateChatFromAlertRecentlyDeclined() {
+        CrisisAlert alert = CrisisAlert.builder()
+                .alertId("alt-400")
+                .status("ACTIVE")
+                .pseudonym("Spamming-Student")
+                .title("High energy post")
+                .emotionTag("ANXIOUS")
+                .energyScore(10)
+                .build();
+
+        ChatSession declinedSession = ChatSession.builder()
+                .sessionId("sess-declined-123")
+                .studentPseudonym("Spamming-Student")
+                .status("DECLINED")
+                .createdAt(LocalDateTime.now().minusMinutes(15))
+                .build();
+
+        when(alertRepository.findByAlertId("alt-400")).thenReturn(Optional.of(alert));
+        when(sessionRepository.findOpenSessionsForStudent(any(), eq("Spamming-Student"))).thenReturn(Collections.emptyList());
+        when(sessionRepository.findByStudentPseudonymOrderByCreatedAtDesc("Spamming-Student"))
+                .thenReturn(List.of(declinedSession));
+
+        Map<String, Object> result = alertService.initiateChatFromAlert("alt-400", "counselor1", "Counselor One", false);
+
+        assertEquals("recently_declined", result.get("status"));
+        assertEquals("sess-declined-123", result.get("sessionId"));
+        assertTrue(result.get("message").toString().contains("declined outreach recently"));
+        verify(chatService, never()).createOutreachInvite(any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("initiateChatFromAlert allows outreach when force=true even if student recently declined")
+    void testInitiateChatFromAlertForceOverride() {
+        CrisisAlert alert = CrisisAlert.builder()
+                .alertId("alt-401")
+                .status("ACTIVE")
+                .pseudonym("Spamming-Student")
+                .title("Acute crisis post")
+                .emotionTag("ANXIOUS")
+                .energyScore(10)
+                .build();
+
+        when(alertRepository.findByAlertId("alt-401")).thenReturn(Optional.of(alert));
+        when(sessionRepository.findOpenSessionsForStudent(any(), eq("Spamming-Student"))).thenReturn(Collections.emptyList());
+
+        ChatSessionResponse mockResponse = ChatSessionResponse.builder()
+                .sessionId("chat-session-forced")
+                .studentPseudonym("Spamming-Student")
+                .status("INVITED")
+                .build();
+
+        when(chatService.createOutreachInvite(
+                any(), eq("Spamming-Student"), anyString(), eq("ANXIOUS"), eq(10), eq("counselor1"), eq("Counselor One")))
+                .thenReturn(mockResponse);
+
+        Map<String, Object> result = alertService.initiateChatFromAlert("alt-401", "counselor1", "Counselor One", true);
+
+        assertEquals("invite_sent", result.get("status"));
+        assertEquals("chat-session-forced", result.get("sessionId"));
+        verify(chatService, times(1)).createOutreachInvite(any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("resolveAllForPseudonym closes all active alerts for student in batch")
+    void testResolveAllForPseudonym() {
+        CrisisAlert a1 = CrisisAlert.builder().alertId("a-1").pseudonym("User-A").status("ACTIVE").build();
+        CrisisAlert a2 = CrisisAlert.builder().alertId("a-2").pseudonym("User-A").status("ACKNOWLEDGED").build();
+
+        when(alertRepository.findByPseudonymAndStatusInOrderByCreatedAtDesc(eq("User-A"), anyList()))
+                .thenReturn(List.of(a1, a2));
+        when(alertRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        List<CrisisAlert> resolved = alertService.resolveAllForPseudonym("User-A", "counselor1", "Case closed safely.");
+
+        assertEquals(2, resolved.size());
+        assertEquals("RESOLVED", a1.getStatus());
+        assertEquals("RESOLVED", a2.getStatus());
+        assertTrue(a1.getResolutionNotes().contains("Case closed safely."));
+        assertTrue(a2.getResolutionNotes().contains("Case closed safely."));
+        verify(alertRepository, times(1)).saveAll(anyList());
+    }
+
+    @Test
+    @DisplayName("alertHighEnergyPost attaches directly to existing in-progress case for same student")
+    void testAlertHighEnergyPost_AttachesToOpenCaseIfPresent() {
+        CrisisAlert existingCase = CrisisAlert.builder()
+                .alertId("alt-existing")
+                .pseudonym("SoftSky-2342")
+                .status("ACKNOWLEDGED")
+                .acknowledgedBy("lead_psych")
+                .chatSessionId("chat-session-open")
+                .outreachStatus("INVITED")
+                .build();
+
+        when(alertRepository.existsByReferenceIdAndReferenceTypeAndStatusIn(anyString(), anyString(), anyList()))
+                .thenReturn(false);
+        when(alertRepository.findByPseudonymAndStatusInOrderByCreatedAtDesc(eq("SoftSky-2342"), eq(List.of("ACKNOWLEDGED"))))
+                .thenReturn(List.of(existingCase));
+        when(alertRepository.save(any(CrisisAlert.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CrisisAlert newAlert = alertService.alertHighEnergyPost("post-999", "SoftSky-2342", "I am feeling so overwhelmed today", "ANXIOUS", 9);
+
+        assertNotNull(newAlert);
+        assertEquals("ACTIVE", newAlert.getStatus(), "Should remain ACTIVE so professionals are alerted to the new rant");
+        assertNull(newAlert.getAcknowledgedBy(), "New alert should not be marked as acknowledged yet");
+        assertEquals("chat-session-open", newAlert.getChatSessionId());
+        assertEquals("INVITED", newAlert.getOutreachStatus());
+    }
 }
+

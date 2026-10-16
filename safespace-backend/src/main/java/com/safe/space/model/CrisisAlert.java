@@ -126,6 +126,17 @@ public class CrisisAlert {
     @Column(length = 2000)
     private String resolutionNotes;
 
+    /** Whether this resolved/escalated alert is archived by the professional team. */
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean archived = false;
+
+    @Column
+    private LocalDateTime archivedAt;
+
+    @Column(length = 50)
+    private String archivedBy;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

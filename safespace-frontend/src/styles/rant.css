@@ -107,22 +107,24 @@ body.has-student-bottom-nav .rant-layout {
 .rant-tabs {
   max-width: 960px;
   margin: 0 auto;
-  padding: 0 1.5rem;
-  display: flex;
-  gap: 0.25rem;
+  padding: 0 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.35rem;
   background: #FFFFFF;
-  border-bottom: 1px solid #E0D7C6;
+  border-bottom: 1.5px solid #E0D7C6;
   box-shadow: 0 4px 20px rgba(22, 31, 54, 0.04);
-  overflow-x: auto;
   border-radius: 0 0 1rem 1rem;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .rant-tab {
-  flex: 1;
-  padding: 0.9rem 1rem;
+  width: 100%;
+  padding: 0.85rem 0.5rem;
   border: none;
   background: transparent;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.82rem;
   font-weight: 600;
   color: #6C7A92;
@@ -135,6 +137,7 @@ body.has-student-bottom-nav .rant-layout {
   transition: all 0.2s ease;
   white-space: nowrap;
   position: relative;
+  box-sizing: border-box;
 }
 
 .rant-tab * {
@@ -164,6 +167,26 @@ body.has-student-bottom-nav .rant-layout {
   text-align: center;
 }
 
+.rant-tab .tab-count-pill {
+  background: #E8EFF4;
+  color: #161F36;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid #BACBD8;
+  min-width: 1.1rem;
+  text-align: center;
+  line-height: 1.2;
+  transition: all 0.2s ease;
+}
+
+.rant-tab.active .tab-count-pill {
+  background: #161F36;
+  color: #FFFFFF;
+  border-color: #161F36;
+}
+
 /* ── Main Content ── */
 .rant-content {
   max-width: 900px;
@@ -173,22 +196,20 @@ body.has-student-bottom-nav .rant-layout {
 
 .tab-panel {
   display: none;
+  min-height: 480px;
 }
 
 .tab-panel.active {
   display: block;
-  animation: fadeUp 0.3s ease;
+  animation: fadeInTab 0.2s ease-in-out;
 }
 
-@keyframes fadeUp {
+@keyframes fadeInTab {
   from {
     opacity: 0;
-    transform: translateY(8px);
   }
-
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -733,8 +754,9 @@ body.has-student-bottom-nav .rant-layout {
 
 .post-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 0.75rem;
   margin-bottom: 0.5rem;
 }
 
@@ -742,6 +764,13 @@ body.has-student-bottom-nav .rant-layout {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.post-author-meta {
+  min-width: 0;
+  flex: 1;
 }
 
 .post-avatar {
@@ -755,17 +784,104 @@ body.has-student-bottom-nav .rant-layout {
   font-size: 0.7rem;
   font-weight: 800;
   color: #FAF7F2;
+  flex-shrink: 0;
 }
 
 .post-name {
   font-weight: 700;
   font-size: 0.82rem;
   color: #161F36;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .post-time {
   font-size: 0.68rem;
   color: #9ca3af;
+}
+
+/* ── Top-Right Non-Overlapping Action Buttons ── */
+.post-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.btn-post-action {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #94A3B8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.btn-post-action:hover:not(:disabled) {
+  background: #F1F5F9;
+  color: #334155;
+  border-color: #E2E8F0;
+  transform: translateY(-1px);
+}
+
+.btn-post-action.archive:hover:not(:disabled) {
+  background: #F1F5F9;
+  color: #1E293B;
+  border-color: #CBD5E1;
+}
+
+.btn-post-action.restore:hover:not(:disabled) {
+  background: #EEF2FF;
+  color: #4338CA;
+  border-color: #C7D2FE;
+}
+
+.btn-post-action.delete:hover:not(:disabled) {
+  background: #FEF2F2;
+  color: #DC2626;
+  border-color: #FECACA;
+}
+
+.btn-post-action:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.btn-post-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.post-card.is-archived {
+  opacity: 0.88;
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+}
+
+.post-card.is-archived:hover {
+  opacity: 1;
+}
+
+.tag-archived {
+  background: #F1F5F9;
+  color: #475569;
+  border: 1px solid #CBD5E1;
+  border-radius: 9999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .post-body {
@@ -1123,6 +1239,11 @@ body.has-student-bottom-nav .rant-layout {
   box-shadow: 0 0 25px rgba(99, 102, 241, 0.3);
 }
 
+.breathing-sphere.hold-empty {
+  transform: scale(0.92);
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.35);
+}
+
 .breathing-count {
   font-size: 2.75rem;
   font-weight: 800;
@@ -1166,7 +1287,15 @@ body.has-student-bottom-nav .rant-layout {
   font-size: 0.75rem;
   color: #64748b;
   font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
   transition: all 0.25s ease;
+}
+
+.box-phase-chip:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
 }
 
 .box-phase-chip.active {
@@ -1448,6 +1577,7 @@ body.has-student-bottom-nav .rant-layout {
   .rant-welcome p { font-size: 0.78rem; }
 
   .rant-tabs {
+    display: flex;
     border-radius: 0;
     padding: 0.25rem 0.75rem;
     max-width: 100%;
@@ -1544,7 +1674,7 @@ body.has-student-bottom-nav .rant-layout {
   .feed-pill { flex-shrink: 0; }
 
   .post-card { padding: 0.85rem; border-radius: 0.75rem; }
-  .post-header { flex-direction: column; align-items: flex-start; gap: 0.25rem; }
+  .post-header { display: flex; flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
   .post-body { font-size: 0.82rem; }
   .post-tags { gap: 0.3rem; }
 
@@ -1727,6 +1857,8 @@ body.has-student-bottom-nav .rant-layout {
   box-shadow: 0 4px 25px rgba(22, 31, 54, 0.05);
   border: 1px solid rgba(224, 215, 198, 0.8);
   padding: 1.75rem;
+  min-height: 480px;
+  box-sizing: border-box;
 }
 
 .resources-browser-card h2 {
@@ -2237,4 +2369,119 @@ body.has-student-bottom-nav .rant-layout {
     padding: 0.75rem 0.85rem;
     gap: 0.5rem;
   }
+}
+
+/* ── My Posts Sub-filter Bar & Post Deletion Modal ── */
+.my-posts-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1.1rem;
+  flex-wrap: wrap;
+}
+
+.my-posts-filter-pill {
+  padding: 0.45rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid #E0D7C6;
+  background: #FFFFFF;
+  color: #4B5563;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  user-select: none;
+}
+
+.my-posts-filter-pill:hover {
+  background: #FAF7F2;
+  border-color: #CBD5E1;
+  color: #161F36;
+}
+
+.my-posts-filter-pill.active {
+  background: #161F36;
+  color: #FFFFFF;
+  border-color: #161F36;
+  box-shadow: 0 2px 8px rgba(22, 31, 54, 0.15);
+}
+
+.my-posts-empty {
+  text-align: center;
+  padding: 3.5rem 1.5rem;
+  background: #FFFFFF;
+  border: 1.5px solid #E0D7C6;
+  border-radius: 1rem;
+  color: #4B5563;
+}
+
+.my-posts-empty i {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 0.85rem;
+  color: #161F36;
+  opacity: 0.75;
+}
+
+.delete-modal-box {
+  text-align: center;
+  max-width: 440px !important;
+}
+
+.delete-modal-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #FEF2F2;
+  color: #DC2626;
+  border: 2px solid #FECACA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.55rem;
+  margin: 0 auto 0.9rem;
+}
+
+.delete-modal-desc {
+  font-size: 0.88rem;
+  color: #334155;
+  margin-bottom: 0.85rem;
+  line-height: 1.5;
+}
+
+.delete-modal-warning {
+  background: #FFF1F2;
+  border: 1px solid #FECDD3;
+  border-radius: 0.6rem;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.78rem;
+  color: #9F1239;
+  line-height: 1.45;
+  text-align: left;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.delete-modal-warning i {
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+  color: #E11D48;
+}
+
+.confirm.delete-confirm-btn {
+  background: #DC2626 !important;
+  border-color: #DC2626 !important;
+  color: #FFFFFF !important;
+  font-weight: 700;
+}
+
+.confirm.delete-confirm-btn:hover:not(:disabled) {
+  background: #B91C1C !important;
+  border-color: #B91C1C !important;
 }

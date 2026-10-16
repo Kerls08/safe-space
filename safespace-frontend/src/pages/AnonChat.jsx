@@ -26,13 +26,40 @@ function formatTime(timestamp) {
 
 export default function AnonChat() {
   const location = useLocation();
-  const { role, username, fullName } = useAuth();
+  const { role, username, fullName, updateBadge } = useAuth();
   const isProfessional = role === 'PROFESSIONAL' || role === 'SUPER_ADMIN';
 
   // Sessions list & active session
   const [sessions, setSessions] = useState([]);
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [activeSession, setActiveSession] = useState(null);
+  const activeSessionIdRef = useRef(activeSessionId);
+  useEffect(() => {
+    activeSessionIdRef.current = activeSessionId;
+  }, [activeSessionId]);
+
+  const handleSelectSession = useCallback((sid) => {
+    setActiveSessionId(sid);
+    if (!isProfessional && sid) {
+      const seenInvites = new Set(JSON.parse(localStorage.getItem('safespace_seen_invites') || '[]'));
+      seenInvites.add(sid);
+      localStorage.setItem('safespace_seen_invites', JSON.stringify(Array.from(seenInvites)));
+
+      setSessions((prevSessions) => {
+        let remaining = 0;
+        prevSessions.forEach((s) => {
+          if (s.sessionId === sid) return;
+          if (s.status === 'INVITED') {
+            if (!seenInvites.has(s.sessionId)) remaining++;
+          } else if (s.status !== 'CLOSED' && s.status !== 'DECLINED' && (s.unreadCount || 0) > 0) {
+            remaining += s.unreadCount;
+          }
+        });
+        updateBadge('anon-chat', remaining);
+        return prevSessions;
+      });
+    }
+  }, [isProfessional, updateBadge]);
   const [messages, setMessages] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTab, setFilterTab] = useState('all'); // 'all' | 'unread' | 'checkin' | 'waiting'
@@ -137,24 +164,59 @@ export default function AnonChat() {
           } catch (e) { /* ignore */ }
         }
 
-        setSessions(Array.from(map.values()));
+        const sessionList = Array.from(map.values());
+        setSessions(sessionList);
+
+        const currentActiveId = activeSessionIdRef.current;
+        const seenInvites = new Set(JSON.parse(localStorage.getItem('safespace_seen_invites') || '[]'));
+        if (currentActiveId && !seenInvites.has(currentActiveId)) {
+          seenInvites.add(currentActiveId);
+          localStorage.setItem('safespace_seen_invites', JSON.stringify(Array.from(seenInvites)));
+        }
+
+        let studentUnviewed = 0;
+        sessionList.forEach((s) => {
+          if (s.sessionId === currentActiveId) return;
+          if (s.status === 'INVITED') {
+            if (!seenInvites.has(s.sessionId)) studentUnviewed++;
+          } else if (s.status !== 'CLOSED' && s.status !== 'DECLINED' && (s.unreadCount || 0) > 0) {
+            studentUnviewed += s.unreadCount;
+          }
+        });
+        updateBadge('anon-chat', studentUnviewed);
       }
     } catch (e) {
       console.warn('Failed to load sessions:', e);
     }
-  }, [isProfessional, username]);
+  }, [isProfessional, username, updateBadge]);
+
+  // For professionals, clear badge on mount & set lastSeen timestamp
+  useEffect(() => {
+    if (isProfessional) {
+      updateBadge('anon-chat', 0);
+      localStorage.setItem('safespace_last_seen_pro_chat', new Date().toISOString());
+    }
+  }, [updateBadge, isProfessional]);
 
   // Initial boot and counselor heartbeat
   useEffect(() => {
     loadSessions();
 
+    const sessionPollTimer = setInterval(() => {
+      loadSessions();
+    }, 4000);
+
+    let heartbeatTimer = null;
     if (isProfessional) {
       chatApi.heartbeat(username || '');
-      const heartbeatTimer = setInterval(() => {
+      heartbeatTimer = setInterval(() => {
         chatApi.heartbeat(username || '');
       }, 30000);
-      return () => clearInterval(heartbeatTimer);
     }
+    return () => {
+      clearInterval(sessionPollTimer);
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+    };
   }, [loadSessions, isProfessional, username]);
 
   // Handle URL query param: ?session=...
@@ -162,9 +224,9 @@ export default function AnonChat() {
     const params = new URLSearchParams(location.search);
     const sid = params.get('session');
     if (sid) {
-      setActiveSessionId(sid);
+      handleSelectSession(sid);
     }
-  }, [location.search]);
+  }, [location.search, handleSelectSession]);
 
   // Poll messages and session state
   useEffect(() => {
@@ -183,6 +245,10 @@ export default function AnonChat() {
         const msgList = await chatApi.getMessages(activeSessionId, viewerType);
         
         if (isMounted) {
+          if (isProfessional && activeSession && activeSession.status === 'INVITED' && sessionData.status === 'ACTIVE') {
+            showToast(`Student ${sessionData.studentPseudonym || 'Anonymous'} accepted the outreach invitation! Active counseling session is ready 💚`);
+            loadSessions();
+          }
           setActiveSession(sessionData);
           setMessages(msgList || []);
         }
@@ -250,7 +316,7 @@ export default function AnonChat() {
 
   const handleResumeCurrentSession = () => {
     if (pendingChoiceSession) {
-      setActiveSessionId(pendingChoiceSession.sessionId);
+      handleSelectSession(pendingChoiceSession.sessionId);
     }
     setChoiceModalOpen(false);
     setPendingChoiceSession(null);
@@ -295,7 +361,7 @@ export default function AnonChat() {
 
       setNewChatModalOpen(false);
       setModalTopic('');
-      setActiveSessionId(newSession.sessionId);
+      handleSelectSession(newSession.sessionId);
       loadSessions();
     } catch (err) {
       showToast(err.message || 'Failed to create chat session.');
@@ -385,7 +451,7 @@ export default function AnonChat() {
         setActiveSession(null);
       }
       loadSessions();
-      showToast('Conversation deleted permanently.');
+      showToast(isProfessional ? 'Conversation removed from your queue.' : 'Conversation removed from your view.');
     } catch (err) {
       showToast(err.message || 'Failed to delete conversation.');
     } finally {
@@ -397,7 +463,9 @@ export default function AnonChat() {
   const filteredSessions = sessions.filter((s) => {
     // Tab filter
     if (filterTab === 'unread') {
-      if ((s.unreadCount || 0) === 0) return false;
+      const seenInvites = new Set(JSON.parse(localStorage.getItem('safespace_seen_invites') || '[]'));
+      const isUnviewedInvite = !isProfessional && s.status === 'INVITED' && !seenInvites.has(s.sessionId);
+      if ((s.unreadCount || 0) === 0 && !isUnviewedInvite) return false;
     } else if (filterTab === 'checkin') {
       if (s.status !== 'INVITED' && !(s.topic && s.topic.includes('Outreach'))) return false;
     } else if (filterTab === 'waiting' && isProfessional) {
@@ -430,6 +498,18 @@ export default function AnonChat() {
                 onClick={() => {
                   setActiveSessionId(null);
                   setActiveSession(null);
+                  if (!isProfessional) {
+                    const seenInvites = new Set(JSON.parse(localStorage.getItem('safespace_seen_invites') || '[]'));
+                    let unviewed = 0;
+                    sessions.forEach((s) => {
+                      if (s.status === 'INVITED') {
+                        if (!seenInvites.has(s.sessionId)) unviewed++;
+                      } else if (s.status !== 'CLOSED' && s.status !== 'DECLINED' && (s.unreadCount || 0) > 0) {
+                        unviewed += s.unreadCount;
+                      }
+                    });
+                    updateBadge('anon-chat', unviewed);
+                  }
                 }}
               >
                 <i className="fas fa-house"></i>
@@ -522,8 +602,11 @@ export default function AnonChat() {
             </div>
           ) : (
             filteredSessions.map((s) => {
+              const seenInvites = new Set(JSON.parse(localStorage.getItem('safespace_seen_invites') || '[]'));
               const isSelected = s.sessionId === activeSessionId;
-              const hasUnread = (s.unreadCount || 0) > 0 && !isSelected;
+              const isUnviewedInvite = !isProfessional && s.status === 'INVITED' && !seenInvites.has(s.sessionId);
+              const hasUnread = ((s.unreadCount || 0) > 0 || isUnviewedInvite) && !isSelected;
+              const displayCount = (s.unreadCount || 0) > 0 ? s.unreadCount : (isUnviewedInvite ? 1 : 0);
               const initials = (s.studentPseudonym || 'AN').split('-').slice(1, 2).join('').substring(0, 2).toUpperCase() || 'AN';
               const time = formatTime(s.lastMessageAt || s.createdAt);
               const statusClass = s.status ? s.status.toLowerCase() : 'waiting';
@@ -535,7 +618,7 @@ export default function AnonChat() {
                   key={s.sessionId}
                   className={`session-card ${isSelected ? 'active' : ''} ${hasUnread ? 'has-unread' : ''}`}
                   onClick={() => {
-                    setActiveSessionId(s.sessionId);
+                    handleSelectSession(s.sessionId);
                   }}
                   onContextMenu={(e) => {
                     e.preventDefault();
@@ -551,7 +634,7 @@ export default function AnonChat() {
                       <span className="session-name">{s.studentPseudonym || 'Anonymous Student'}</span>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
                         {hasUnread && (
-                          <span className="session-unread-badge">{s.unreadCount > 9 ? '9+' : s.unreadCount}</span>
+                          <span className="session-unread-badge">{displayCount > 9 ? '9+' : displayCount}</span>
                         )}
                         <span className="session-time">{time}</span>
                         <button
@@ -1498,7 +1581,7 @@ export default function AnonChat() {
                 <i className="fas fa-trash-alt"></i>
               </div>
               <h3 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', width: '100%', fontSize: '1.15rem', color: '#161F36', margin: 0, fontWeight: 700 }}>
-                Delete Conversation?
+                {isProfessional ? 'Remove Conversation?' : 'Delete Conversation?'}
               </h3>
             </div>
             <div className="chat-modal-body" style={{ textAlign: 'center', paddingTop: '0.4rem', paddingBottom: '1.25rem' }}>
@@ -1508,14 +1591,19 @@ export default function AnonChat() {
                   let targetDesc = 'this conversation';
                   if (target) {
                     if (target.status === 'INVITED') {
-                      targetDesc = `the check-in request from ${target.professionalName || 'Counselor'}`;
+                      targetDesc = isProfessional
+                        ? `your outreach check-in to ${target.studentPseudonym || 'Student'}`
+                        : `the check-in request from ${target.professionalName || 'Counselor'}`;
                     } else if (isProfessional) {
                       targetDesc = `conversation with ${target.studentPseudonym || 'Student'}`;
                     } else {
                       targetDesc = `this conversation with ${target.professionalName || target.studentPseudonym || 'Counselor'}`;
                     }
                   }
-                  return `Are you sure you want to permanently delete ${targetDesc}? All messages will be wiped immediately. This cannot be undone.`;
+                  if (isProfessional) {
+                    return `Are you sure you want to remove ${targetDesc} from your queue? It will be removed from your view while remaining accessible to the student.`;
+                  }
+                  return `Are you sure you want to remove ${targetDesc} from your conversations? This will clear it from your view.`;
                 })()}
               </p>
             </div>
@@ -1563,11 +1651,11 @@ export default function AnonChat() {
               >
                 {deleteModalLoading ? (
                   <>
-                    <i className="fas fa-spinner fa-spin"></i> Deleting...
+                    <i className="fas fa-spinner fa-spin"></i> Removing...
                   </>
                 ) : (
                   <>
-                    <i className="fas fa-trash-alt"></i> Delete
+                    <i className="fas fa-trash-alt"></i> {isProfessional ? 'Remove' : 'Delete'}
                   </>
                 )}
               </button>

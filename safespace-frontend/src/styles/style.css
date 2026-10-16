@@ -46,6 +46,7 @@
 html {
   scroll-behavior: smooth;
   height: 100%;
+  scrollbar-gutter: stable;
 }
 body {
   font-family: var(--font-sans);
@@ -519,10 +520,10 @@ body {
 
 .pro-bottom-nav-inner {
   width: 100%;
-  max-width: 760px;
+  max-width: 880px;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 0.25rem;
+  gap: 0.35rem;
   height: 100%;
   align-items: center;
 }
@@ -540,12 +541,13 @@ body {
   font-family: var(--font-sans);
   font-size: 0.72rem;
   font-weight: 700;
-  padding: 0.35rem 0.2rem;
+  padding: 0.35rem 0.4rem;
   border-radius: 0.75rem;
   transition: all 0.2s ease;
   text-decoration: none;
   outline: none;
   position: relative;
+  white-space: nowrap;
 }
 
 .pro-nav-btn i {
@@ -590,7 +592,10 @@ body {
   text-align: center;
   color: #FFFFFF;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
-  display: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
 }
 
 .pro-nav-badge.badge-red {
@@ -654,10 +659,10 @@ body {
 
 .student-bottom-nav-inner {
   width: 100%;
-  max-width: 440px;
+  max-width: 500px;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
+  gap: 1.25rem;
   height: 100%;
   align-items: center;
 }
@@ -675,12 +680,13 @@ body {
   font-family: var(--font-sans);
   font-size: 0.8rem;
   font-weight: 700;
-  padding: 0.45rem 1rem;
+  padding: 0.45rem 1.25rem;
   border-radius: 0.85rem;
   transition: all 0.2s ease;
   text-decoration: none;
   outline: none;
   position: relative;
+  white-space: nowrap;
 }
 
 .student-nav-btn i {
@@ -725,7 +731,10 @@ body {
   text-align: center;
   color: #FFFFFF;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
-  display: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
 }
 
 .student-nav-badge.badge-blue {

@@ -94,6 +94,16 @@ public class Post {
     @Column
     private LocalDateTime reviewedAt;
 
+    /**
+     * Whether this post is archived by the author student.
+     */
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean archived = false;
+
+    @Column
+    private LocalDateTime archivedAt;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

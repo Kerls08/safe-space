@@ -26,12 +26,30 @@ public class DefaultAdminSeeder implements ApplicationRunner {
 
     private final UserRepository userRepository;
     private final com.safe.space.service.CredentialService credentialService;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
     private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder(12);
     private static final String DEFAULT_PASSWORD = "SafeSpace2026!";
 
     @Override
     public void run(ApplicationArguments args) {
         log.info("── Initializing Safe Space Test Database Seeder ──");
+
+        try {
+            jdbcTemplate.execute("ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS deleted_by_student BOOLEAN DEFAULT FALSE NOT NULL");
+            jdbcTemplate.execute("ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS deleted_by_professional BOOLEAN DEFAULT FALSE NOT NULL");
+            jdbcTemplate.execute("UPDATE chat_sessions SET deleted_by_student = FALSE WHERE deleted_by_student IS NULL");
+            jdbcTemplate.execute("UPDATE chat_sessions SET deleted_by_professional = FALSE WHERE deleted_by_professional IS NULL");
+            jdbcTemplate.execute("ALTER TABLE crisis_alerts ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE NOT NULL");
+            jdbcTemplate.execute("ALTER TABLE crisis_alerts ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP");
+            jdbcTemplate.execute("ALTER TABLE crisis_alerts ADD COLUMN IF NOT EXISTS archived_by VARCHAR(50)");
+            jdbcTemplate.execute("UPDATE crisis_alerts SET archived = FALSE WHERE archived IS NULL");
+            jdbcTemplate.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE NOT NULL");
+            jdbcTemplate.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP");
+            jdbcTemplate.execute("UPDATE posts SET archived = FALSE WHERE archived IS NULL");
+            log.info("Schema integrity verified for chat_sessions, crisis_alerts, and posts tables.");
+        } catch (Exception e) {
+            log.warn("Database column check on schema tables: {}", e.getMessage());
+        }
 
         String encodedPassword = ENCODER.encode(DEFAULT_PASSWORD);
 

@@ -50,6 +50,9 @@ public class CrisisAlertService {
     private final EmailService emailService;
     private final UserRepository userRepository;
 
+    // Cache to debounce email notifications per student pseudonym (15 minutes)
+    private final Map<String, LocalDateTime> lastEmailDispatchPerPseudonym = new java.util.concurrent.ConcurrentHashMap<>();
+
     // ── 1. ALERT GENERATION ──
 
     /**
@@ -81,6 +84,7 @@ public class CrisisAlertService {
                 .flaggedKeywords(flaggedKeywords)
                 .build();
 
+        attachToOpenCaseIfPresent(alert, pseudonym);
         CrisisAlert saved = alertRepository.save(alert);
         log.warn("🚨 ALERT GENERATED [{}] type=CRISIS_POST severity={} postId={} pseudonym={}",
                 saved.getAlertId(), saved.getSeverity(), postId, pseudonym);
@@ -103,7 +107,11 @@ public class CrisisAlertService {
         if (alertExists(postId, "POST"))
             return null;
 
-        String severity = mapEnergySeverity(energyScore);
+        boolean isMash = isRepetitiveOrKeyboardMash(content);
+        String severity = mapEnergySeverity(energyScore, content);
+        String title = isMash
+                ? "High energy post detected (score: " + energyScore + "/10 - Repetitive Venting)"
+                : "High energy post detected (score: " + energyScore + "/10)";
 
         CrisisAlert alert = CrisisAlert.builder()
                 .alertId(generateAlertId())
@@ -112,13 +120,14 @@ public class CrisisAlertService {
                 .status("ACTIVE")
                 .referenceId(postId)
                 .referenceType("POST")
-                .title("High energy post detected (score: " + energyScore + "/10)")
+                .title(title)
                 .message(truncate(content, 500))
                 .pseudonym(pseudonym)
                 .emotionTag(emotionTag)
                 .energyScore(energyScore)
                 .build();
 
+        attachToOpenCaseIfPresent(alert, pseudonym);
         CrisisAlert saved = alertRepository.save(alert);
         log.info("⚡ ALERT GENERATED [{}] type=HIGH_ENERGY severity={} postId={} energy={}",
                 saved.getAlertId(), severity, postId, energyScore);
@@ -130,9 +139,31 @@ public class CrisisAlertService {
     }
 
     private String mapEnergySeverity(int energyScore) {
+        return mapEnergySeverity(energyScore, null);
+    }
+
+    private String mapEnergySeverity(int energyScore, String content) {
+        if (isRepetitiveOrKeyboardMash(content)) {
+            // Repetitive keyboard mash / venting: cap severity at HIGH so it doesn't trigger false CRITICAL sirens
+            return energyScore >= 9 ? "HIGH" : "MODERATE";
+        }
         if (energyScore >= 10) return "CRITICAL";
         if (energyScore >= 9) return "HIGH";
         return "MODERATE";
+    }
+
+    private boolean isRepetitiveOrKeyboardMash(String content) {
+        if (content == null) return false;
+        String trimmed = content.trim();
+        if (trimmed.isEmpty()) return false;
+        String clean = trimmed.toLowerCase().replaceAll("[^a-z0-9]", "");
+        if (clean.length() >= 3 && clean.length() <= 20) {
+            long uniqueChars = clean.chars().distinct().count();
+            if (uniqueChars <= 3) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -158,6 +189,7 @@ public class CrisisAlertService {
                 .energyScore(energyScore)
                 .build();
 
+        attachToOpenCaseIfPresent(alert, pseudonym);
         CrisisAlert saved = alertRepository.save(alert);
         log.warn("🚨 ALERT GENERATED [{}] type=CRISIS_CHAT severity=CRITICAL sessionId={} pseudonym={}",
                 saved.getAlertId(), sessionId, pseudonym);
@@ -291,6 +323,24 @@ public class CrisisAlertService {
         }
     }
 
+    /**
+     * If the student already has an open In-Progress casework alert (ACKNOWLEDGED), attach this new
+     * alert directly to their ongoing case so it doesn't create fragmented cards across tabs.
+     */
+    private void attachToOpenCaseIfPresent(CrisisAlert alert, String pseudonym) {
+        if (pseudonym == null || pseudonym.isBlank()) return;
+        List<CrisisAlert> openCases = alertRepository.findByPseudonymAndStatusInOrderByCreatedAtDesc(
+                pseudonym, List.of("ACKNOWLEDGED"));
+        if (!openCases.isEmpty()) {
+            CrisisAlert activeCase = openCases.get(0);
+            // Attach to ongoing case session/outreach while keeping status ACTIVE so clinicians are alerted to the new rant
+            alert.setChatSessionId(activeCase.getChatSessionId());
+            alert.setOutreachStatus(activeCase.getOutreachStatus());
+            log.info("Attached new alert [{}] to existing in-progress case for pseudonym '{}' (assigned to {})",
+                    alert.getAlertId(), pseudonym, activeCase.getAcknowledgedBy());
+        }
+    }
+
     // ── 3. ALERT MANAGEMENT (Professional Workflow) ──
 
     /**
@@ -358,24 +408,115 @@ public class CrisisAlertService {
         return saved;
     }
 
+    /**
+     * Resolve all active or acknowledged alerts for a specific student pseudonym (Case Resolution).
+     */
+    @Transactional
+    public List<CrisisAlert> resolveAllForPseudonym(String pseudonym, String username, String notes) {
+        if (pseudonym == null || pseudonym.isBlank()) {
+            return List.of();
+        }
+        List<CrisisAlert> activeAlerts = alertRepository.findByPseudonymAndStatusInOrderByCreatedAtDesc(
+                pseudonym, List.of("ACTIVE", "ACKNOWLEDGED"));
+        LocalDateTime now = LocalDateTime.now();
+        String noteToAdd = (notes != null && !notes.isBlank()) ? notes : "Case resolved by clinician.";
+        for (CrisisAlert a : activeAlerts) {
+            a.setStatus("RESOLVED");
+            a.setResolvedBy(username);
+            a.setResolvedAt(now);
+            String existingNotes = a.getResolutionNotes();
+            a.setResolutionNotes(existingNotes != null && !existingNotes.isBlank()
+                    ? existingNotes + "\n[Case Resolved] " + noteToAdd
+                    : "[Case Resolved] " + noteToAdd);
+        }
+        List<CrisisAlert> saved = alertRepository.saveAll(activeAlerts);
+        log.info("Batch resolved {} alert(s) for pseudonym '{}' by {}", saved.size(), pseudonym, username);
+        return saved;
+    }
+
+    /**
+     * Acknowledge all active alerts for a specific student pseudonym.
+     */
+    @Transactional
+    public List<CrisisAlert> acknowledgeAllForPseudonym(String pseudonym, String username) {
+        if (pseudonym == null || pseudonym.isBlank()) {
+            return List.of();
+        }
+        List<CrisisAlert> alertsToUpdate = alertRepository.findByPseudonymAndStatusInOrderByCreatedAtDesc(
+                pseudonym, List.of("ACTIVE", "ACKNOWLEDGED"));
+        LocalDateTime now = LocalDateTime.now();
+        for (CrisisAlert a : alertsToUpdate) {
+            a.setStatus("ACKNOWLEDGED");
+            if (a.getAcknowledgedBy() == null || a.getAcknowledgedBy().isBlank()) {
+                a.setAcknowledgedBy(username);
+            }
+            a.setAcknowledgedAt(now);
+        }
+        List<CrisisAlert> saved = alertRepository.saveAll(alertsToUpdate);
+        log.info("Batch acknowledged {} alert(s) for pseudonym '{}' by {}", saved.size(), pseudonym, username);
+        return saved;
+    }
+
     // ── 4. ALERT QUERIES ──
 
     /**
+     * Helper to get pseudonyms of all students currently with open in-progress casework.
+     */
+    private Set<String> getInProgressPseudonyms() {
+        return alertRepository.findInProgressAlertsPrioritized().stream()
+                .map(CrisisAlert::getPseudonym)
+                .filter(p -> p != null && !p.isBlank())
+                .collect(Collectors.toSet());
+    }
+
+    /**
      * Get all active alerts, prioritized by severity then time.
+     * Excludes active rants from students who already have an open in-progress case
+     * (those belong to the ongoing in-progress case).
      */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getActiveAlerts() {
+        Set<String> inProgressPseudonyms = getInProgressPseudonyms();
         return alertRepository.findActiveAlertsPrioritized().stream()
+                .filter(a -> a.getPseudonym() == null || a.getPseudonym().isBlank() || !inProgressPseudonyms.contains(a.getPseudonym()))
                 .map(this::toMap)
                 .collect(Collectors.toList());
     }
 
     /**
-     * Get all in-progress alerts (ACKNOWLEDGED status), sorted newest first.
+     * Get all in-progress alerts, including both ACKNOWLEDGED alerts and any new ACTIVE
+     * rants from students whose case is in progress, sorted newest first.
      */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getInProgressAlerts() {
-        return alertRepository.findInProgressAlertsPrioritized().stream()
+        List<CrisisAlert> acknowledged = alertRepository.findInProgressAlertsPrioritized();
+        Set<String> inProgressPseudonyms = acknowledged.stream()
+                .map(CrisisAlert::getPseudonym)
+                .filter(p -> p != null && !p.isBlank())
+                .collect(Collectors.toSet());
+
+        List<CrisisAlert> result = new ArrayList<>(acknowledged);
+        if (!inProgressPseudonyms.isEmpty()) {
+            Set<String> existingAlertIds = result.stream()
+                    .map(CrisisAlert::getAlertId)
+                    .collect(Collectors.toSet());
+            List<CrisisAlert> extraActive = alertRepository.findActiveAlertsPrioritized().stream()
+                    .filter(a -> a.getPseudonym() != null && inProgressPseudonyms.contains(a.getPseudonym()))
+                    .toList();
+            for (CrisisAlert ea : extraActive) {
+                if (!existingAlertIds.contains(ea.getAlertId())) {
+                    result.add(ea);
+                    existingAlertIds.add(ea.getAlertId());
+                }
+            }
+        }
+
+        result.sort((a, b) -> {
+            if (b.getCreatedAt() == null || a.getCreatedAt() == null) return 0;
+            return b.getCreatedAt().compareTo(a.getCreatedAt());
+        });
+
+        return result.stream()
                 .map(this::toMap)
                 .collect(Collectors.toList());
     }
@@ -392,16 +533,108 @@ public class CrisisAlertService {
 
     /**
      * Get alert history (all statuses) with optional status filter.
+     * Supports:
+     *   "ARCHIVED"       → Archived resolved/escalated cases only
+     *   "RESOLVED"       → Active (non-archived) resolved cases
+     *   "ESCALATED"      → Active (non-archived) escalated cases
+     *   "ACTIVE_HISTORY" → All unarchived resolved and escalated cases
+     *   "ALL" or null    → All resolved and escalated cases (including archived flag so client can filter/count)
      */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getAlertHistory(String statusFilter) {
         List<CrisisAlert> alerts;
-        if (statusFilter != null && !statusFilter.isBlank() && !"ALL".equalsIgnoreCase(statusFilter)) {
-            alerts = alertRepository.findByStatusOrderByCreatedAtDesc(statusFilter);
+        if ("ARCHIVED".equalsIgnoreCase(statusFilter)) {
+            alerts = alertRepository.findByArchivedTrueOrderByCreatedAtDesc();
+        } else if ("RESOLVED".equalsIgnoreCase(statusFilter)) {
+            alerts = alertRepository.findByStatusAndArchivedFalseOrderByCreatedAtDesc("RESOLVED");
+        } else if ("ESCALATED".equalsIgnoreCase(statusFilter)) {
+            alerts = alertRepository.findByStatusAndArchivedFalseOrderByCreatedAtDesc("ESCALATED");
+        } else if ("ACTIVE_HISTORY".equalsIgnoreCase(statusFilter)) {
+            alerts = alertRepository.findByStatusInAndArchivedFalseOrderByCreatedAtDesc(List.of("RESOLVED", "ESCALATED"));
         } else {
             alerts = alertRepository.findByStatusInOrderByCreatedAtDesc(List.of("RESOLVED", "ESCALATED"));
         }
         return alerts.stream().map(this::toMap).collect(Collectors.toList());
+    }
+
+    /**
+     * Archive an alert or its consolidated case (for a student pseudonym).
+     */
+    @Transactional
+    public Map<String, Object> archiveAlertOrCase(String alertId, String username) {
+        CrisisAlert alert = alertRepository.findByAlertId(alertId)
+                .orElseThrow(() -> new NoSuchElementException("Alert not found: " + alertId));
+        LocalDateTime now = LocalDateTime.now();
+        int count = 0;
+        if (alert.getPseudonym() != null && !alert.getPseudonym().isBlank()) {
+            List<CrisisAlert> siblingAlerts = alertRepository.findByPseudonymAndStatusInOrderByCreatedAtDesc(
+                    alert.getPseudonym(), List.of("RESOLVED", "ESCALATED"));
+            for (CrisisAlert a : siblingAlerts) {
+                a.setArchived(true);
+                a.setArchivedAt(now);
+                a.setArchivedBy(username);
+            }
+            alertRepository.saveAll(siblingAlerts);
+            count = siblingAlerts.size();
+        } else {
+            alert.setArchived(true);
+            alert.setArchivedAt(now);
+            alert.setArchivedBy(username);
+            alertRepository.save(alert);
+            count = 1;
+        }
+        log.info("Archived {} alert(s) for alertId={} (pseudonym={}) by {}", count, alertId, alert.getPseudonym(), username);
+        return Map.of("success", true, "archivedCount", count, "pseudonym", alert.getPseudonym() != null ? alert.getPseudonym() : "");
+    }
+
+    /**
+     * Restore / unarchive an alert or its consolidated case back to active history.
+     */
+    @Transactional
+    public Map<String, Object> unarchiveAlertOrCase(String alertId, String username) {
+        CrisisAlert alert = alertRepository.findByAlertId(alertId)
+                .orElseThrow(() -> new NoSuchElementException("Alert not found: " + alertId));
+        int count = 0;
+        if (alert.getPseudonym() != null && !alert.getPseudonym().isBlank()) {
+            List<CrisisAlert> siblingAlerts = alertRepository.findByPseudonymAndStatusInOrderByCreatedAtDesc(
+                    alert.getPseudonym(), List.of("RESOLVED", "ESCALATED"));
+            for (CrisisAlert a : siblingAlerts) {
+                a.setArchived(false);
+                a.setArchivedAt(null);
+                a.setArchivedBy(null);
+            }
+            alertRepository.saveAll(siblingAlerts);
+            count = siblingAlerts.size();
+        } else {
+            alert.setArchived(false);
+            alert.setArchivedAt(null);
+            alert.setArchivedBy(null);
+            alertRepository.save(alert);
+            count = 1;
+        }
+        log.info("Restored/unarchived {} alert(s) for alertId={} (pseudonym={}) by {}", count, alertId, alert.getPseudonym(), username);
+        return Map.of("success", true, "restoredCount", count, "pseudonym", alert.getPseudonym() != null ? alert.getPseudonym() : "");
+    }
+
+    /**
+     * Permanently delete an alert or its consolidated case from the database.
+     */
+    @Transactional
+    public Map<String, Object> deleteAlertOrCase(String alertId, String username) {
+        CrisisAlert alert = alertRepository.findByAlertId(alertId)
+                .orElseThrow(() -> new NoSuchElementException("Alert not found: " + alertId));
+        int count = 0;
+        if (alert.getPseudonym() != null && !alert.getPseudonym().isBlank()) {
+            List<CrisisAlert> siblingAlerts = alertRepository.findByPseudonymAndStatusInOrderByCreatedAtDesc(
+                    alert.getPseudonym(), List.of("RESOLVED", "ESCALATED"));
+            count = siblingAlerts.size();
+            alertRepository.deleteAll(siblingAlerts);
+        } else {
+            count = 1;
+            alertRepository.delete(alert);
+        }
+        log.info("Permanently deleted {} alert(s) for alertId={} (pseudonym={}) by {}", count, alertId, alert.getPseudonym(), username);
+        return Map.of("success", true, "deletedCount", count, "pseudonym", alert.getPseudonym() != null ? alert.getPseudonym() : "");
     }
 
     /**
@@ -427,6 +660,19 @@ public class CrisisAlertService {
         long resolved = alertRepository.countByStatus("RESOLVED");
         long escalated = alertRepository.countByStatus("ESCALATED");
 
+        Set<String> inProgressPseudonyms = getInProgressPseudonyms();
+        // Case-level counts (unique student incidents)
+        long activeCases = alertRepository.findActiveAlertsPrioritized().stream()
+                .filter(a -> a.getPseudonym() == null || a.getPseudonym().isBlank() || !inProgressPseudonyms.contains(a.getPseudonym()))
+                .map(a -> (a.getPseudonym() != null && !a.getPseudonym().isBlank()) ? a.getPseudonym() : a.getAlertId())
+                .distinct().count();
+        long inProgressCases = alertRepository.findInProgressAlertsPrioritized().stream()
+                .map(a -> (a.getPseudonym() != null && !a.getPseudonym().isBlank()) ? a.getPseudonym() : a.getAlertId())
+                .distinct().count();
+        long resolvedCases = alertRepository.findByStatusInOrderByCreatedAtDesc(List.of("RESOLVED", "ESCALATED")).stream()
+                .map(a -> (a.getPseudonym() != null && !a.getPseudonym().isBlank()) ? a.getPseudonym() : a.getAlertId())
+                .distinct().count();
+
         // Active severity breakdown
         Map<String, Long> severityBreakdown = new LinkedHashMap<>();
         for (Object[] row : alertRepository.countActiveBySeverity()) {
@@ -444,17 +690,21 @@ public class CrisisAlertService {
         long todayTotal = alertRepository.countSince(todayStart);
         long todayCritical = alertRepository.countCriticalSince(todayStart);
 
-        return Map.of(
-                "totalAlerts", total,
-                "active", active,
-                "acknowledged", acknowledged,
-                "inProgress", acknowledged,
-                "resolved", resolved,
-                "escalated", escalated,
-                "severityBreakdown", severityBreakdown,
-                "typeBreakdown", typeBreakdown,
-                "todayTotal", todayTotal,
-                "todayCritical", todayCritical);
+        Map<String, Object> stats = new LinkedHashMap<>();
+        stats.put("totalAlerts", total);
+        stats.put("active", active);
+        stats.put("acknowledged", acknowledged);
+        stats.put("inProgress", acknowledged);
+        stats.put("activeCases", activeCases);
+        stats.put("inProgressCases", inProgressCases);
+        stats.put("resolvedCases", resolvedCases);
+        stats.put("resolved", resolved);
+        stats.put("escalated", escalated);
+        stats.put("severityBreakdown", severityBreakdown);
+        stats.put("typeBreakdown", typeBreakdown);
+        stats.put("todayTotal", todayTotal);
+        stats.put("todayCritical", todayCritical);
+        return stats;
     }
 
     /**
@@ -491,6 +741,12 @@ public class CrisisAlertService {
     @Transactional
     public Map<String, Object> initiateChatFromAlert(String alertId, String professionalId,
             String professionalName) {
+        return initiateChatFromAlert(alertId, professionalId, professionalName, false);
+    }
+
+    @Transactional
+    public Map<String, Object> initiateChatFromAlert(String alertId, String professionalId,
+            String professionalName, boolean force) {
         CrisisAlert alert = alertRepository.findByAlertId(alertId)
                 .orElseThrow(() -> new NoSuchElementException("Alert not found: " + alertId));
 
@@ -526,9 +782,7 @@ public class CrisisAlertService {
                 ChatSessionResponse accepted = chatService.acceptSession(
                         existing.getSessionId(), professionalId, professionalName);
 
-                alert.setChatSessionId(accepted.getSessionId());
-                alert.setOutreachStatus("ACTIVE");
-                autoAcknowledgeAlert(alert, professionalId);
+                autoAcknowledgeCase(alert, professionalId, accepted.getSessionId(), "ACTIVE");
 
                 return Map.of(
                         "status", "claimed_waiting",
@@ -540,9 +794,11 @@ public class CrisisAlertService {
 
             // Case 2: Session is ACTIVE with THIS professional
             if ("ACTIVE".equals(existing.getStatus()) && professionalId.equals(existing.getProfessionalId())) {
-                alert.setChatSessionId(existing.getSessionId());
-                alert.setOutreachStatus("ACTIVE");
-                autoAcknowledgeAlert(alert, professionalId);
+                if (existing.isDeletedByProfessional()) {
+                    existing.setDeletedByProfessional(false);
+                    sessionRepository.save(existing);
+                }
+                autoAcknowledgeCase(alert, professionalId, existing.getSessionId(), "ACTIVE");
                 return Map.of(
                         "status", "resumed_active",
                         "sessionId", existing.getSessionId(),
@@ -573,15 +829,53 @@ public class CrisisAlertService {
 
             // Case 5: Session is INVITED by THIS professional
             if ("INVITED".equals(existing.getStatus()) && professionalId.equals(existing.getProfessionalId())) {
-                alert.setChatSessionId(existing.getSessionId());
-                alert.setOutreachStatus("INVITED");
-                alertRepository.save(alert);
+                if (existing.isDeletedByProfessional()) {
+                    existing.setDeletedByProfessional(false);
+                    sessionRepository.save(existing);
+                }
+                autoAcknowledgeCase(alert, professionalId, existing.getSessionId(), "INVITED");
                 return Map.of(
-                        "status", "invite_sent",
+                        "status", "invite_already_pending",
                         "sessionId", existing.getSessionId(),
                         "pseudonym", existing.getStudentPseudonym(),
                         "professionalName", professionalName,
-                        "message", "Outreach invitation already sent by you. Waiting for student to accept.");
+                        "message", "An outreach invitation is already pending with this student. Awaiting student response.");
+            }
+        }
+
+        // Check if student recently declined outreach (within last 2 hours) unless force is requested
+        if (!force) {
+            List<ChatSession> pastSessions = sessionRepository.findByStudentPseudonymOrderByCreatedAtDesc(alert.getPseudonym());
+            Optional<ChatSession> recentDeclined = pastSessions.stream()
+                    .filter(s -> "DECLINED".equals(s.getStatus()))
+                    .filter(s -> s.getCreatedAt() != null && s.getCreatedAt().isAfter(LocalDateTime.now().minusHours(2)))
+                    .findFirst();
+
+            if (recentDeclined.isPresent()) {
+                ChatSession decSession = recentDeclined.get();
+                return Map.of(
+                        "status", "recently_declined",
+                        "sessionId", decSession.getSessionId(),
+                        "pseudonym", alert.getPseudonym(),
+                        "professionalName", professionalName,
+                        "declinedAt", decSession.getCreatedAt().toString(),
+                        "message", "Student " + alert.getPseudonym() + " declined outreach recently (prefers to vent only). Repeated invitations may feel intrusive. Re-inviting requires clinical confirmation.");
+            }
+
+            List<CrisisAlert> studentAlerts = alertRepository.findByPseudonymAndStatusInOrderByCreatedAtDesc(
+                    alert.getPseudonym(), List.of("ACTIVE", "ACKNOWLEDGED", "RESOLVED"));
+            Optional<CrisisAlert> declinedAlert = studentAlerts.stream()
+                    .filter(a -> "DECLINED".equals(a.getOutreachStatus()) || (a.getResolutionNotes() != null && a.getResolutionNotes().toLowerCase().contains("declined")))
+                    .filter(a -> a.getCreatedAt() != null && a.getCreatedAt().isAfter(LocalDateTime.now().minusHours(2)))
+                    .findFirst();
+
+            if (declinedAlert.isPresent()) {
+                return Map.of(
+                        "status", "recently_declined",
+                        "pseudonym", alert.getPseudonym(),
+                        "professionalName", professionalName,
+                        "declinedAt", declinedAlert.get().getCreatedAt().toString(),
+                        "message", "Student " + alert.getPseudonym() + " declined outreach recently (prefers to vent only). Repeated invitations may feel intrusive. Re-inviting requires clinical confirmation.");
             }
         }
 
@@ -596,12 +890,10 @@ public class CrisisAlertService {
                 professionalId,
                 professionalName);
 
-        alert.setChatSessionId(inviteSession.getSessionId());
-        alert.setOutreachStatus("INVITED");
-        autoAcknowledgeAlert(alert, professionalId);
+        autoAcknowledgeCase(alert, professionalId, inviteSession.getSessionId(), "INVITED");
 
-        log.info("Crisis outreach invitation created: alertId={}, sessionId={}, professional={}, pseudonym={}",
-                alertId, inviteSession.getSessionId(), professionalName, alert.getPseudonym());
+        log.info("Crisis outreach invitation created: alertId={}, sessionId={}, professional={}, pseudonym={}, force={}",
+                alertId, inviteSession.getSessionId(), professionalName, alert.getPseudonym(), force);
 
         return Map.of(
                 "status", "invite_sent",
@@ -611,13 +903,32 @@ public class CrisisAlertService {
                 "message", "Outreach invitation sent to student. Waiting for student to accept.");
     }
 
-    private void autoAcknowledgeAlert(CrisisAlert alert, String professionalId) {
-        if ("ACTIVE".equals(alert.getStatus())) {
-            alert.setStatus("ACKNOWLEDGED");
-            alert.setAcknowledgedBy(professionalId);
-            alert.setAcknowledgedAt(LocalDateTime.now());
-        }
+    private void autoAcknowledgeCase(CrisisAlert alert, String professionalId, String sessionId, String outreachStatus) {
+        LocalDateTime now = LocalDateTime.now();
+        alert.setStatus("ACKNOWLEDGED");
+        alert.setAcknowledgedBy(professionalId);
+        alert.setAcknowledgedAt(now);
+        alert.setChatSessionId(sessionId);
+        alert.setOutreachStatus(outreachStatus);
         alertRepository.save(alert);
+
+        if (alert.getPseudonym() != null && !alert.getPseudonym().isBlank()) {
+            List<CrisisAlert> openSiblings = alertRepository.findByPseudonymAndStatusInOrderByCreatedAtDesc(
+                    alert.getPseudonym(), List.of("ACTIVE"));
+            for (CrisisAlert sibling : openSiblings) {
+                if (!sibling.getAlertId().equals(alert.getAlertId())) {
+                    sibling.setStatus("ACKNOWLEDGED");
+                    sibling.setAcknowledgedBy(professionalId);
+                    sibling.setAcknowledgedAt(now);
+                    sibling.setChatSessionId(sessionId);
+                    sibling.setOutreachStatus(outreachStatus);
+                }
+            }
+            if (!openSiblings.isEmpty()) {
+                alertRepository.saveAll(openSiblings);
+                log.info("Auto-acknowledged {} additional active alert(s) for pseudonym '{}'", openSiblings.size(), alert.getPseudonym());
+            }
+        }
     }
 
     /**
@@ -626,16 +937,33 @@ public class CrisisAlertService {
      */
     @Transactional
     public void updateAlertOutreachStatus(String sessionId, String outreachStatus, String notes) {
-        alertRepository.findFirstByChatSessionIdOrderByCreatedAtDesc(sessionId).ifPresent(alert -> {
-            alert.setOutreachStatus(outreachStatus);
-            if (notes != null && !notes.isBlank()) {
-                String existing = alert.getResolutionNotes();
-                alert.setResolutionNotes(existing != null ? existing + "\n" + notes : notes);
+        List<CrisisAlert> alerts = new ArrayList<>(alertRepository.findByChatSessionIdOrderByCreatedAtDesc(sessionId));
+        if (alerts.isEmpty()) {
+            alertRepository.findFirstByChatSessionIdOrderByCreatedAtDesc(sessionId).ifPresent(alerts::add);
+        }
+
+        if (!alerts.isEmpty()) {
+            String pseudonym = alerts.get(0).getPseudonym();
+            if (pseudonym != null && !pseudonym.isBlank()) {
+                List<CrisisAlert> studentAlerts = alertRepository.findByPseudonymAndStatusInOrderByCreatedAtDesc(
+                        pseudonym, List.of("ACKNOWLEDGED", "ACTIVE"));
+                for (CrisisAlert sa : studentAlerts) {
+                    if (!alerts.contains(sa)) {
+                        alerts.add(sa);
+                    }
+                }
             }
-            alertRepository.save(alert);
-            log.info("Crisis alert outreachStatus updated: alertId={}, sessionId={}, outreachStatus={}",
-                    alert.getAlertId(), sessionId, outreachStatus);
-        });
+            for (CrisisAlert a : alerts) {
+                a.setOutreachStatus(outreachStatus);
+                if (notes != null && !notes.isBlank()) {
+                    String existing = a.getResolutionNotes();
+                    a.setResolutionNotes(existing != null ? existing + "\n" + notes : notes);
+                }
+            }
+            alertRepository.saveAll(alerts);
+            log.info("Crisis alert outreachStatus updated to '{}' for {} alert(s) linked to sessionId={}",
+                    outreachStatus, alerts.size(), sessionId);
+        }
     }
 
     // ── EMAIL NOTIFICATION TO PROFESSIONALS ──
@@ -646,6 +974,17 @@ public class CrisisAlertService {
      */
     private void notifyProfessionalsByEmail(CrisisAlert alert) {
         try {
+            String pseudonym = alert.getPseudonym();
+            if (pseudonym != null && !pseudonym.isBlank()) {
+                LocalDateTime lastSent = lastEmailDispatchPerPseudonym.get(pseudonym);
+                if (lastSent != null && lastSent.isAfter(LocalDateTime.now().minusMinutes(15))) {
+                    log.info("📧 Email alert debounced for pseudonym '{}' (last alert sent {}m ago)",
+                            pseudonym, java.time.Duration.between(lastSent, LocalDateTime.now()).toMinutes());
+                    return;
+                }
+                lastEmailDispatchPerPseudonym.put(pseudonym, LocalDateTime.now());
+            }
+
             List<User> professionals = userRepository.findByRoleInAndActiveTrueAndEmailIsNotNull(
                     List.of("PROFESSIONAL", "SUPER_ADMIN")
             );
@@ -748,6 +1087,9 @@ public class CrisisAlertService {
         map.put("resolvedByName", resByName);
         map.put("resolvedAt", a.getResolvedAt());
         map.put("resolutionNotes", a.getResolutionNotes());
+        map.put("archived", a.isArchived());
+        map.put("archivedAt", a.getArchivedAt());
+        map.put("archivedBy", a.getArchivedBy());
         map.put("createdAt", a.getCreatedAt());
         return map;
     }

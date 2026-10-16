@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { postsApi } from '../services/api';
@@ -23,25 +23,25 @@ const PROFANITY_WORDS = [
 
 const BOX_BREATHING_DATA = [
   { name: 'Inhale', sub: 'Breathe in slowly through your nose...', duration: 4, phaseClass: 'inhale', sphereText: 'Inhale' },
-  { name: 'Hold', sub: 'Hold your breath gently. Rest in stillness...', duration: 4, phaseClass: 'hold', sphereText: 'Hold' },
-  { name: 'Exhale', sub: 'Release slowly and completely through your mouth...', duration: 4, phaseClass: 'exhale', sphereText: 'Exhale' },
-  { name: 'Hold', sub: 'Pause quietly before the next breath begins...', duration: 4, phaseClass: 'hold', sphereText: 'Rest' }
+  { name: 'Hold', sub: 'Hold your breath gently. Stay still...', duration: 4, phaseClass: 'hold', sphereText: 'Hold' },
+  { name: 'Exhale', sub: 'Breathe out slowly and gently through your mouth...', duration: 4, phaseClass: 'exhale', sphereText: 'Exhale' },
+  { name: 'Hold', sub: 'Wait quietly before your next breath...', duration: 4, phaseClass: 'hold-empty', sphereText: 'Rest' }
 ];
 
 const GROUNDING_DATA = [
-  { count: 5, sense: 'SEE', icon: '👁️', prompt: '5 things you can SEE', desc: 'Look around. Notice colors, shadows, a pen, light shining on a wall, or small details.', items: ['1st thing you see', '2nd thing you see', '3rd thing you see', '4th thing you see', '5th thing you see'] },
-  { count: 4, sense: 'TOUCH', icon: '✋', prompt: '4 things you can TOUCH', desc: 'Notice physical sensations: the fabric of your clothes, feet on the floor, or the cool desk.', items: ['1st texture', '2nd texture', '3rd texture', '4th texture'] },
-  { count: 3, sense: 'HEAR', icon: '👂', prompt: '3 things you can HEAR', desc: 'Listen carefully: distant conversation, the hum of an air conditioner, birds, or your breathing.', items: ['1st sound', '2nd sound', '3rd sound'] },
-  { count: 2, sense: 'SMELL', icon: '👃', prompt: '2 things you can SMELL', desc: 'Take a gentle breath in: notice any soap, fresh air, coffee, paper, or clothing.', items: ['1st scent', '2nd scent'] },
-  { count: 1, sense: 'TASTE', icon: '👅', prompt: '1 thing you can TASTE', desc: 'Notice the lingering taste of a drink, food, mint, or the natural taste inside your mouth.', items: ['1 taste'] }
+  { count: 5, sense: 'SEE', icon: '👁️', prompt: '5 things you can SEE', desc: 'Look around you. Find 5 things you can see (like a pen, a wall, a shoe, or a window).', items: ['1. Something you can see', '2. Something you can see', '3. Something you can see', '4. Something you can see', '5. Something you can see'] },
+  { count: 4, sense: 'TOUCH', icon: '✋', prompt: '4 things you can TOUCH', desc: 'Find 4 things you can feel with your hands or body (like your shirt, a smooth desk, or the floor).', items: ['1. Something you can touch', '2. Something you can touch', '3. Something you can touch', '4. Something you can touch'] },
+  { count: 3, sense: 'HEAR', icon: '👂', prompt: '3 things you can HEAR', desc: 'Listen quietly. Find 3 sounds you can hear (like people talking far away, a fan humming, or your breath).', items: ['1. A sound you can hear', '2. A sound you can hear', '3. A sound you can hear'] },
+  { count: 2, sense: 'SMELL', icon: '👃', prompt: '2 things you can SMELL', desc: 'Breathe in gently. Find 2 smells around you (like soap, fresh air, paper, food, or your clothes).', items: ['1. A smell around you', '2. A smell around you'] },
+  { count: 1, sense: 'TASTE', icon: '👅', prompt: '1 thing you can TASTE', desc: 'Notice 1 taste in your mouth (like water, mint, food you ate earlier, or take a sip of water).', items: ['1. A taste in your mouth'] }
 ];
 
 const PMR_DATA = [
-  { target: 'Hands & Forearms', icon: 'fa-hand', tenseTip: 'Make tight fists with both hands. Squeeze hard and feel the tension build in your forearms.', releaseTip: 'Release your fists completely. Let your fingers uncurl and feel the warmth and relief.' },
-  { target: 'Shoulders & Neck', icon: 'fa-user-tie', tenseTip: 'Shrug your shoulders up toward your ears. Hold tight and feel the strain in your neck.', releaseTip: 'Drop your shoulders all the way down. Let gravity take over and feel all heaviness vanish.' },
-  { target: 'Face & Forehead', icon: 'fa-face-smile', tenseTip: 'Scrunch up your eyes, wrinkle your forehead, and clench your jaw gently. Hold tight.', releaseTip: 'Soften your forehead, unclamp your jaw, and let all facial muscles smooth out.' },
-  { target: 'Chest & Stomach', icon: 'fa-lungs', tenseTip: 'Take a deep breath and tighten your core/abdominal muscles firmly. Hold it in.', releaseTip: 'Exhale completely. Let your belly relax and soften into pure ease.' },
-  { target: 'Feet & Calves', icon: 'fa-shoe-prints', tenseTip: 'Point your toes downwards and tense your calf muscles tight. Feel the tightness.', releaseTip: 'Release your feet and toes. Feel the tension drain away into the ground.' }
+  { target: 'Hands & Arms', icon: 'fa-hand', tenseTip: 'Make tight fists with both hands. Squeeze hard and feel your arms tighten up.', releaseTip: 'Open your hands completely. Let your fingers go loose and feel the tension leave.' },
+  { target: 'Shoulders & Neck', icon: 'fa-user-tie', tenseTip: 'Pull your shoulders up high towards your ears. Hold tight and feel the squeeze.', releaseTip: 'Drop your shoulders all the way down. Let them feel heavy, loose, and completely rested.' },
+  { target: 'Face & Jaw', icon: 'fa-face-smile', tenseTip: 'Close your eyes tight, squeeze your face, and bite down gently. Hold it tight.', releaseTip: 'Let go. Relax your eyes, loosen your mouth, and let your whole face go soft.' },
+  { target: 'Chest & Tummy', icon: 'fa-lungs', tenseTip: 'Take a deep breath and make your tummy muscles tight and firm. Hold it in.', releaseTip: 'Breathe out all the air. Let your stomach relax and feel soft and loose.' },
+  { target: 'Feet & Lower Legs', icon: 'fa-shoe-prints', tenseTip: 'Point your toes down and tighten the back of your legs. Feel the tight squeeze.', releaseTip: 'Relax your feet and toes completely. Feel all the tightness melt away.' }
 ];
 
 function getTimeAgo(dateStr) {
@@ -140,6 +140,16 @@ export default function RantBoard() {
   const [contentBlocked, setContentBlocked] = useState(false);
   const [autoReplyData, setAutoReplyData] = useState(null); // { autoReply, flagged, contextualResources }
   const [toastMessage, setToastMessage] = useState('');
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+
+  // Anti-flood / mindful breathing cooldown between submissions
+  useEffect(() => {
+    if (cooldownSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setCooldownSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldownSeconds]);
 
   // Crisis resource banner state (shown when energyScore >= 9)
   const [crisisBannerVisible, setCrisisBannerVisible] = useState(false);
@@ -157,6 +167,22 @@ export default function RantBoard() {
   // My Posts
   const [myPosts, setMyPosts] = useState([]);
   const [myPostsLoading, setMyPostsLoading] = useState(false);
+  const [myPostsFilter, setMyPostsFilter] = useState('ACTIVE');
+  const [deleteModal, setDeleteModal] = useState({ open: false, postId: null, pseudonym: '', content: '' });
+  const [postActionLoadingId, setPostActionLoadingId] = useState(null);
+
+  // Unread tracker for My Posts notification badge
+  const [lastSeenMyPostsAt, setLastSeenMyPostsAt] = useState(() => {
+    try {
+      const saved = localStorage.getItem('safespace_last_seen_my_posts');
+      if (saved) return parseInt(saved, 10);
+      const now = Date.now();
+      localStorage.setItem('safespace_last_seen_my_posts', String(now));
+      return now;
+    } catch {
+      return Date.now();
+    }
+  });
 
   // Student Resources
   const [resources, setResources] = useState([]);
@@ -173,6 +199,8 @@ export default function RantBoard() {
   const [journalEntries, setJournalEntries] = useState({ one: '', two: '', three: '' });
   const [journalSaved, setJournalSaved] = useState(false);
   const kitTimerRef = useRef(null);
+  const kitStepRef = useRef(0);
+  const kitCountdownRef = useRef(4);
 
   // Pre-submission crisis resources banner listener (energyScore >= 9)
   useEffect(() => {
@@ -235,29 +263,29 @@ export default function RantBoard() {
   }, [feedEmotion]);
 
   // Fetch My Posts
-  const loadMyPosts = useCallback(async () => {
+  const loadMyPosts = useCallback(async (silent = false) => {
     if (isProfessional) return;
-    setMyPostsLoading(true);
+    if (!silent) setMyPostsLoading(true);
     try {
       const data = await postsApi.getMyPosts();
       setMyPosts(Array.isArray(data) ? data : data.content || []);
     } catch (err) {
       console.warn('My posts load error:', err);
     } finally {
-      setMyPostsLoading(false);
+      if (!silent) setMyPostsLoading(false);
     }
   }, [isProfessional]);
 
   // Fetch Resources
-  const loadResources = useCallback(async () => {
-    setResourcesLoading(true);
+  const loadResources = useCallback(async (silent = false) => {
+    if (!silent) setResourcesLoading(true);
     try {
       const data = await postsApi.getResources();
       setResources(Array.isArray(data) ? data : (data.content || []));
     } catch (err) {
       console.warn('Resources load error:', err);
     } finally {
-      setResourcesLoading(false);
+      if (!silent) setResourcesLoading(false);
     }
   }, []);
 
@@ -275,8 +303,103 @@ export default function RantBoard() {
     if (isProfessional && tabId !== 'feed') return;
     setActiveTab(tabId);
     if (tabId === 'feed') loadFeed(0, false);
-    if (tabId === 'mine') loadMyPosts();
-    if (tabId === 'resources') loadResources();
+    if (tabId === 'mine') {
+      const now = Date.now();
+      setLastSeenMyPostsAt(now);
+      try {
+        localStorage.setItem('safespace_last_seen_my_posts', String(now));
+      } catch {}
+      loadMyPosts(myPosts.length > 0);
+    }
+    if (tabId === 'resources') loadResources(resources.length > 0);
+  };
+
+  useEffect(() => {
+    if (activeTab === 'mine') {
+      const now = Date.now();
+      setLastSeenMyPostsAt(now);
+      try {
+        localStorage.setItem('safespace_last_seen_my_posts', String(now));
+      } catch {}
+    }
+  }, [activeTab]);
+
+  // My Posts Partitions & Dynamic Unread Badge
+  const activeMyPosts = useMemo(() => myPosts.filter((p) => !p.archived), [myPosts]);
+  const archivedMyPosts = useMemo(() => myPosts.filter((p) => !!p.archived), [myPosts]);
+
+  const displayedMyPosts = useMemo(() => {
+    if (myPostsFilter === 'ARCHIVED') return archivedMyPosts;
+    return activeMyPosts;
+  }, [myPostsFilter, activeMyPosts, archivedMyPosts]);
+
+  const unseenMyPostsCount = useMemo(() => {
+    if (activeTab === 'mine') return 0;
+    if (!lastSeenMyPostsAt) return 0;
+    return activeMyPosts.filter((p) => {
+      const postTime = new Date(p.createdAt).getTime() || 0;
+      return postTime > lastSeenMyPostsAt;
+    }).length;
+  }, [activeMyPosts, activeTab, lastSeenMyPostsAt]);
+
+  // My Posts Action Handlers
+  const handleArchivePost = async (postId) => {
+    if (!postId) return;
+    try {
+      setPostActionLoadingId(`archive-${postId}`);
+      await postsApi.archivePost(postId);
+      showToast('Post moved to archive 📦');
+      await loadMyPosts(true);
+    } catch (err) {
+      console.error('Failed to archive post:', err);
+      showToast(err.message || 'Failed to archive post');
+    } finally {
+      setPostActionLoadingId(null);
+    }
+  };
+
+  const handleRestorePost = async (postId) => {
+    if (!postId) return;
+    try {
+      setPostActionLoadingId(`restore-${postId}`);
+      await postsApi.unarchivePost(postId);
+      showToast('Post restored to active posts ↺');
+      await loadMyPosts(true);
+    } catch (err) {
+      console.error('Failed to restore post:', err);
+      showToast(err.message || 'Failed to restore post');
+    } finally {
+      setPostActionLoadingId(null);
+    }
+  };
+
+  const openDeleteModal = (post) => {
+    setDeleteModal({
+      open: true,
+      postId: post.postId || post.id,
+      pseudonym: post.pseudonym || 'Your Post',
+      content: post.content ? (post.content.length > 80 ? post.content.substring(0, 80) + '…' : post.content) : ''
+    });
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModal({ open: false, postId: null, pseudonym: '', content: '' });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.postId) return;
+    try {
+      setPostActionLoadingId(`delete-${deleteModal.postId}`);
+      await postsApi.deletePost(deleteModal.postId);
+      closeDeleteModal();
+      showToast('Post permanently deleted 🗑');
+      await loadMyPosts(true);
+    } catch (err) {
+      console.error('Failed to delete post:', err);
+      showToast(err.message || 'Failed to delete post');
+    } finally {
+      setPostActionLoadingId(null);
+    }
   };
 
   // Handle Post Submit
@@ -315,6 +438,7 @@ export default function RantBoard() {
         showToast('Your post has been shared anonymously ✓');
       }
 
+      setCooldownSeconds(20);
       setContent('');
       setContentBlocked(false);
       loadFeed(0, false);
@@ -330,6 +454,8 @@ export default function RantBoard() {
   const openKit = (type) => {
     setActiveKit(type);
     setIsKitPaused(false);
+    kitStepRef.current = 0;
+    kitCountdownRef.current = 4;
     setKitStep(0);
     setBreathingCycle(1);
     setKitCountdown(4);
@@ -347,26 +473,33 @@ export default function RantBoard() {
     showToast('Great job taking care of yourself 💚');
   };
 
-  // Box Breathing Timer
+  const handleSelectBreathingPhase = (phaseIndex) => {
+    kitStepRef.current = phaseIndex;
+    kitCountdownRef.current = 4;
+    setKitStep(phaseIndex);
+    setKitCountdown(4);
+  };
+
+  // Box Breathing Timer (Reliable non-nested phase sequencer)
   useEffect(() => {
     if (!kitModalOpen || activeKit !== 'breathing') return;
 
     kitTimerRef.current = setInterval(() => {
       if (isKitPaused) return;
 
-      setKitCountdown((prevCount) => {
-        if (prevCount <= 1) {
-          setKitStep((prevStep) => {
-            const nextStep = (prevStep + 1) % 4;
-            if (nextStep === 0) {
-              setBreathingCycle((c) => c + 1);
-            }
-            return nextStep;
-          });
-          return 4;
+      if (kitCountdownRef.current <= 1) {
+        kitCountdownRef.current = 4;
+        const nextStep = (kitStepRef.current + 1) % 4;
+        kitStepRef.current = nextStep;
+        if (nextStep === 0) {
+          setBreathingCycle((c) => c + 1);
         }
-        return prevCount - 1;
-      });
+        setKitStep(nextStep);
+        setKitCountdown(4);
+      } else {
+        kitCountdownRef.current -= 1;
+        setKitCountdown(kitCountdownRef.current);
+      }
     }, 1000);
 
     return () => clearInterval(kitTimerRef.current);
@@ -448,8 +581,8 @@ export default function RantBoard() {
             onClick={() => handleSwitchTab('mine')}
           >
             <i className="fas fa-bookmark"></i> My Posts
-            {myPosts.length > 0 && (
-              <span className="tab-badge" id="myPostsBadge">{myPosts.length}</span>
+            {unseenMyPostsCount > 0 && (
+              <span className="tab-count-pill" id="myPostsCount">{unseenMyPostsCount}</span>
             )}
           </button>
           <button
@@ -616,11 +749,15 @@ export default function RantBoard() {
                     type="submit"
                     className={`btn-share ${contentBlocked ? 'blocked' : ''}`}
                     id="submitBtn"
-                    disabled={isSubmitting || contentBlocked || !content.trim()}
+                    disabled={isSubmitting || contentBlocked || !content.trim() || cooldownSeconds > 0}
                   >
                     {isSubmitting ? (
                       <>
                         <i className="fas fa-spinner fa-spin"></i> Posting...
+                      </>
+                    ) : cooldownSeconds > 0 ? (
+                      <>
+                        <i className="fas fa-wind"></i> Take a breath... ({cooldownSeconds}s)
                       </>
                     ) : contentBlocked ? (
                       <>
@@ -821,35 +958,117 @@ export default function RantBoard() {
         {/* ── TAB 3: My Posts ── */}
         {!isProfessional && activeTab === 'mine' && (
           <div className="tab-panel active" id="panelMine">
+            {/* Sub-filter Bar */}
+            <div className="my-posts-filter-bar">
+              <button
+                type="button"
+                className={`my-posts-filter-pill ${myPostsFilter === 'ACTIVE' ? 'active' : ''}`}
+                onClick={() => setMyPostsFilter('ACTIVE')}
+              >
+                Active Posts ({activeMyPosts.length})
+              </button>
+              <button
+                type="button"
+                className={`my-posts-filter-pill ${myPostsFilter === 'ARCHIVED' ? 'active' : ''}`}
+                onClick={() => setMyPostsFilter('ARCHIVED')}
+              >
+                📦 Archived ({archivedMyPosts.length})
+              </button>
+            </div>
+
             <div id="myPostsContainer">
               {myPostsLoading ? (
                 <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#6C7A92' }}>
                   <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.8rem', marginBottom: '0.75rem' }}></i>
                   <p>Loading your saved posts...</p>
                 </div>
-              ) : myPosts.length === 0 ? (
+              ) : displayedMyPosts.length === 0 ? (
                 <div className="my-posts-empty">
-                  <i className="fas fa-inbox"></i>
+                  <i className={`fas ${myPostsFilter === 'ARCHIVED' ? 'fa-box-archive' : 'fa-inbox'}`}></i>
                   <p>
-                    You haven't posted anything yet.<br />
-                    Share your thoughts in the <strong>Share</strong> tab.
+                    {myPostsFilter === 'ARCHIVED' ? (
+                      <>You have no archived posts.<br />You can archive any post from the Active Posts tab.</>
+                    ) : (
+                      <>You haven't posted anything yet.<br />Share your thoughts in the <strong>Share</strong> tab.</>
+                    )}
                   </p>
                 </div>
               ) : (
-                myPosts.map((post) => {
+                displayedMyPosts.map((post) => {
                   const initials = (post.pseudonym || 'AN').substring(0, 2).toUpperCase();
                   const timeAgo = getTimeAgo(post.createdAt);
                   const energyScoreVal = post.energyScore || 5;
+                  const targetPostId = post.postId || post.id;
+                  const isArchived = !!post.archived;
 
                   return (
-                    <div key={post.id} className="post-card">
+                    <div key={post.id || post.postId} className={`post-card ${isArchived ? 'is-archived' : ''}`}>
                       <div className="post-header">
                         <div className="post-author">
                           <div className="post-avatar">{initials}</div>
-                          <div>
+                          <div className="post-author-meta">
                             <div className="post-name">{post.pseudonym}</div>
                             <div className="post-time">{timeAgo}</div>
                           </div>
+                        </div>
+
+                        {/* Top-Right Non-Overlapping Action Buttons */}
+                        <div className="post-card-actions">
+                          {isArchived ? (
+                            <>
+                              <button
+                                type="button"
+                                className="btn-post-action restore"
+                                title="Restore to active posts"
+                                aria-label="Restore post"
+                                disabled={postActionLoadingId === `restore-${targetPostId}`}
+                                onClick={() => handleRestorePost(targetPostId)}
+                              >
+                                {postActionLoadingId === `restore-${targetPostId}` ? (
+                                  <i className="fas fa-spinner fa-spin"></i>
+                                ) : (
+                                  <i className="fas fa-rotate-left"></i>
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-post-action delete"
+                                title="Permanently delete post"
+                                aria-label="Delete post"
+                                disabled={postActionLoadingId === `delete-${targetPostId}`}
+                                onClick={() => openDeleteModal(post)}
+                              >
+                                <i className="fas fa-trash-alt"></i>
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                className="btn-post-action archive"
+                                title="Archive this post"
+                                aria-label="Archive post"
+                                disabled={postActionLoadingId === `archive-${targetPostId}`}
+                                onClick={() => handleArchivePost(targetPostId)}
+                              >
+                                {postActionLoadingId === `archive-${targetPostId}` ? (
+                                  <i className="fas fa-spinner fa-spin"></i>
+                                ) : (
+                                  <i className="fas fa-box-archive"></i>
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-post-action delete"
+                                title="Permanently delete post"
+                                aria-label="Delete post"
+                                disabled={postActionLoadingId === `delete-${targetPostId}`}
+                                onClick={() => openDeleteModal(post)}
+                              >
+                                <i className="fas fa-trash-alt"></i>
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                       <div className="post-body">{post.content}</div>
@@ -860,6 +1079,11 @@ export default function RantBoard() {
                         <span className={`tag-energy ${getEnergyTagClass(energyScoreVal)}`}>
                           ⚡ {energyScoreVal}/10
                         </span>
+                        {isArchived && (
+                          <span className="tag-archived">
+                            <i className="fas fa-box-archive"></i> Archived
+                          </span>
+                        )}
                       </div>
                       {post.autoReply && (
                         <div className="post-reply">
@@ -880,23 +1104,23 @@ export default function RantBoard() {
             <div className="kit-grid">
               <div className="kit-card" data-kit="breathing" onClick={() => openKit('breathing')}>
                 <div className="kit-icon breathing"><i className="fas fa-wind"></i></div>
-                <h4>Box Breathing</h4>
-                <p>Inhale 4s · Hold 4s · Exhale 4s · Hold 4s</p>
+                <h4>Slow Box Breathing</h4>
+                <p>Breathe in, hold, and breathe out for 4 seconds</p>
               </div>
               <div className="kit-card" data-kit="grounding" onClick={() => openKit('grounding')}>
                 <div className="kit-icon grounding"><i className="fas fa-hand-holding-heart"></i></div>
                 <h4>5-4-3-2-1 Grounding</h4>
-                <p>Engage all five senses to anchor yourself</p>
+                <p>Use your 5 senses to feel calm and peaceful</p>
               </div>
               <div className="kit-card" data-kit="muscle" onClick={() => openKit('muscle')}>
                 <div className="kit-icon muscle"><i className="fas fa-dumbbell"></i></div>
-                <h4>Progressive Relaxation</h4>
-                <p>Tense and release muscle groups</p>
+                <h4>Muscle Relaxation</h4>
+                <p>Tighten and relax your body to let go of stress</p>
               </div>
               <div className="kit-card" data-kit="journal" onClick={() => openKit('journal')}>
                 <div className="kit-icon journal"><i className="fas fa-pen-fancy"></i></div>
-                <h4>Micro Journal</h4>
-                <p>Write 3 things you're grateful for right now</p>
+                <h4>3 Good Things Journal</h4>
+                <p>Write 3 small things you are thankful for today</p>
               </div>
             </div>
           </div>
@@ -952,16 +1176,16 @@ export default function RantBoard() {
               </div>
               <div>
                 <h3 id="kitModalTitle">
-                  {activeKit === 'breathing' && 'Box Breathing (4-4-4-4)'}
+                  {activeKit === 'breathing' && 'Slow Box Breathing (4-4-4-4)'}
                   {activeKit === 'grounding' && '5-4-3-2-1 Sensory Grounding'}
-                  {activeKit === 'muscle' && 'Progressive Muscle Relaxation'}
-                  {activeKit === 'journal' && 'Micro Gratitude Journal'}
+                  {activeKit === 'muscle' && 'Muscle Relaxation'}
+                  {activeKit === 'journal' && '3 Good Things Journal'}
                 </h3>
                 <p id="kitModalSubtitle">
-                  {activeKit === 'breathing' && 'Calm your nervous system and regain mental composure'}
-                  {activeKit === 'grounding' && 'Anchor your awareness in the physical environment right now'}
-                  {activeKit === 'muscle' && 'Consciously isolate, tense, and release physical stress'}
-                  {activeKit === 'journal' && 'Gently shift perspective by noting 3 meaningful positives'}
+                  {activeKit === 'breathing' && 'Slow down your breathing to help your mind and body relax.'}
+                  {activeKit === 'grounding' && 'Pause and notice the simple things around you right now.'}
+                  {activeKit === 'muscle' && 'Tighten and then relax your muscles to let go of body stress.'}
+                  {activeKit === 'journal' && 'Take a quiet moment to write down 3 good things in your day.'}
                 </p>
               </div>
             </div>
@@ -985,14 +1209,38 @@ export default function RantBoard() {
                 <div className="kit-phase-sub" id="breathingPhaseSub">{BOX_BREATHING_DATA[kitStep].sub}</div>
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
                   <span style={{ background: '#eff6ff', color: '#1d4ed8', padding: '0.25rem 0.85rem', borderRadius: '999px', fontSize: '0.78rem', fontWeight: 700 }} id="breathingCycleCounter">
-                    <i className="fas fa-rotate"></i> Cycle {breathingCycle}
+                    Cycle {breathingCycle}
                   </span>
                 </div>
                 <div className="box-phases-bar">
-                  <div className={`box-phase-chip ${kitStep === 0 ? 'active' : ''}`}><i className="fas fa-arrow-up"></i> Inhale 4s</div>
-                  <div className={`box-phase-chip ${kitStep === 1 ? 'active' : ''}`}><i className="fas fa-pause"></i> Hold 4s</div>
-                  <div className={`box-phase-chip ${kitStep === 2 ? 'active' : ''}`}><i className="fas fa-arrow-down"></i> Exhale 4s</div>
-                  <div className={`box-phase-chip ${kitStep === 3 ? 'active' : ''}`}><i className="fas fa-pause"></i> Hold 4s</div>
+                  <button
+                    type="button"
+                    className={`box-phase-chip ${kitStep === 0 ? 'active' : ''}`}
+                    onClick={() => handleSelectBreathingPhase(0)}
+                  >
+                    Inhale 4s
+                  </button>
+                  <button
+                    type="button"
+                    className={`box-phase-chip ${kitStep === 1 ? 'active' : ''}`}
+                    onClick={() => handleSelectBreathingPhase(1)}
+                  >
+                    Hold 4s
+                  </button>
+                  <button
+                    type="button"
+                    className={`box-phase-chip ${kitStep === 2 ? 'active' : ''}`}
+                    onClick={() => handleSelectBreathingPhase(2)}
+                  >
+                    Exhale 4s
+                  </button>
+                  <button
+                    type="button"
+                    className={`box-phase-chip ${kitStep === 3 ? 'active' : ''}`}
+                    onClick={() => handleSelectBreathingPhase(3)}
+                  >
+                    Hold 4s
+                  </button>
                 </div>
               </>
             )}
@@ -1065,40 +1313,40 @@ export default function RantBoard() {
                 </h4>
                 
                 <div style={{ background: '#FEF3C7', border: '1px solid #FDE68A', padding: '1rem', borderRadius: '0.75rem', color: '#92400E', fontSize: '0.85rem', marginBottom: '0.75rem', textAlign: 'left' }}>
-                  <strong><i className="fas fa-hand-fist"></i> Tense (5s):</strong> {PMR_DATA[kitStep].tenseTip}
+                  <strong>Squeeze (5s):</strong> {PMR_DATA[kitStep].tenseTip}
                 </div>
 
                 <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', padding: '1rem', borderRadius: '0.75rem', color: '#065F46', fontSize: '0.85rem', textAlign: 'left' }}>
-                  <strong><i className="fas fa-hand-holding-heart"></i> Release (10s):</strong> {PMR_DATA[kitStep].releaseTip}
+                  <strong>Relax (10s):</strong> {PMR_DATA[kitStep].releaseTip}
                 </div>
               </div>
             )}
 
-            {/* 4. Micro Gratitude Journal UI */}
+            {/* 4. 3 Good Things Journal UI */}
             {activeKit === 'journal' && (
               <div>
                 <p style={{ fontSize: '0.85rem', color: '#64748B', textAlign: 'center', marginBottom: '1.25rem' }}>
-                  Take a deep breath. Write down 3 small, authentic things that bring a spark of warmth to your day:
+                  Take a slow breath. Write down 3 small things that made you smile or feel thankful today:
                 </p>
 
                 <div style={{ display: 'grid', gap: '0.75rem' }}>
                   <input
                     type="text"
-                    placeholder="1. One kind gesture, person, or peaceful moment..."
+                    placeholder="1. A kind person, a sweet moment, or someone who helped you..."
                     value={journalEntries.one}
                     onChange={(e) => setJournalEntries({ ...journalEntries, one: e.target.value })}
                     style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '0.75rem', border: '1.5px solid #E0D7C6', fontSize: '0.88rem' }}
                   />
                   <input
                     type="text"
-                    placeholder="2. Something pleasant you tasted, saw, or listened to..."
+                    placeholder="2. Something nice you saw, heard, or ate today..."
                     value={journalEntries.two}
                     onChange={(e) => setJournalEntries({ ...journalEntries, two: e.target.value })}
                     style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '0.75rem', border: '1.5px solid #E0D7C6', fontSize: '0.88rem' }}
                   />
                   <input
                     type="text"
-                    placeholder="3. An accomplishment or a gentle reminder to yourself..."
+                    placeholder="3. Something you did well today, or a kind thought for yourself..."
                     value={journalEntries.three}
                     onChange={(e) => setJournalEntries({ ...journalEntries, three: e.target.value })}
                     style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '0.75rem', border: '1.5px solid #E0D7C6', fontSize: '0.88rem' }}
@@ -1107,7 +1355,7 @@ export default function RantBoard() {
 
                 {journalSaved && (
                   <div style={{ background: '#ECFDF5', color: '#065F46', padding: '0.75rem', borderRadius: '0.6rem', marginTop: '1rem', fontSize: '0.85rem', textAlign: 'center', fontWeight: 600 }}>
-                    <i className="fas fa-check-circle"></i> Reflections saved in your heart! Keep holding onto that light.
+                    <i className="fas fa-check-circle"></i> Saved! You did a great job taking this quiet moment for yourself.
                   </div>
                 )}
               </div>
@@ -1118,10 +1366,10 @@ export default function RantBoard() {
             {activeKit === 'breathing' && (
               <>
                 <button type="button" className="btn-kit-secondary" onClick={closeKit}>
-                  <i className="fas fa-check"></i> Finished
+                  Finished
                 </button>
                 <button type="button" className="btn-kit-primary" onClick={() => setIsKitPaused(!isKitPaused)}>
-                  <i className={isKitPaused ? "fas fa-play" : "fas fa-pause"}></i> {isKitPaused ? 'Resume' : 'Pause'}
+                  {isKitPaused ? 'Resume' : 'Pause'}
                 </button>
               </>
             )}
@@ -1129,7 +1377,7 @@ export default function RantBoard() {
             {activeKit === 'grounding' && (
               <>
                 <button type="button" className="btn-kit-secondary" onClick={closeKit}>
-                  Finish Exercise
+                  Close
                 </button>
                 <button
                   type="button"
@@ -1139,7 +1387,7 @@ export default function RantBoard() {
                     else closeKit();
                   }}
                 >
-                  {kitStep < GROUNDING_DATA.length - 1 ? 'Next Sense →' : 'Done ✓'}
+                  {kitStep < GROUNDING_DATA.length - 1 ? 'Next Step →' : 'Finish'}
                 </button>
               </>
             )}
@@ -1147,7 +1395,7 @@ export default function RantBoard() {
             {activeKit === 'muscle' && (
               <>
                 <button type="button" className="btn-kit-secondary" onClick={closeKit}>
-                  Finish
+                  Close
                 </button>
                 <button
                   type="button"
@@ -1157,7 +1405,7 @@ export default function RantBoard() {
                     else closeKit();
                   }}
                 >
-                  {kitStep < PMR_DATA.length - 1 ? 'Next Group →' : 'Complete ✓'}
+                  {kitStep < PMR_DATA.length - 1 ? 'Next Step →' : 'Finish'}
                 </button>
               </>
             )}
@@ -1175,13 +1423,63 @@ export default function RantBoard() {
                     setTimeout(() => closeKit(), 1500);
                   }}
                 >
-                  <i className="fas fa-heart"></i> Save Reflections
+                  Save My 3 Things
                 </button>
               </>
             )}
           </div>
         </div>
       </div>
+
+      {/* Delete Post Confirmation Modal */}
+      {deleteModal.open && (
+        <div className="modal-backdrop active" id="deletePostModal">
+          <div className="modal-box delete-modal-box">
+            <div className="delete-modal-icon">
+              <i className="fas fa-triangle-exclamation"></i>
+            </div>
+            <h3 style={{ margin: '0 0 0.5rem', color: '#161F36', fontSize: '1.15rem' }}>
+              Permanently Delete Post?
+            </h3>
+            <p className="delete-modal-desc">
+              Are you sure you want to delete this post?
+              {deleteModal.content && (
+                <span style={{ display: 'block', fontStyle: 'italic', color: '#6B7280', marginTop: '0.4rem' }}>
+                  "{deleteModal.content}"
+                </span>
+              )}
+            </p>
+            <div className="delete-modal-warning">
+              <i className="fas fa-info-circle"></i>
+              <span>
+                This action cannot be undone. This reflection will be permanently erased from your safe space account.
+              </span>
+            </div>
+            <div className="modal-btns">
+              <button
+                type="button"
+                className="cancel"
+                onClick={closeDeleteModal}
+                disabled={!!postActionLoadingId}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="confirm delete-confirm-btn"
+                onClick={handleConfirmDelete}
+                disabled={!!postActionLoadingId}
+              >
+                {postActionLoadingId?.startsWith('delete-') ? (
+                  <><i className="fas fa-spinner fa-spin"></i> Deleting...</>
+                ) : (
+                  <><i className="fas fa-trash-alt"></i> Delete Permanently</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

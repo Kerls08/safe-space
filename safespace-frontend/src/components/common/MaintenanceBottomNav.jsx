@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import '../../styles/maintenance.css';
 
 export default function MaintenanceBottomNav() {
-  const { role } = useAuth();
+  const { role, badges, updateBadge } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -18,12 +18,22 @@ export default function MaintenanceBottomNav() {
 
   const navItems = [
     { id: 'controls', param: '', label: 'Overview', icon: 'fas fa-server', btnId: 'btnTabControls', title: 'Overview & Maintenance' },
-    { id: 'users', param: 'users', label: 'User Mgmt', icon: 'fas fa-users-gear', btnId: 'btnTabUsers', title: 'User Management & Accounts' },
+    { id: 'users', param: 'users', label: 'User Management', icon: 'fas fa-users-gear', btnId: 'btnTabUsers', badgeKey: 'maint-users', badgeColor: 'badge-amber', title: 'User Management & Accounts' },
     { id: 'hygiene', param: 'hygiene', label: 'Data Hygiene', icon: 'fas fa-broom', btnId: 'btnTabHygiene', title: 'Safe Data Hygiene' },
-    { id: 'audit', param: 'audit', label: 'Audit Trail', icon: 'fas fa-shield-halved', btnId: 'btnTabAudit', title: 'Security & System Audit Trail' }
+    { id: 'audit', param: 'audit', label: 'Audit Trail', icon: 'fas fa-shield-halved', btnId: 'btnTabAudit', badgeKey: 'maint-audit', badgeColor: 'badge-red', title: 'Security & System Audit Trail' }
   ];
 
-  const handleNav = (param) => {
+  const handleNav = (param, badgeKey) => {
+    if (badgeKey) {
+      updateBadge(badgeKey, 0);
+      const nowIso = new Date().toISOString();
+      if (badgeKey === 'maint-users') {
+        localStorage.setItem('safespace_last_seen_maint_users', nowIso);
+      } else if (badgeKey === 'maint-audit') {
+        localStorage.setItem('safespace_last_seen_maint_audit', nowIso);
+      }
+    }
+
     if (location.pathname === '/system-maintenance') {
       if (param) {
         setSearchParams({ tab: param }, { replace: true });
@@ -41,16 +51,25 @@ export default function MaintenanceBottomNav() {
       <div className="maint-bottom-nav-inner">
         {navItems.map((item) => {
           const isActive = currentTab === item.id;
+          const badgeCount = (isActive || !item.badgeKey) ? 0 : (badges[item.badgeKey] || 0);
+
           return (
             <button
               key={item.id}
               type="button"
               className={`maint-nav-btn ${isActive ? 'active' : ''}`}
               id={item.btnId}
-              onClick={() => handleNav(item.param)}
+              onClick={() => handleNav(item.param, item.badgeKey)}
               title={item.title}
             >
-              <i className={item.icon}></i>
+              <span className="maint-nav-icon-wrap">
+                <i className={item.icon}></i>
+                {badgeCount > 0 && (
+                  <span className={`maint-nav-badge ${item.badgeColor || 'badge-amber'}`}>
+                    {badgeCount > 99 ? '99+' : badgeCount}
+                  </span>
+                )}
+              </span>
               <span>{item.label}</span>
             </button>
           );

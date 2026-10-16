@@ -32,6 +32,8 @@ public class PostResponse {
     private String reviewedBy;
     private LocalDateTime reviewedAt;
     private LocalDateTime createdAt;
+    private boolean archived;
+    private LocalDateTime archivedAt;
 
     /**
      * Contextual wellness resources relevant to the student's emotional state.

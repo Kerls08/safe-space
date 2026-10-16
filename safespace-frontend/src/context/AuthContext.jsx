@@ -37,7 +37,9 @@ export function AuthProvider({ children }) {
   const [badges, setBadges] = useState({
     'anon-chat': 0,
     'crisis-alerts': 0,
-    'pro-dashboard': 0
+    'pro-dashboard': 0,
+    'maint-users': 0,
+    'maint-audit': 0
   });
 
   const isAuthenticated = Boolean(token && role);

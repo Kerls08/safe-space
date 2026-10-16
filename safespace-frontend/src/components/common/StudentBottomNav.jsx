@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function StudentBottomNav() {
-  const { role, badges } = useAuth();
+  const { role, badges, updateBadge } = useAuth();
   const location = useLocation();
 
   if (role !== 'STUDENT') return null;
@@ -18,7 +18,7 @@ export default function StudentBottomNav() {
       <div className="student-bottom-nav-inner">
         {links.map((l) => {
           const isActive = location.pathname === l.href;
-          const badgeCount = l.badgeKey ? badges[l.badgeKey] : 0;
+          const badgeCount = !l.badgeKey ? 0 : (badges[l.badgeKey] || 0);
 
           return (
             <Link

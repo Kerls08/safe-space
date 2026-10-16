@@ -23,14 +23,20 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     /** Paginated feed for Peer Mirror (newest first). */
     Page<Post> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
-    /** Paginated feed for Peer Mirror (excluding flagged/crisis posts). */
+    /** Paginated feed for Peer Mirror (excluding flagged/crisis posts and archived posts). */
     Page<Post> findByFlaggedFalseOrderByCreatedAtDesc(Pageable pageable);
+
+    Page<Post> findByFlaggedFalseAndArchivedFalseOrderByCreatedAtDesc(Pageable pageable);
 
     /** Paginated flagged posts for professional review. */
     Page<Post> findByFlaggedTrueOrderByCreatedAtDesc(Pageable pageable);
 
     /** Posts by a specific owner (for "my posts" view). */
     List<Post> findByOwnerUsernameOrderByCreatedAtDesc(String ownerUsername);
+
+    List<Post> findByOwnerUsernameAndArchivedFalseOrderByCreatedAtDesc(String ownerUsername);
+
+    List<Post> findByOwnerUsernameAndArchivedTrueOrderByCreatedAtDesc(String ownerUsername);
 
     /**
      * Find the most recent post by pseudonym (for resolving pseudonym →
@@ -81,6 +87,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     /** Posts by emotion for filtering (excluding flagged/crisis posts). */
     List<Post> findByFlaggedFalseAndEmotionTagOrderByCreatedAtDesc(String emotionTag);
+
+    List<Post> findByFlaggedFalseAndArchivedFalseAndEmotionTagOrderByCreatedAtDesc(String emotionTag);
 
     /** Count by emotion tag. */
     @Query("SELECT p.emotionTag, COUNT(p) FROM Post p GROUP BY p.emotionTag")

@@ -293,10 +293,38 @@ export const postsApi = {
     return await res.json().catch(() => ({}));
   },
 
-  async getMyPosts() {
-    const res = await authFetch(`${API_BASE}/posts/mine`);
+  async getMyPosts(filter = 'ALL') {
+    const query = filter && filter !== 'ALL' ? `?filter=${encodeURIComponent(filter)}` : '';
+    const res = await authFetch(`${API_BASE}/posts/mine${query}`);
     if (!res.ok) return [];
     return await res.json();
+  },
+
+  async archivePost(postId) {
+    const res = await authFetch(`${API_BASE}/posts/${encodeURIComponent(postId)}/archive`, {
+      method: 'PUT'
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to archive post');
+    return data;
+  },
+
+  async unarchivePost(postId) {
+    const res = await authFetch(`${API_BASE}/posts/${encodeURIComponent(postId)}/unarchive`, {
+      method: 'PUT'
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to restore post');
+    return data;
+  },
+
+  async deletePost(postId) {
+    const res = await authFetch(`${API_BASE}/posts/${encodeURIComponent(postId)}`, {
+      method: 'DELETE'
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to delete post');
+    return data;
   },
 
   async getResources() {
@@ -530,9 +558,9 @@ export const alertsApi = {
     return await res.json();
   },
 
-  async getHistory(status = 'ALL') {
+  async getHistory(status = 'ALL', silent = false) {
     const query = status && status !== 'ALL' ? `?status=${encodeURIComponent(status)}` : '';
-    const res = await authFetch(`${API_BASE}/alerts/history${query}`);
+    const res = await authFetch(`${API_BASE}/alerts/history${query}`, { silent });
     if (!res.ok) throw new Error('Failed to load alert history');
     return await res.json();
   },
@@ -575,13 +603,60 @@ export const alertsApi = {
     return res;
   },
 
-  async initiateChat(alertId, professionalName) {
+  async initiateChat(alertId, professionalName, force = false) {
     const res = await authFetch(`${API_BASE}/alerts/${encodeURIComponent(alertId)}/chat`, {
       method: 'POST',
-      body: JSON.stringify({ professionalName })
+      body: JSON.stringify({ professionalName, force })
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'Failed to reach out');
+    return data;
+  },
+
+  async resolveCase(pseudonym, notes = '') {
+    const res = await authFetch(`${API_BASE}/alerts/resolve-case/${encodeURIComponent(pseudonym)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ notes })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to resolve case');
+    return data;
+  },
+
+  async acknowledgeCase(pseudonym) {
+    const res = await authFetch(`${API_BASE}/alerts/ack-case/${encodeURIComponent(pseudonym)}`, {
+      method: 'PUT',
+      body: '{}'
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to acknowledge case');
+    return data;
+  },
+
+  async archiveAlert(alertId) {
+    const res = await authFetch(`${API_BASE}/alerts/${encodeURIComponent(alertId)}/archive`, {
+      method: 'PUT'
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to archive alert');
+    return data;
+  },
+
+  async unarchiveAlert(alertId) {
+    const res = await authFetch(`${API_BASE}/alerts/${encodeURIComponent(alertId)}/unarchive`, {
+      method: 'PUT'
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to restore alert');
+    return data;
+  },
+
+  async deleteAlert(alertId) {
+    const res = await authFetch(`${API_BASE}/alerts/${encodeURIComponent(alertId)}`, {
+      method: 'DELETE'
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to delete alert');
     return data;
   }
 };

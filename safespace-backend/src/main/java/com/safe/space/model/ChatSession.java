@@ -94,6 +94,16 @@ public class ChatSession {
     @Column
     private LocalDateTime closedAt;
 
+    /** Whether student deleted/hid this session from their view. */
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean deletedByStudent = false;
+
+    /** Whether professional deleted/hid this session from their view. */
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean deletedByProfessional = false;
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) createdAt = LocalDateTime.now();

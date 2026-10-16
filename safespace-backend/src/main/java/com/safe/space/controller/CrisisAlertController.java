@@ -4,6 +4,7 @@ import com.safe.space.repository.UserRepository;
 import com.safe.space.service.CrisisAlertService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +29,7 @@ import java.util.NoSuchElementException;
 @RestController
 @RequestMapping("/api/alerts")
 @RequiredArgsConstructor
+@Slf4j
 public class CrisisAlertController {
 
     private final CrisisAlertService alertService;
@@ -200,17 +202,104 @@ public class CrisisAlertController {
     @PostMapping("/{alertId}/chat")
     public ResponseEntity<?> initiateChatFromAlert(
             @PathVariable String alertId,
-            @RequestBody Map<String, String> body,
+            @RequestBody(required = false) Map<String, Object> body,
             HttpServletRequest request) {
         String role = (String) request.getAttribute("auth.role");
         String username = (String) request.getAttribute("auth.username");
         if (!isProfessionalOrAdmin(role))
             return forbidden("Access denied.");
 
-        String professionalName = body != null ? body.getOrDefault("professionalName", username) : username;
+        String professionalName = body != null && body.get("professionalName") != null 
+                ? String.valueOf(body.get("professionalName")) : username;
+        boolean force = body != null && Boolean.parseBoolean(String.valueOf(body.getOrDefault("force", "false")));
 
-        Map<String, Object> result = alertService.initiateChatFromAlert(alertId, username, professionalName);
+        Map<String, Object> result = alertService.initiateChatFromAlert(alertId, username, professionalName, force);
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Resolve all active/acknowledged alerts for a student pseudonym (Case Resolution).
+     */
+    @PutMapping("/resolve-case/{pseudonym}")
+    public ResponseEntity<?> resolveCase(
+            @PathVariable String pseudonym,
+            @RequestBody(required = false) Map<String, String> body,
+            HttpServletRequest request) {
+        String role = (String) request.getAttribute("auth.role");
+        String username = (String) request.getAttribute("auth.username");
+        if (!isProfessionalOrAdmin(role))
+            return forbidden("Access denied.");
+
+        String notes = body != null ? body.getOrDefault("notes", "") : "";
+        var resolved = alertService.resolveAllForPseudonym(pseudonym, username, notes);
+        return ResponseEntity.ok(Map.of(
+                "resolvedCount", resolved.size(),
+                "pseudonym", pseudonym,
+                "message", "Successfully resolved all active alerts for " + pseudonym));
+    }
+
+    /**
+     * Acknowledge all active alerts for a student pseudonym.
+     */
+    @PutMapping("/ack-case/{pseudonym}")
+    public ResponseEntity<?> ackCase(
+            @PathVariable String pseudonym,
+            HttpServletRequest request) {
+        String role = (String) request.getAttribute("auth.role");
+        String username = (String) request.getAttribute("auth.username");
+        if (!isProfessionalOrAdmin(role))
+            return forbidden("Access denied.");
+
+        var acked = alertService.acknowledgeAllForPseudonym(pseudonym, username);
+        return ResponseEntity.ok(Map.of(
+                "acknowledgedCount", acked.size(),
+                "pseudonym", pseudonym,
+                "message", "Successfully acknowledged all active alerts for " + pseudonym));
+    }
+
+    /**
+     * Archive a resolved or escalated alert/case.
+     */
+    @PutMapping("/{alertId}/archive")
+    public ResponseEntity<?> archiveAlert(
+            @PathVariable String alertId,
+            HttpServletRequest request) {
+        String role = (String) request.getAttribute("auth.role");
+        String username = (String) request.getAttribute("auth.username");
+        if (!isProfessionalOrAdmin(role))
+            return forbidden("Access denied.");
+
+        return ResponseEntity.ok(alertService.archiveAlertOrCase(alertId, username));
+    }
+
+    /**
+     * Restore / unarchive an alert/case back to active history.
+     */
+    @PutMapping("/{alertId}/unarchive")
+    public ResponseEntity<?> unarchiveAlert(
+            @PathVariable String alertId,
+            HttpServletRequest request) {
+        String role = (String) request.getAttribute("auth.role");
+        String username = (String) request.getAttribute("auth.username");
+        if (!isProfessionalOrAdmin(role))
+            return forbidden("Access denied.");
+
+        return ResponseEntity.ok(alertService.unarchiveAlertOrCase(alertId, username));
+    }
+
+    /**
+     * Permanently delete a resolved or escalated alert/case.
+     */
+    @DeleteMapping("/{alertId}")
+    public ResponseEntity<?> deleteAlert(
+            @PathVariable String alertId,
+            HttpServletRequest request) {
+        String role = (String) request.getAttribute("auth.role");
+        String username = (String) request.getAttribute("auth.username");
+        if (!isProfessionalOrAdmin(role))
+            return forbidden("Access denied.");
+
+        return ResponseEntity.ok(alertService.deleteAlertOrCase(alertId, username));
     }
 
     // ── Helpers ──
@@ -263,5 +352,12 @@ public class CrisisAlertController {
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Map<String, String>> handleBadState(IllegalStateException ex) {
         return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleGeneralError(Exception ex) {
+        log.error("CrisisAlertController error: ", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred"));
     }
 }

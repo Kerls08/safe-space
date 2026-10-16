@@ -592,6 +592,16 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  user-select: none;
+}
+
+.btn-alert:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.btn-alert:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .btn-alert.ack {
@@ -834,3 +844,330 @@
   .stat-chip { min-width: 3rem; font-size: 0.6rem; }
   .stat-chip .stat-num { font-size: 0.9rem; }
 }
+
+/* ── Incident Case Threading & Accordion ── */
+.alert-thread-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 9999px;
+  background: #ede9fe;
+  color: #6d28d9;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.alert-thread-box {
+  margin-top: 0.5rem;
+  border-radius: 0.6rem;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.alert-thread-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.alert-thread-toggle:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.alert-thread-toggle .thread-pill {
+  font-size: 0.62rem;
+  font-weight: 700;
+  background: #e2e8f0;
+  color: #475569;
+  padding: 0.1rem 0.45rem;
+  border-radius: 9999px;
+}
+
+.alert-thread-history {
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.thread-history-card {
+  padding: 0.45rem 0.65rem;
+  background: #ffffff;
+  border-radius: 0.45rem;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.thread-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.thread-history-time {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.thread-history-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.thread-tag {
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 0.08rem 0.35rem;
+  border-radius: 0.25rem;
+}
+
+.thread-tag.energy {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.thread-tag.emotion {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.thread-history-text {
+  font-size: 0.74rem;
+  color: #334155;
+  font-style: italic;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* Guardrail Re-outreach Modal */
+.modal-warning-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #fffbeb;
+  color: #d97706;
+  border: 2px solid #fde68a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin: 0 auto 0.85rem;
+}
+
+/* ── Live New Activity Tag for Ongoing In-Progress Cases ── */
+.alert-tag.alert-tag-new-activity {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  animation: pulseNewActivity 2.2s infinite ease-in-out;
+}
+
+@keyframes pulseNewActivity {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+  }
+}
+
+.thread-tag.new-activity {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.tab-count.tab-count-history {
+  background: #4f46e5;
+  color: #ffffff;
+}
+
+.alert-tag.alert-tag-unreviewed {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* ── Archive, Restore & Delete Action Buttons ── */
+.btn-alert.archive {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+.btn-alert.archive i {
+  color: #64748b;
+}
+
+.btn-alert.archive:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #1e293b;
+  border-color: #94a3b8;
+}
+
+.btn-alert.restore {
+  background: #e0e7ff;
+  color: #4338ca;
+  border-color: #c7d2fe;
+}
+
+.btn-alert.restore i {
+  color: #4f46e5;
+}
+
+.btn-alert.restore:hover:not(:disabled) {
+  background: #c7d2fe;
+  color: #3730a3;
+  border-color: #a5b4fc;
+}
+
+.btn-alert.delete {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.btn-alert.delete i {
+  color: #ef4444;
+}
+
+.btn-alert.delete:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+
+.alert-actions.history-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  align-self: center;
+  min-width: 125px;
+}
+
+.alert-card.is-archived {
+  opacity: 0.88;
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.alert-card.is-archived:hover {
+  opacity: 1;
+}
+
+.alert-tag.archived-tag {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.alert-tag.archived-tag i {
+  color: #64748b;
+}
+
+/* ── Delete Confirmation Modal ── */
+.delete-modal-box {
+  text-align: center;
+  max-width: 440px !important;
+}
+
+.delete-modal-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 2px solid #fecaca;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.55rem;
+  margin: 0 auto 0.9rem;
+}
+
+.delete-modal-desc {
+  font-size: 0.86rem;
+  color: #334155;
+  margin-bottom: 0.85rem;
+  line-height: 1.5;
+}
+
+.delete-modal-warning {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 0.6rem;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.78rem;
+  color: #9f1239;
+  line-height: 1.45;
+  text-align: left;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.delete-modal-warning i {
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+  color: #e11d48;
+}
+
+.confirm.delete-confirm-btn {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+.confirm.delete-confirm-btn:hover:not(:disabled) {
+  background: #b91c1c !important;
+  border-color: #b91c1c !important;
+}
+
+
+

@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function ProfessionalBottomNav() {
-  const { role, badges } = useAuth();
+  const { role, badges, updateBadge } = useAuth();
   const location = useLocation();
 
   const isMaintPage = location.pathname === '/system-maintenance' || location.pathname === '/credential-manager';
@@ -25,7 +25,7 @@ export default function ProfessionalBottomNav() {
       <div className="pro-bottom-nav-inner">
         {proLinks.map((l) => {
           const isActive = location.pathname === l.href;
-          const badgeCount = l.badgeKey ? badges[l.badgeKey] : 0;
+          const badgeCount = (isActive || !l.badgeKey) ? 0 : (badges[l.badgeKey] || 0);
 
           return (
             <Link
@@ -33,6 +33,19 @@ export default function ProfessionalBottomNav() {
               to={l.href}
               className={`pro-nav-btn${isActive ? ' active' : ''}`}
               title={l.title}
+              onClick={() => {
+                if (l.badgeKey) {
+                  updateBadge(l.badgeKey, 0);
+                  const nowIso = new Date().toISOString();
+                  if (l.badgeKey === 'crisis-alerts') {
+                    localStorage.setItem('safespace_last_seen_alerts', nowIso);
+                  } else if (l.badgeKey === 'anon-chat') {
+                    localStorage.setItem('safespace_last_seen_pro_chat', nowIso);
+                  } else if (l.badgeKey === 'pro-dashboard') {
+                    localStorage.setItem('safespace_last_seen_dashboard', nowIso);
+                  }
+                }
+              }}
             >
               <span className="pro-nav-icon-wrap">
                 <i className={l.icon}></i>

@@ -171,6 +171,7 @@ public class AnonymousChatService {
 
         session.setStatus("ACTIVE");
         session.setAcceptedAt(LocalDateTime.now());
+        session.setMessageCount(session.getMessageCount() + 1);
         sessionRepository.save(session);
 
         String msgId = "msg-" + Long.toString(System.currentTimeMillis(), 36)
@@ -214,6 +215,7 @@ public class AnonymousChatService {
         session.setStatus("DECLINED");
         session.setClosedBy("student_declined");
         session.setClosedAt(LocalDateTime.now());
+        session.setMessageCount(session.getMessageCount() + 1);
         sessionRepository.save(session);
 
         String msgId = "msg-" + Long.toString(System.currentTimeMillis(), 36)
@@ -365,10 +367,62 @@ public class AnonymousChatService {
             throw new SecurityException("You do not have permission to delete this conversation.");
         }
 
-        messageRepository.deleteBySessionId(sessionId);
-        sessionRepository.delete(session);
+        boolean isStudentRole = "STUDENT".equalsIgnoreCase(role);
+        boolean isProfessionalRole = "PROFESSIONAL".equalsIgnoreCase(role) || "SUPER_ADMIN".equalsIgnoreCase(role);
+        boolean isAdminRole = "ADMIN".equalsIgnoreCase(role) || "MAINTENANCE".equalsIgnoreCase(role);
 
-        log.info("Chat session deleted: sessionId={}, deletedBy={}, role={}, pseudonym={}", sessionId, requesterId, role, pseudonym);
+        // 1. If student is deleting:
+        if (isStudentRole || (isStudentOwner && !isProfessionalRole && !isAdminRole)) {
+            session.setDeletedByStudent(true);
+
+            // If outreach check-in was pending or declined, inform CrisisAlertService
+            if ("INVITED".equalsIgnoreCase(session.getStatus()) || "DECLINED".equalsIgnoreCase(session.getStatus())) {
+                try {
+                    CrisisAlertService alertSvc = crisisAlertServiceProvider.getIfAvailable();
+                    if (alertSvc != null) {
+                        alertSvc.updateAlertOutreachStatus(sessionId, "DECLINED", "Student dismissed/deleted the check-in invitation.");
+                    }
+                } catch (Exception e) {
+                    log.warn("Could not update linked alert on session deletion: {}", e.getMessage());
+                }
+            }
+
+            // If it was a student-only waiting session (never assigned to a counselor),
+            // or if the professional also deleted it, permanently remove from DB.
+            if ((session.getProfessionalId() == null && "WAITING".equalsIgnoreCase(session.getStatus()))
+                    || session.isDeletedByProfessional()) {
+                messageRepository.deleteBySessionId(sessionId);
+                sessionRepository.delete(session);
+                log.info("Chat session permanently deleted (both parties deleted or unassigned waiting): sessionId={}, deletedBy={}", sessionId, requesterId);
+            } else {
+                sessionRepository.save(session);
+                log.info("Chat session hidden for student (soft-deleted): sessionId={}, deletedBy={}", sessionId, requesterId);
+            }
+            return;
+        }
+
+        // 2. If professional is deleting:
+        if (isProfessionalRole || (isProfessionalAssigned && !isStudentRole && !isAdminRole)) {
+            session.setDeletedByProfessional(true);
+
+            // If the student has also deleted it, permanently delete from DB.
+            if (session.isDeletedByStudent()) {
+                messageRepository.deleteBySessionId(sessionId);
+                sessionRepository.delete(session);
+                log.info("Chat session permanently deleted (both parties deleted): sessionId={}, deletedBy={}", sessionId, requesterId);
+            } else {
+                sessionRepository.save(session);
+                log.info("Chat session hidden for professional (soft-deleted): sessionId={}, deletedBy={}", sessionId, requesterId);
+            }
+            return;
+        }
+
+        // 3. Admin / Maintenance hard-delete:
+        if (isAdminRole) {
+            messageRepository.deleteBySessionId(sessionId);
+            sessionRepository.delete(session);
+            log.info("Chat session administratively deleted: sessionId={}, deletedBy={}", sessionId, requesterId);
+        }
     }
 
     /**
@@ -387,7 +441,7 @@ public class AnonymousChatService {
      */
     @Transactional(readOnly = true)
     public List<ChatSessionResponse> getStudentSessions(String pseudonym) {
-        return sessionRepository.findByStudentPseudonymOrderByCreatedAtDesc(pseudonym).stream()
+        return sessionRepository.findByStudentPseudonymAndDeletedByStudentFalseOrderByCreatedAtDesc(pseudonym).stream()
                 .map(s -> {
                     long unread = messageRepository.countBySessionIdAndSenderTypeNotAndReadFalse(
                             s.getSessionId(), "student");
@@ -403,7 +457,7 @@ public class AnonymousChatService {
      */
     @Transactional(readOnly = true)
     public List<ChatSessionResponse> getStudentSessionsByUserId(String userId) {
-        return sessionRepository.findByStudentUserIdOrderByCreatedAtDesc(userId).stream()
+        return sessionRepository.findByStudentUserIdAndDeletedByStudentFalseOrderByCreatedAtDesc(userId).stream()
                 .map(s -> {
                     long unread = messageRepository.countBySessionIdAndSenderTypeNotAndReadFalse(
                             s.getSessionId(), "student");
@@ -420,8 +474,8 @@ public class AnonymousChatService {
     @Transactional(readOnly = true)
     public Map<String, List<ChatSessionResponse>> getProfessionalQueue(String professionalId) {
         // Waiting queue: crisis first, then chronological
-        List<ChatSession> crisisWaiting = sessionRepository.findByStatusAndCrisisFlagTrueOrderByCreatedAtAsc("WAITING");
-        List<ChatSession> allWaiting = sessionRepository.findByStatusOrderByCreatedAtAsc("WAITING");
+        List<ChatSession> crisisWaiting = sessionRepository.findByStatusAndCrisisFlagTrueAndDeletedByProfessionalFalseOrderByCreatedAtAsc("WAITING");
+        List<ChatSession> allWaiting = sessionRepository.findByStatusAndDeletedByProfessionalFalseOrderByCreatedAtAsc("WAITING");
 
         // Deduplicate: crisis first, then non-crisis
         Set<String> crisisIds = crisisWaiting.stream().map(s -> s.getSessionId()).collect(Collectors.toSet());
@@ -433,9 +487,13 @@ public class AnonymousChatService {
         crisisWaiting.forEach(s -> waitingQueue.add(toSessionResponse(s, 0)));
         nonCrisisWaiting.forEach(s -> waitingQueue.add(toSessionResponse(s, 0)));
 
+        boolean isSuperUser = professionalId != null && ("superadmin".equalsIgnoreCase(professionalId) || "admin".equalsIgnoreCase(professionalId));
+        List<ChatSession> rawActive = isSuperUser
+                ? sessionRepository.findByStatusAndDeletedByProfessionalFalseOrderByCreatedAtDesc("ACTIVE")
+                : sessionRepository.findByProfessionalIdAndStatusAndDeletedByProfessionalFalseOrderByCreatedAtDesc(professionalId, "ACTIVE");
+
         // Active sessions for this professional
-        List<ChatSessionResponse> activeSessions = sessionRepository
-                .findByProfessionalIdAndStatusOrderByCreatedAtDesc(professionalId, "ACTIVE").stream()
+        List<ChatSessionResponse> activeSessions = rawActive.stream()
                 .map(s -> {
                     long unread = messageRepository.countBySessionIdAndSenderTypeNotAndReadFalse(
                             s.getSessionId(), "professional");
@@ -443,13 +501,25 @@ public class AnonymousChatService {
                 })
                 .collect(Collectors.toList());
 
+        List<ChatSession> rawInvited = isSuperUser
+                ? sessionRepository.findByStatusAndDeletedByProfessionalFalseOrderByCreatedAtDesc("INVITED")
+                : sessionRepository.findByProfessionalIdAndStatusAndDeletedByProfessionalFalseOrderByCreatedAtDesc(professionalId, "INVITED");
+
         // Invited sessions sent by this professional (pending student response)
-        List<ChatSessionResponse> invitedSessions = sessionRepository
-                .findByProfessionalIdAndStatusOrderByCreatedAtDesc(professionalId, "INVITED").stream()
+        List<ChatSessionResponse> invitedSessions = rawInvited.stream()
                 .map(s -> toSessionResponse(s, 0))
                 .collect(Collectors.toList());
 
-        return Map.of("waiting", waitingQueue, "active", activeSessions, "invited", invitedSessions);
+        List<ChatSession> rawDeclined = isSuperUser
+                ? sessionRepository.findByStatusAndDeletedByProfessionalFalseOrderByCreatedAtDesc("DECLINED")
+                : sessionRepository.findByProfessionalIdAndStatusAndDeletedByProfessionalFalseOrderByCreatedAtDesc(professionalId, "DECLINED");
+
+        // Declined sessions for this professional so triage screens accurately reflect status
+        List<ChatSessionResponse> declinedSessions = rawDeclined.stream()
+                .map(s -> toSessionResponse(s, 0))
+                .collect(Collectors.toList());
+
+        return Map.of("waiting", waitingQueue, "active", activeSessions, "invited", invitedSessions, "declined", declinedSessions);
     }
 
     // ── Messaging ──
@@ -524,9 +594,22 @@ public class AnonymousChatService {
         // Mark messages as read for the viewer
         if (viewerType != null) {
             for (ChatMessage msg : messages) {
-                if (!msg.isRead() && !msg.getSenderType().equals(viewerType)) {
-                    msg.setRead(true);
-                    messageRepository.save(msg);
+                if (!msg.isRead()) {
+                    if ("professional".equals(viewerType)) {
+                        // Professional reads all incoming student messages and system notification messages
+                        if (!"professional".equals(msg.getSenderType())) {
+                            msg.setRead(true);
+                            messageRepository.save(msg);
+                        }
+                    } else if ("student".equals(viewerType)) {
+                        // Student reads counselor messages or assistant automated replies
+                        // Crucially, student must NOT mark student-action notifications (e.g. outreach accept/decline) as read!
+                        if ("professional".equals(msg.getSenderType()) 
+                                || ("system".equals(msg.getSenderType()) && "SafeSpace Assistant".equals(msg.getSenderName()))) {
+                            msg.setRead(true);
+                            messageRepository.save(msg);
+                        }
+                    }
                 }
             }
         }

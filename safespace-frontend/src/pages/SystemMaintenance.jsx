@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { maintenanceApi, userAdminApi, getToken } from '../services/api';
 import '../styles/maintenance.css';
 import '../styles/auth.css';
@@ -44,6 +45,22 @@ export default function SystemMaintenance({ initialTab }) {
   };
 
   const [activeTab, setActiveTab] = useState(getInitialActiveTab);
+  const { updateBadge } = useAuth();
+
+  // Clear maintenance badges on active tab visit
+  useEffect(() => {
+    if (activeTab === 'viewUsers') {
+      updateBadge('maint-users', 0);
+      try {
+        localStorage.setItem('safespace_last_seen_maint_users', new Date().toISOString());
+      } catch {}
+    } else if (activeTab === 'viewAudit') {
+      updateBadge('maint-audit', 0);
+      try {
+        localStorage.setItem('safespace_last_seen_maint_audit', new Date().toISOString());
+      } catch {}
+    }
+  }, [activeTab, updateBadge]);
 
   // Diagnostics & Status
   const [healthData, setHealthData] = useState(null);

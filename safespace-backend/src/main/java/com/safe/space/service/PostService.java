@@ -276,8 +276,8 @@ public class PostService {
     public Map<String, Object> getPostsPaginated(int page, int size, String emotion) {
         Page<Post> postPage;
         if (emotion != null && !emotion.isBlank() && !"ALL".equalsIgnoreCase(emotion)) {
-            // Filter by emotion — exclude flagged posts to prevent triggering peers
-            List<Post> filtered = postRepository.findByFlaggedFalseAndEmotionTagOrderByCreatedAtDesc(emotion);
+            // Filter by emotion — exclude flagged and archived posts to prevent triggering peers
+            List<Post> filtered = postRepository.findByFlaggedFalseAndArchivedFalseAndEmotionTagOrderByCreatedAtDesc(emotion);
             int start = Math.min(page * size, filtered.size());
             int end = Math.min(start + size, filtered.size());
             List<PostResponse> content = filtered.subList(start, end).stream()
@@ -292,8 +292,8 @@ public class PostService {
             );
         }
 
-        // Exclude flagged posts to prevent triggering peers
-        postPage = postRepository.findByFlaggedFalseOrderByCreatedAtDesc(PageRequest.of(page, size));
+        // Exclude flagged and archived posts to prevent triggering peers
+        postPage = postRepository.findByFlaggedFalseAndArchivedFalseOrderByCreatedAtDesc(PageRequest.of(page, size));
         List<PostResponse> content = postPage.getContent().stream()
                 .map(this::toStudentResponse)
                 .collect(Collectors.toList());
@@ -321,10 +321,23 @@ public class PostService {
      * Get a user's own posts by their username (for "My Posts" view).
      */
     @Transactional(readOnly = true)
-    public List<PostResponse> getMyPosts(String username) {
-        return postRepository.findByOwnerUsernameOrderByCreatedAtDesc(username).stream()
+    public List<PostResponse> getMyPosts(String username, String filter) {
+        List<Post> posts;
+        if ("ACTIVE".equalsIgnoreCase(filter)) {
+            posts = postRepository.findByOwnerUsernameAndArchivedFalseOrderByCreatedAtDesc(username);
+        } else if ("ARCHIVED".equalsIgnoreCase(filter)) {
+            posts = postRepository.findByOwnerUsernameAndArchivedTrueOrderByCreatedAtDesc(username);
+        } else {
+            posts = postRepository.findByOwnerUsernameOrderByCreatedAtDesc(username);
+        }
+        return posts.stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostResponse> getMyPosts(String username) {
+        return getMyPosts(username, "ALL");
     }
 
     /**
@@ -404,14 +417,86 @@ public class PostService {
     // ── 5. Admin Operations ──
 
     /**
-     * Delete a post (admin/professional only).
+     * Archive a post (author student or professional/admin).
+     */
+    @Transactional
+    public PostResponse archivePost(String postId, String username, String role) {
+        Post post = postRepository.findByPostId(postId)
+                .orElseThrow(() -> new NoSuchElementException("Post not found: " + postId));
+
+        boolean isOwner = username != null && username.equals(post.getOwnerUsername());
+        boolean isStaff = role != null && (
+                "PROFESSIONAL".equalsIgnoreCase(role) ||
+                "SUPER_ADMIN".equalsIgnoreCase(role) ||
+                "ADMIN".equalsIgnoreCase(role)
+        );
+
+        if (!isOwner && !isStaff) {
+            throw new SecurityException("You do not have permission to archive this post.");
+        }
+
+        post.setArchived(true);
+        post.setArchivedAt(LocalDateTime.now());
+        Post saved = postRepository.save(post);
+        log.info("Post archived: postId={}, archivedBy={}", postId, username);
+        return toResponse(saved);
+    }
+
+    /**
+     * Restore / unarchive a post back to active posts.
+     */
+    @Transactional
+    public PostResponse unarchivePost(String postId, String username, String role) {
+        Post post = postRepository.findByPostId(postId)
+                .orElseThrow(() -> new NoSuchElementException("Post not found: " + postId));
+
+        boolean isOwner = username != null && username.equals(post.getOwnerUsername());
+        boolean isStaff = role != null && (
+                "PROFESSIONAL".equalsIgnoreCase(role) ||
+                "SUPER_ADMIN".equalsIgnoreCase(role) ||
+                "ADMIN".equalsIgnoreCase(role)
+        );
+
+        if (!isOwner && !isStaff) {
+            throw new SecurityException("You do not have permission to restore this post.");
+        }
+
+        post.setArchived(false);
+        post.setArchivedAt(null);
+        Post saved = postRepository.save(post);
+        log.info("Post restored: postId={}, restoredBy={}", postId, username);
+        return toResponse(saved);
+    }
+
+    /**
+     * Delete a post (author student or professional/admin).
+     */
+    @Transactional
+    public void deletePost(String postId, String username, String role) {
+        Post post = postRepository.findByPostId(postId)
+                .orElseThrow(() -> new NoSuchElementException("Post not found: " + postId));
+
+        boolean isOwner = username != null && username.equals(post.getOwnerUsername());
+        boolean isStaff = role != null && (
+                "PROFESSIONAL".equalsIgnoreCase(role) ||
+                "SUPER_ADMIN".equalsIgnoreCase(role) ||
+                "ADMIN".equalsIgnoreCase(role)
+        );
+
+        if (!isOwner && !isStaff) {
+            throw new SecurityException("You do not have permission to delete this post.");
+        }
+
+        postRepository.delete(post);
+        log.info("Post permanently deleted: postId={}, deletedBy={}, role={}", postId, username, role);
+    }
+
+    /**
+     * Legacy admin delete post.
      */
     @Transactional
     public void deletePost(String postId) {
-        Post post = postRepository.findByPostId(postId)
-                .orElseThrow(() -> new NoSuchElementException("Post not found: " + postId));
-        postRepository.delete(post);
-        log.info("Post deleted: postId={}", postId);
+        deletePost(postId, null, "ADMIN");
     }
 
     // ── Private Helpers ──
@@ -451,6 +536,8 @@ public class PostService {
                 .reviewedBy(post.getReviewedBy())
                 .reviewedAt(post.getReviewedAt())
                 .createdAt(post.getCreatedAt())
+                .archived(post.isArchived())
+                .archivedAt(post.getArchivedAt())
                 .build();
     }
 
@@ -478,6 +565,8 @@ public class PostService {
                 .reviewedBy(post.getReviewedBy())
                 .reviewedAt(post.getReviewedAt())
                 .createdAt(post.getCreatedAt())
+                .archived(post.isArchived())
+                .archivedAt(post.getArchivedAt())
                 .contextualResources(resources)
                 .calmDownKit(calmDownKit)
                 .build();
@@ -501,6 +590,8 @@ public class PostService {
                 .autoReply(post.getAutoReply())
                 .reviewed(false)  // hidden from students
                 .createdAt(post.getCreatedAt())
+                .archived(post.isArchived())
+                .archivedAt(post.getArchivedAt())
                 .build();
     }
 

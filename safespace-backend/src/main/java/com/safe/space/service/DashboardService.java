@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
  *   3. Trends     — daily time-series for emotional climate tracking
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class DashboardService {
 
@@ -39,6 +38,22 @@ public class DashboardService {
     private final CalmDownSessionRepository calmDownSessionRepository;
     private final ChatSessionRepository chatSessionRepository;
     private final UserRepository userRepository;
+    private final CrisisAlertRepository crisisAlertRepository;
+
+    public DashboardService(
+            PostRepository postRepository,
+            AutoReplyLogRepository autoReplyLogRepository,
+            CalmDownSessionRepository calmDownSessionRepository,
+            ChatSessionRepository chatSessionRepository,
+            UserRepository userRepository,
+            CrisisAlertRepository crisisAlertRepository) {
+        this.postRepository = postRepository;
+        this.autoReplyLogRepository = autoReplyLogRepository;
+        this.calmDownSessionRepository = calmDownSessionRepository;
+        this.chatSessionRepository = chatSessionRepository;
+        this.userRepository = userRepository;
+        this.crisisAlertRepository = crisisAlertRepository;
+    }
 
     // ── 1. OVERVIEW ──
 
@@ -50,7 +65,7 @@ public class DashboardService {
         // Posts
         long totalPosts = postRepository.count();
         long totalPostsToday = postRepository.countByCreatedAtBetween(todayStart, todayEnd);
-        long flaggedPosts = postRepository.countByFlaggedTrue();
+        long flaggedPosts = crisisAlertRepository.countByStatus("ACTIVE");
         double avgEnergy = totalPosts > 0 ? postRepository.findAverageEnergyScore() : 0;
         double avgEnergyToday = totalPostsToday > 0
                 ? postRepository.findAverageEnergyScoreBetween(todayStart, todayEnd) : 0;
@@ -137,71 +152,39 @@ public class DashboardService {
     public DashboardAlertsResponse getAlerts() {
         List<DashboardAlertsResponse.Alert> alerts = new ArrayList<>();
 
-        // Flagged posts → critical alerts
-        List<Post> flagged = postRepository.findByFlaggedTrueOrderByCreatedAtDesc();
-        for (Post p : flagged) {
-            alerts.add(DashboardAlertsResponse.Alert.builder()
-                    .alertType("flagged_post")
-                    .severity("critical")
-                    .referenceId(p.getPostId())
-                    .summary(truncate(p.getContent(), 120))
-                    .emotionTag(p.getEmotionTag())
-                    .energyScore(p.getEnergyScore())
-                    .flaggedKeywords(p.getFlaggedKeywords())
-                    .status("needs_review")
-                    .timestamp(p.getCreatedAt())
-                    .build());
-        }
+        // Fetch unresolved crisis alerts (ACTIVE + ACKNOWLEDGED) that are not archived
+        List<com.safe.space.model.CrisisAlert> unresolvedAlerts = crisisAlertRepository.findUnresolvedAlertsPrioritized();
+        for (com.safe.space.model.CrisisAlert a : unresolvedAlerts) {
+            if (a.isArchived()) continue;
 
-        // Crisis chat sessions → critical alerts
-        List<ChatSession> crisisWaiting = chatSessionRepository
-                .findByStatusAndCrisisFlagTrueOrderByCreatedAtAsc("WAITING");
-        for (ChatSession cs : crisisWaiting) {
-            alerts.add(DashboardAlertsResponse.Alert.builder()
-                    .alertType("crisis_chat")
-                    .severity("critical")
-                    .referenceId(cs.getSessionId())
-                    .summary("Crisis chat waiting: " + truncate(cs.getTopic(), 100))
-                    .emotionTag(cs.getEmotionTag())
-                    .energyScore(cs.getEnergyScore())
-                    .status("WAITING")
-                    .timestamp(cs.getCreatedAt())
-                    .build());
-        }
+            String alertType = a.getAlertType() != null ? a.getAlertType().toLowerCase() : "alert";
+            String severity = a.getSeverity() != null ? a.getSeverity().toLowerCase() : "moderate";
 
-        // Active crisis chats → high alerts
-        List<ChatSession> allActive = chatSessionRepository.findByStatusOrderByCreatedAtAsc("ACTIVE");
-        for (ChatSession cs : allActive) {
-            if (cs.isCrisisFlag()) {
-                alerts.add(DashboardAlertsResponse.Alert.builder()
-                        .alertType("crisis_chat")
-                        .severity("high")
-                        .referenceId(cs.getSessionId())
-                        .summary("Active crisis chat with " + cs.getProfessionalName()
-                                + ": " + truncate(cs.getTopic(), 80))
-                        .emotionTag(cs.getEmotionTag())
-                        .energyScore(cs.getEnergyScore())
-                        .status("ACTIVE")
-                        .timestamp(cs.getCreatedAt())
-                        .build());
+            // Clinically calibrate severity by energy score and alert type
+            if (a.getEnergyScore() != null) {
+                int score = a.getEnergyScore();
+                if (score >= 10 || "CRISIS_POST".equalsIgnoreCase(a.getAlertType()) || "REPEAT_CRISIS".equalsIgnoreCase(a.getAlertType())) {
+                    severity = "critical";
+                } else if (score >= 9) {
+                    severity = "high";
+                } else if (score >= 8) {
+                    severity = "elevated";
+                }
+            } else if ("CRISIS_POST".equalsIgnoreCase(a.getAlertType()) || "REPEAT_CRISIS".equalsIgnoreCase(a.getAlertType())) {
+                severity = "critical";
             }
-        }
 
-        // High energy posts (8+) → moderate alerts
-        List<Post> highEnergy = postRepository.findByEnergyScoreGreaterThanEqualOrderByCreatedAtDesc(8);
-        for (Post p : highEnergy) {
-            if (!p.isFlagged()) { // avoid duplicates with flagged
-                alerts.add(DashboardAlertsResponse.Alert.builder()
-                        .alertType("high_energy_post")
-                        .severity("moderate")
-                        .referenceId(p.getPostId())
-                        .summary(truncate(p.getContent(), 120))
-                        .emotionTag(p.getEmotionTag())
-                        .energyScore(p.getEnergyScore())
-                        .status("monitor")
-                        .timestamp(p.getCreatedAt())
-                        .build());
-            }
+            alerts.add(DashboardAlertsResponse.Alert.builder()
+                    .alertType(alertType)
+                    .severity(severity)
+                    .referenceId(a.getReferenceId() != null ? a.getReferenceId() : a.getAlertId())
+                    .summary(truncate(a.getMessage() != null && !a.getMessage().isBlank() ? a.getMessage() : a.getTitle(), 120))
+                    .emotionTag(a.getEmotionTag())
+                    .energyScore(a.getEnergyScore())
+                    .flaggedKeywords(a.getFlaggedKeywords())
+                    .status(a.getStatus())
+                    .timestamp(a.getCreatedAt())
+                    .build());
         }
 
         // Sort: newest first by timestamp so incoming alerts appear on top
