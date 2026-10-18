@@ -206,14 +206,40 @@ public class AnonymousChatController {
     @PostMapping("/heartbeat")
     public ResponseEntity<Map<String, Object>> heartbeat(@RequestBody Map<String, String> body) {
         String professionalId = body.getOrDefault("professionalId", "");
-        if (professionalId.isBlank()) {
-            throw new IllegalArgumentException("professionalId is required.");
+        String sessionId = body.getOrDefault("sessionId", "");
+        if (professionalId.isBlank() && sessionId.isBlank()) {
+            throw new IllegalArgumentException("professionalId or sessionId is required.");
         }
-        fallbackResponseService.recordHeartbeat(professionalId);
+        if (!professionalId.isBlank()) {
+            fallbackResponseService.recordHeartbeat(professionalId);
+        }
+        if (!sessionId.isBlank()) {
+            fallbackResponseService.recordStudentHeartbeat(sessionId);
+        }
         return ResponseEntity.ok(Map.of(
                 "status", "online",
                 "professionalId", professionalId,
-                "message", "Heartbeat recorded. Fallback auto-responses will activate if heartbeat stops."
+                "sessionId", sessionId
+        ));
+    }
+
+    /**
+     * Professional or student explicitly logs out or leaves chat — mark offline immediately.
+     */
+    @PostMapping("/offline")
+    public ResponseEntity<Map<String, Object>> offline(@RequestBody Map<String, String> body) {
+        String professionalId = body.getOrDefault("professionalId", "");
+        String sessionId = body.getOrDefault("sessionId", "");
+        if (!professionalId.isBlank()) {
+            fallbackResponseService.recordOffline(professionalId);
+        }
+        if (!sessionId.isBlank()) {
+            fallbackResponseService.recordStudentOffline(sessionId);
+        }
+        return ResponseEntity.ok(Map.of(
+                "status", "offline",
+                "professionalId", professionalId,
+                "sessionId", sessionId
         ));
     }
 

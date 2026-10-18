@@ -389,7 +389,9 @@ export default function Login() {
 
         {/* Brand */}
         <div className="login-brand">
-          <div className="brand-icon"><i className="fas fa-shield-heart"></i></div>
+          <div className="brand-icon logo-only">
+            <img src="/SafeSpace logo v2.svg" alt="SafeSpace Logo" className="brand-logo-img" />
+          </div>
           <h1>Safe<span>Space</span></h1>
           <p>Sign in with your credentials</p>
         </div>

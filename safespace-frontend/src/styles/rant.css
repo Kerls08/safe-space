@@ -56,19 +56,25 @@ body.has-student-bottom-nav .rant-layout {
 }
 
 .rant-welcome-icon {
-  width: 3.75rem;
-  height: 3.75rem;
-  border-radius: 1rem;
-  background: rgba(186, 203, 216, 0.18);
-  border: 1px solid rgba(186, 203, 216, 0.3);
-  backdrop-filter: blur(10px);
+  width: 3.5rem;
+  height: 3.5rem;
+  background: transparent;
+  border: none;
+  backdrop-filter: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
-  color: #BACBD8;
   flex-shrink: 0;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.rant-welcome-icon .brand-logo-img {
+  width: 3.5rem;
+  height: 3.5rem;
+  object-fit: contain;
+  display: block;
 }
 
 .rant-welcome h1 {

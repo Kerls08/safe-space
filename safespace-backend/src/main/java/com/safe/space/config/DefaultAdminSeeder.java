@@ -2,7 +2,6 @@ package com.safe.space.config;
 
 import com.safe.space.model.User;
 import com.safe.space.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -20,7 +19,6 @@ import org.springframework.stereotype.Component;
  *   Password: SafeSpace2026!
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class DefaultAdminSeeder implements ApplicationRunner {
 
@@ -29,6 +27,14 @@ public class DefaultAdminSeeder implements ApplicationRunner {
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
     private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder(12);
     private static final String DEFAULT_PASSWORD = "SafeSpace2026!";
+
+    public DefaultAdminSeeder(UserRepository userRepository,
+                              com.safe.space.service.CredentialService credentialService,
+                              org.springframework.jdbc.core.JdbcTemplate jdbcTemplate) {
+        this.userRepository = userRepository;
+        this.credentialService = credentialService;
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     @Override
     public void run(ApplicationArguments args) {
@@ -46,7 +52,9 @@ public class DefaultAdminSeeder implements ApplicationRunner {
             jdbcTemplate.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE NOT NULL");
             jdbcTemplate.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP");
             jdbcTemplate.execute("UPDATE posts SET archived = FALSE WHERE archived IS NULL");
-            log.info("Schema integrity verified for chat_sessions, crisis_alerts, and posts tables.");
+            jdbcTemplate.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS delivered BOOLEAN DEFAULT FALSE NOT NULL");
+            jdbcTemplate.execute("UPDATE chat_messages SET delivered = FALSE WHERE delivered IS NULL");
+            log.info("Schema integrity verified for chat_sessions, chat_messages, crisis_alerts, and posts tables.");
         } catch (Exception e) {
             log.warn("Database column check on schema tables: {}", e.getMessage());
         }

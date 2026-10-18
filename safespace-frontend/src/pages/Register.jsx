@@ -186,7 +186,9 @@ export default function Register() {
         </Link>
 
         <div className="register-brand">
-          <div className="brand-icon"><i className="fas fa-graduation-cap"></i></div>
+          <div className="brand-icon logo-only">
+            <img src="/SafeSpace logo v2.svg" alt="SafeSpace Logo" className="brand-logo-img" />
+          </div>
           <h1>Create Your <span>Student Account</span></h1>
           <p>Voluntary self-registration for USTP Balubal students — your privacy is protected</p>
         </div>

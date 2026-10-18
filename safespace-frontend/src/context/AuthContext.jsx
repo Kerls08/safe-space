@@ -6,7 +6,8 @@ import {
   getFullName, 
   saveSession, 
   clearSessionStorage, 
-  authApi 
+  authApi,
+  chatApi 
 } from '../services/api';
 
 const AuthContext = createContext(null);
@@ -46,13 +47,18 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     const curToken = token;
+    const curUsername = username;
+    const curRole = role;
+    if (curUsername && (curRole === 'PROFESSIONAL' || curRole === 'SUPER_ADMIN')) {
+      chatApi.recordOffline(curUsername).catch(() => {});
+    }
     await authApi.logout(curToken);
     setToken(null);
     setUsername(null);
     setRole(null);
     setFullName(null);
     clearSessionStorage();
-  }, [token]);
+  }, [token, username, role]);
 
   const login = useCallback((data) => {
     saveSession(data);

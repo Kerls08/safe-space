@@ -55,17 +55,24 @@
 }
 
 .landing-brand .brand-logo-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: #161F36;
-  color: #BACBD8;
+  width: 32px;
+  height: 32px;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.05rem;
-  box-shadow: 0 3px 10px rgba(22, 31, 54, 0.25);
+  box-shadow: none;
+  border-radius: 0;
+  border: none;
   flex-shrink: 0;
+  overflow: visible;
+}
+
+.landing-brand .brand-logo-icon .brand-logo-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  display: block;
 }
 
 .landing-brand .brand-text {

@@ -229,8 +229,8 @@ export default function Landing() {
       <nav className={`landing-nav ${navScrolled ? 'scrolled' : ''}`} id="landingNav">
         <div className="landing-nav-inner">
           <Link to="/" className="landing-brand">
-            <div className="brand-logo-icon">
-              <i className="fas fa-shield-heart"></i>
+            <div className="brand-logo-icon logo-only">
+              <img src="/SafeSpace logo v2.svg" alt="SafeSpace Logo" className="brand-logo-img" />
             </div>
             <span className="brand-text">Safe<span>Space</span></span>
           </Link>

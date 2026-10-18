@@ -49,6 +49,11 @@ public class ChatMessage {
     @Column(nullable = false)
     private boolean read;
 
+    /** Whether the message has been delivered to the recipient. */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean delivered = false;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime sentAt;
 

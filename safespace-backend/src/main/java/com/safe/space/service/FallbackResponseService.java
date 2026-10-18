@@ -42,8 +42,36 @@ public class FallbackResponseService {
      */
     private final ConcurrentHashMap<String, LocalDateTime> professionalHeartbeats = new ConcurrentHashMap<>();
 
-    /** Professional considered offline after this many seconds without heartbeat. */
-    private static final int HEARTBEAT_TIMEOUT_SECONDS = 60;
+    /**
+     * Tracks student online presence per chat session.
+     * Key: sessionId, Value: last heartbeat timestamp.
+     */
+    private final ConcurrentHashMap<String, LocalDateTime> studentSessionHeartbeats = new ConcurrentHashMap<>();
+
+    /** Professional and student considered offline after this many seconds without heartbeat. */
+    private static final int HEARTBEAT_TIMEOUT_SECONDS = 15;
+
+    // ── Student Presence ──
+
+    public void recordStudentHeartbeat(String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) return;
+        studentSessionHeartbeats.put(sessionId, LocalDateTime.now());
+        log.debug("Student heartbeat recorded: sessionId={}", sessionId);
+    }
+
+    public void recordStudentOffline(String sessionId) {
+        if (sessionId != null && !sessionId.isBlank()) {
+            studentSessionHeartbeats.remove(sessionId);
+            log.info("Student explicitly recorded offline: sessionId={}", sessionId);
+        }
+    }
+
+    public boolean isStudentOnline(String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) return false;
+        LocalDateTime lastBeat = studentSessionHeartbeats.get(sessionId);
+        if (lastBeat == null) return false;
+        return lastBeat.plusSeconds(HEARTBEAT_TIMEOUT_SECONDS).isAfter(LocalDateTime.now());
+    }
 
     // ── Professional Presence ──
 
@@ -51,8 +79,19 @@ public class FallbackResponseService {
      * Records a heartbeat from a professional, marking them as online.
      */
     public void recordHeartbeat(String professionalId) {
+        if (professionalId == null || professionalId.isBlank()) return;
         professionalHeartbeats.put(professionalId, LocalDateTime.now());
         log.debug("Heartbeat recorded: professionalId={}", professionalId);
+    }
+
+    /**
+     * Explicitly marks a professional as offline immediately.
+     */
+    public void recordOffline(String professionalId) {
+        if (professionalId != null && !professionalId.isBlank()) {
+            professionalHeartbeats.remove(professionalId);
+            log.info("Professional explicitly recorded offline: professionalId={}", professionalId);
+        }
     }
 
     /**

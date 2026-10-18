@@ -74,6 +74,29 @@
   color: #BACBD8;
   margin-bottom: 0.75rem;
   box-shadow: 0 8px 22px rgba(22, 31, 54, 0.28);
+  overflow: hidden;
+}
+
+/* Freestanding logo with NO background or container box */
+.register-brand .brand-icon.logo-only,
+.register-brand .brand-icon:has(.brand-logo-img) {
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+  margin-bottom: 0.75rem;
+  border: none;
+}
+
+.register-brand .brand-icon .brand-logo-img,
+.register-brand .brand-icon.logo-only .brand-logo-img,
+.register-brand .brand-icon:has(.brand-logo-img) .brand-logo-img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  display: block;
 }
 
 .register-brand h1 {

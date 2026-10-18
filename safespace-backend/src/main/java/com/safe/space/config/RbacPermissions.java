@@ -63,6 +63,8 @@ public class RbacPermissions {
                     "/api/energy",                  // Energy Score submission
                     "/api/chat/sessions",           // Create session, view own sessions
                     "/api/chat/professional-status",// Check counselor availability
+                    "/api/chat/heartbeat",          // Student presence heartbeat
+                    "/api/chat/offline",            // Student offline event
                     "/api/resources"                // Resource Linker (read-only)
             ),
 

@@ -108,6 +108,13 @@ body {
   gap: 0.5rem;
   flex-shrink: 0;
 }
+.navbar-brand-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
 .navbar-brand .brand-text {
   display: inline-flex;
   align-items: center;

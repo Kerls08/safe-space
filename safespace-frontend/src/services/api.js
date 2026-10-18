@@ -471,6 +471,7 @@ export const chatApi = {
   },
 
   async heartbeat(professionalId) {
+    if (!professionalId) return;
     try {
       await authFetch(`${API_BASE}/chat/heartbeat`, {
         method: 'POST',
@@ -480,14 +481,61 @@ export const chatApi = {
     } catch (e) { /* ignore */ }
   },
 
-  async checkCounselorAvailable() {
+  async recordOffline(professionalId) {
+    if (!professionalId) return;
+    try {
+      await authFetch(`${API_BASE}/chat/offline`, {
+        method: 'POST',
+        body: JSON.stringify({ professionalId }),
+        silent: true
+      });
+    } catch (e) { /* ignore */ }
+  },
+
+  async studentHeartbeat(sessionId) {
+    if (!sessionId) return;
+    try {
+      await authFetch(`${API_BASE}/chat/heartbeat`, {
+        method: 'POST',
+        body: JSON.stringify({ sessionId }),
+        silent: true
+      });
+    } catch (e) { /* ignore */ }
+  },
+
+  async recordStudentOffline(sessionId) {
+    if (!sessionId) return;
+    try {
+      await authFetch(`${API_BASE}/chat/offline`, {
+        method: 'POST',
+        body: JSON.stringify({ sessionId }),
+        silent: true
+      });
+    } catch (e) { /* ignore */ }
+  },
+
+  async checkCounselorAvailable(targetProfessionalId) {
     try {
       const res = await authFetch(`${API_BASE}/chat/professional-status`, { silent: true });
-      if (!res.ok) return { available: false, count: 0 };
+      if (!res.ok) return { available: false, count: 0, professionals: [] };
       const data = await res.json();
-      return { available: Boolean(data.anyOnline), count: data.onlineCount || 0 };
+      const professionals = Array.isArray(data.professionals) ? data.professionals : [];
+      if (targetProfessionalId && targetProfessionalId.trim()) {
+        const targetClean = targetProfessionalId.trim().toLowerCase();
+        const found = professionals.find((p) => p.professionalId && p.professionalId.toLowerCase() === targetClean);
+        return {
+          available: Boolean(found ? found.online : false),
+          count: data.onlineCount || 0,
+          professionals
+        };
+      }
+      return {
+        available: Boolean(data.anyOnline),
+        count: data.onlineCount || 0,
+        professionals
+      };
     } catch (e) {
-      return { available: false, count: 0 };
+      return { available: false, count: 0, professionals: [] };
     }
   }
 };

@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
  * Crisis-flagged sessions are prioritized in the professional queue.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class AnonymousChatService {
 
@@ -38,6 +37,20 @@ public class AnonymousChatService {
     private final CrisisKeywordService crisisKeywordService;
     private final FallbackResponseService fallbackResponseService;
     private final ObjectProvider<CrisisAlertService> crisisAlertServiceProvider;
+
+    public AnonymousChatService(
+            ChatSessionRepository sessionRepository,
+            ChatMessageRepository messageRepository,
+            CrisisKeywordService crisisKeywordService,
+            FallbackResponseService fallbackResponseService,
+            ObjectProvider<CrisisAlertService> crisisAlertServiceProvider
+    ) {
+        this.sessionRepository = sessionRepository;
+        this.messageRepository = messageRepository;
+        this.crisisKeywordService = crisisKeywordService;
+        this.fallbackResponseService = fallbackResponseService;
+        this.crisisAlertServiceProvider = crisisAlertServiceProvider;
+    }
 
     private static final List<String> PSEUDONYM_SEEDS = List.of(
             "Willow", "Nova", "Echo", "Sol", "River",
@@ -261,6 +274,15 @@ public class AnonymousChatService {
         session.setProfessionalName(professionalName);
         session.setAcceptedAt(LocalDateTime.now());
         sessionRepository.save(session);
+
+        // Mark any waiting intake messages as delivered
+        List<ChatMessage> existing = messageRepository.findBySessionIdOrderBySentAtAsc(sessionId);
+        for (ChatMessage m : existing) {
+            if (!m.isDelivered()) {
+                m.setDelivered(true);
+                messageRepository.save(m);
+            }
+        }
 
         log.info("Chat session accepted: sessionId={}, professional={}", sessionId, professionalName);
 
@@ -554,6 +576,15 @@ public class AnonymousChatService {
         String messageId = "msg-" + Long.toString(System.currentTimeMillis(), 36)
                 + "-" + UUID.randomUUID().toString().substring(0, 6);
 
+        boolean isDelivered = false;
+        if ("ACTIVE".equals(session.getStatus())) {
+            if ("student".equals(request.getSenderType())) {
+                isDelivered = fallbackResponseService.isProfessionalOnline(session.getProfessionalId());
+            } else if ("professional".equals(request.getSenderType())) {
+                isDelivered = true;
+            }
+        }
+
         ChatMessage message = ChatMessage.builder()
                 .messageId(messageId)
                 .sessionId(session.getSessionId())
@@ -561,6 +592,7 @@ public class AnonymousChatService {
                 .senderName(request.getSenderName())
                 .content(request.getContent())
                 .read(false)
+                .delivered(isDelivered)
                 .build();
 
         messageRepository.save(message);
@@ -575,6 +607,7 @@ public class AnonymousChatService {
         // ── Automated Fallback Response ──
         // When a student sends a message, check if a fallback is needed
         if ("student".equals(request.getSenderType())) {
+            fallbackResponseService.recordStudentHeartbeat(session.getSessionId());
             triggerFallbackIfNeeded(session, request.getContent());
         }
 
@@ -591,25 +624,42 @@ public class AnonymousChatService {
 
         List<ChatMessage> messages = messageRepository.findBySessionIdOrderBySentAtAsc(sessionId);
 
-        // Mark messages as read for the viewer
+        // Mark messages as read and delivered for the viewer
         if (viewerType != null) {
+            if ("student".equals(viewerType)) {
+                fallbackResponseService.recordStudentHeartbeat(sessionId);
+            }
             for (ChatMessage msg : messages) {
-                if (!msg.isRead()) {
-                    if ("professional".equals(viewerType)) {
-                        // Professional reads all incoming student messages and system notification messages
-                        if (!"professional".equals(msg.getSenderType())) {
-                            msg.setRead(true);
-                            messageRepository.save(msg);
+                boolean modified = false;
+                if ("professional".equals(viewerType)) {
+                    // Professional reads all incoming student messages and system notification messages
+                    if (!"professional".equals(msg.getSenderType())) {
+                        if (!msg.isDelivered()) {
+                            msg.setDelivered(true);
+                            modified = true;
                         }
-                    } else if ("student".equals(viewerType)) {
-                        // Student reads counselor messages or assistant automated replies
-                        // Crucially, student must NOT mark student-action notifications (e.g. outreach accept/decline) as read!
-                        if ("professional".equals(msg.getSenderType()) 
-                                || ("system".equals(msg.getSenderType()) && "SafeSpace Assistant".equals(msg.getSenderName()))) {
+                        if (!msg.isRead()) {
                             msg.setRead(true);
-                            messageRepository.save(msg);
+                            modified = true;
                         }
                     }
+                } else if ("student".equals(viewerType)) {
+                    // Student reads counselor messages or assistant automated replies
+                    // Crucially, student must NOT mark student-action notifications (e.g. outreach accept/decline) as read!
+                    if ("professional".equals(msg.getSenderType()) 
+                            || ("system".equals(msg.getSenderType()) && "SafeSpace Assistant".equals(msg.getSenderName()))) {
+                        if (!msg.isDelivered()) {
+                            msg.setDelivered(true);
+                            modified = true;
+                        }
+                        if (!msg.isRead()) {
+                            msg.setRead(true);
+                            modified = true;
+                        }
+                    }
+                }
+                if (modified) {
+                    messageRepository.save(msg);
                 }
             }
         }
@@ -730,6 +780,7 @@ public class AnonymousChatService {
     }
 
     private ChatSessionResponse toSessionResponse(ChatSession s, long unreadCount) {
+        boolean isStudentOnline = fallbackResponseService.isStudentOnline(s.getSessionId());
         return ChatSessionResponse.builder()
                 .sessionId(s.getSessionId())
                 .studentPseudonym(s.getStudentPseudonym())
@@ -744,6 +795,7 @@ public class AnonymousChatService {
                 .messageCount(s.getMessageCount())
                 .unreadCount(unreadCount)
                 .closedBy(s.getClosedBy())
+                .studentOnline(isStudentOnline)
                 .createdAt(s.getCreatedAt())
                 .acceptedAt(s.getAcceptedAt())
                 .closedAt(s.getClosedAt())
@@ -758,6 +810,7 @@ public class AnonymousChatService {
                 .senderName(m.getSenderName())
                 .content(m.getContent())
                 .read(m.isRead())
+                .delivered(m.isDelivered() || m.isRead())
                 .sentAt(m.getSentAt())
                 .build();
     }

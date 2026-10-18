@@ -11,12 +11,6 @@ function generateRandomPseudonym() {
   return `Anon-${seed}-${num}`;
 }
 
-const CANNED_RESPONSES = [
-  "I am listening, take all the time you need.",
-  "You are safe here. What you are feeling is completely valid.",
-  "Let's pause and take a gentle deep breath together.",
-  "Can you tell me a little more about what triggered this feeling?"
-];
 
 function formatTime(timestamp) {
   if (!timestamp) return '';
@@ -69,6 +63,10 @@ export default function AnonChat() {
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef(null);
+  const chatMessagesRef = useRef(null);
+  const isNearBottomRef = useRef(true);
+  const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
+  const prevMessagesCountRef = useRef(0);
 
   // Modals
   const [newChatModalOpen, setNewChatModalOpen] = useState(false);
@@ -111,14 +109,63 @@ export default function AnonChat() {
     setTimeout(() => setToastMessage(''), 3000);
   };
 
-  // Auto-scroll messages
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  // Smart auto-scroll messages
+  const scrollToBottom = useCallback((behavior = 'smooth') => {
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTo({
+        top: chatMessagesRef.current.scrollHeight,
+        behavior
+      });
+    } else if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior });
+    }
+    isNearBottomRef.current = true;
+    setShowScrollBottomBtn(false);
+  }, []);
 
+  const handleMessagesScroll = useCallback(() => {
+    const el = chatMessagesRef.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    // Considered near bottom if within 120px
+    const nearBottom = distanceFromBottom <= 120;
+    isNearBottomRef.current = nearBottom;
+    setShowScrollBottomBtn(!nearBottom);
+  }, []);
+
+  // When switching to a different chat session, always scroll to bottom
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (activeSessionId) {
+      isNearBottomRef.current = true;
+      setShowScrollBottomBtn(false);
+      prevMessagesCountRef.current = 0;
+      const timer = setTimeout(() => {
+        scrollToBottom('auto');
+      }, 70);
+      return () => clearTimeout(timer);
+    }
+  }, [activeSessionId, scrollToBottom]);
+
+  // When message list grows (new message arrived or sent)
+  useEffect(() => {
+    const prevCount = prevMessagesCountRef.current;
+    prevMessagesCountRef.current = messages.length;
+
+    // Only scroll if message count increased
+    if (messages.length > prevCount) {
+      if (isNearBottomRef.current) {
+        // User was already at or near bottom -> follow the conversation smoothly
+        const timer = setTimeout(() => {
+          scrollToBottom('smooth');
+        }, 50);
+        return () => clearTimeout(timer);
+      } else {
+        // User is scrolled up reading earlier messages -> DO NOT force scroll down!
+        setShowScrollBottomBtn(true);
+      }
+    }
+  }, [messages.length, scrollToBottom]);
 
   // Load sessions list
   const loadSessions = useCallback(async () => {
@@ -211,8 +258,25 @@ export default function AnonChat() {
       chatApi.heartbeat(username || '');
       heartbeatTimer = setInterval(() => {
         chatApi.heartbeat(username || '');
-      }, 30000);
+      }, 6000);
+
+      const handleBeforeUnload = () => {
+        if (username) {
+          chatApi.recordOffline(username);
+        }
+      };
+      window.addEventListener('beforeunload', handleBeforeUnload);
+
+      return () => {
+        clearInterval(sessionPollTimer);
+        if (heartbeatTimer) clearInterval(heartbeatTimer);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        if (username) {
+          chatApi.recordOffline(username);
+        }
+      };
     }
+
     return () => {
       clearInterval(sessionPollTimer);
       if (heartbeatTimer) clearInterval(heartbeatTimer);
@@ -250,7 +314,34 @@ export default function AnonChat() {
             loadSessions();
           }
           setActiveSession(sessionData);
-          setMessages(msgList || []);
+          setMessages((prev) => {
+            const list = msgList || [];
+            const pending = prev.filter((m) => m.isSending || (m.messageId && String(m.messageId).startsWith('temp-')));
+            let nextMessages;
+            if (pending.length === 0) {
+              nextMessages = list;
+            } else {
+              const serverIds = new Set(list.map((m) => m.messageId));
+              const stillPending = pending.filter((p) => !serverIds.has(p.messageId));
+              nextMessages = [...list, ...stillPending];
+            }
+
+            if (prev.length === nextMessages.length) {
+              const unchanged = prev.every((m, idx) => {
+                const n = nextMessages[idx];
+                return (
+                  m.messageId === n.messageId &&
+                  m.read === n.read &&
+                  m.delivered === n.delivered &&
+                  m.isSending === n.isSending &&
+                  m.content === n.content
+                );
+              });
+              if (unchanged) return prev;
+            }
+
+            return nextMessages;
+          });
         }
       } catch (e) {
         console.warn('Error fetching chat messages:', e);
@@ -266,13 +357,51 @@ export default function AnonChat() {
     };
   }, [activeSessionId, isProfessional]);
 
-  // Check counselor availability
+  // Check counselor availability continuously
   useEffect(() => {
-    if (!isProfessional && activeSessionId) {
-      chatApi.checkCounselorAvailable().then((res) => {
-        setCounselorOnline(Boolean(res && res.available));
-      }).catch(() => setCounselorOnline(false));
-    }
+    if (isProfessional) return;
+
+    let isMounted = true;
+    const checkAvailability = async () => {
+      try {
+        const targetCounselor = activeSession?.professionalId;
+        const res = await chatApi.checkCounselorAvailable(targetCounselor);
+        if (isMounted) {
+          setCounselorOnline(Boolean(res && res.available));
+        }
+      } catch (e) {
+        if (isMounted) setCounselorOnline(false);
+      }
+    };
+
+    checkAvailability();
+    const availTimer = setInterval(checkAvailability, 3000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(availTimer);
+    };
+  }, [isProfessional, activeSession?.professionalId]);
+
+  // Student presence heartbeat (for student active session)
+  useEffect(() => {
+    if (isProfessional || !activeSessionId) return;
+
+    chatApi.studentHeartbeat(activeSessionId);
+    const studentHeartbeatTimer = setInterval(() => {
+      chatApi.studentHeartbeat(activeSessionId);
+    }, 6000);
+
+    const handleStudentBeforeUnload = () => {
+      chatApi.recordStudentOffline(activeSessionId);
+    };
+    window.addEventListener('beforeunload', handleStudentBeforeUnload);
+
+    return () => {
+      clearInterval(studentHeartbeatTimer);
+      window.removeEventListener('beforeunload', handleStudentBeforeUnload);
+      chatApi.recordStudentOffline(activeSessionId);
+    };
   }, [isProfessional, activeSessionId]);
 
   // Send message
@@ -281,20 +410,39 @@ export default function AnonChat() {
     if (!text || !activeSessionId || isSending) return;
 
     setIsSending(true);
-    try {
-      const sender = isProfessional
-        ? fullName || username || 'Lead Psychometrician, RPM'
-        : activeSession?.studentPseudonym || 'Student';
+    const sender = isProfessional
+      ? fullName || username || 'Lead Psychometrician, RPM'
+      : activeSession?.studentPseudonym || 'Student';
 
+    const tempId = 'temp-' + Date.now();
+    const optimisticMsg = {
+      messageId: tempId,
+      sessionId: activeSessionId,
+      content: text,
+      senderType: isProfessional ? 'professional' : 'student',
+      senderName: sender,
+      sentAt: new Date().toISOString(),
+      isSending: true,
+      read: false,
+      delivered: false
+    };
+
+    setMessages((prev) => [...prev, optimisticMsg]);
+    setMessageText('');
+    isNearBottomRef.current = true;
+    setShowScrollBottomBtn(false);
+    setTimeout(() => scrollToBottom('smooth'), 40);
+
+    try {
       const sentMsg = await chatApi.sendMessage(activeSessionId, {
         content: text,
         senderType: isProfessional ? 'professional' : 'student',
         senderName: sender
       });
 
-      setMessages((prev) => [...prev, sentMsg]);
-      setMessageText('');
+      setMessages((prev) => prev.map((m) => (m.messageId === tempId ? { ...sentMsg, isSending: false } : m)));
     } catch (err) {
+      setMessages((prev) => prev.filter((m) => m.messageId !== tempId));
       showToast(err.message || 'Failed to send message.');
     } finally {
       setIsSending(false);
@@ -656,6 +804,16 @@ export default function AnonChat() {
                         <i className={`fas fa-${s.status === 'ACTIVE' ? 'circle' : s.status === 'WAITING' ? 'clock' : s.status === 'INVITED' ? 'envelope-open-text' : 'lock'}`}></i>{' '}
                         {statusLabel}
                       </span>
+                      {isProfessional && (
+                        <span
+                          className={`availability-indicator ${s.studentOnline ? 'online' : 'offline'}`}
+                          style={{ marginLeft: 0 }}
+                          title={`Student is ${s.studentOnline ? 'Online' : 'Offline'}`}
+                        >
+                          <span className="avail-dot"></span>
+                          <span>{s.studentOnline ? 'Online' : 'Offline'}</span>
+                        </span>
+                      )}
                       {s.emotionTag && (
                         <span className="session-emotion-badge">{s.emotionTag}</span>
                       )}
@@ -813,16 +971,18 @@ export default function AnonChat() {
                 >
                   <i className="fas fa-arrow-left"></i>
                 </button>
-                <div className="chat-header-avatar" id="headerAvatar">
-                  <i className="fas fa-user-shield"></i>
+                <div className={`chat-header-avatar ${activeSession?.status === 'INVITED' ? 'invited' : ''}`} id="headerAvatar">
+                  {isProfessional ? (
+                    (activeSession?.studentPseudonym || 'AN').split('-').slice(1, 2).join('').substring(0, 2).toUpperCase() || 'AN'
+                  ) : (
+                    <i className="fas fa-user-shield"></i>
+                  )}
                 </div>
                 <div className="chat-header-info">
                   <h4 id="headerName">
-                    {activeSession?.professionalName
-                      ? activeSession.professionalName
-                      : activeSession?.studentPseudonym
-                      ? activeSession.studentPseudonym
-                      : 'Waiting for counselor...'}
+                    {isProfessional
+                      ? (activeSession?.studentPseudonym || 'Anonymous Student')
+                      : (activeSession?.professionalName || 'Waiting for counselor...')}
                   </h4>
                   <span id="headerStatus">
                     <span className={`session-status-badge ${activeSession?.status ? activeSession.status.toLowerCase() : 'waiting'}`} id="headerBadge">
@@ -831,7 +991,13 @@ export default function AnonChat() {
                     {!isProfessional && (
                       <span className={`availability-indicator ${counselorOnline ? 'online' : 'offline'}`} id="availIndicator" style={{ display: 'inline-flex', marginLeft: '0.5rem' }}>
                         <span className="avail-dot"></span>
-                        <span id="availText">{counselorOnline ? 'Counselor Online' : 'Counselor Offline'}</span>
+                        <span id="availText">{counselorOnline ? 'Online' : 'Offline'}</span>
+                      </span>
+                    )}
+                    {isProfessional && (
+                      <span className={`availability-indicator ${activeSession?.studentOnline ? 'online' : 'offline'}`} id="studentAvailIndicator" style={{ display: 'inline-flex', marginLeft: '0.5rem' }}>
+                        <span className="avail-dot"></span>
+                        <span id="studentAvailText">{activeSession?.studentOnline ? 'Online' : 'Offline'}</span>
                       </span>
                     )}
                   </span>
@@ -937,7 +1103,7 @@ export default function AnonChat() {
             )}
 
             {/* Messages Scroll Area */}
-            <div className="chat-messages" id="chatMessages">
+            <div className="chat-messages" id="chatMessages" ref={chatMessagesRef} onScroll={handleMessagesScroll}>
               {/* Outreach Dedicated Card (for INVITED sessions) */}
               {activeSession?.status === 'INVITED' && (
                 !isProfessional ? (
@@ -1056,6 +1222,36 @@ export default function AnonChat() {
                   );
                 }
 
+                // Recipient details for Messenger seen status badge
+                const recipientName = isProfessional
+                  ? (activeSession?.studentPseudonym || 'Student')
+                  : (activeSession?.professionalName || activeSession?.counselorName || 'Counselor');
+                const recipientInitials = isProfessional
+                  ? (activeSession?.studentPseudonym ? activeSession.studentPseudonym.split('-').slice(1, 2).join('').substring(0, 2).toUpperCase() : 'AN')
+                  : (activeSession?.professionalName ? activeSession.professionalName.substring(0, 2).toUpperCase() : 'DR');
+
+                let msgStatus = 'sent';
+                let statusLabel = 'Sent';
+                let statusTooltip = 'Sent: Stored on server';
+
+                if (m.isSending) {
+                  msgStatus = 'sending';
+                  statusLabel = 'Sending...';
+                  statusTooltip = 'Sending message...';
+                } else if (m.read) {
+                  msgStatus = 'seen';
+                  statusLabel = 'Seen';
+                  statusTooltip = `Seen by ${recipientName}`;
+                } else if (m.delivered) {
+                  msgStatus = 'delivered';
+                  statusLabel = 'Delivered';
+                  statusTooltip = `Delivered to ${recipientName}`;
+                } else {
+                  msgStatus = 'sent';
+                  statusLabel = 'Sent';
+                  statusTooltip = 'Sent to server • Waiting for recipient to connect';
+                }
+
                 return (
                   <div
                     key={idx}
@@ -1072,7 +1268,40 @@ export default function AnonChat() {
                         <span>{m.senderName || m.sender}</span>
                         <span>•</span>
                         <span>{formatTime(m.sentAt || m.timestamp)}</span>
-                        {m.read && <i className="fas fa-check-double message-read-icon"></i>}
+                        {isMine && (
+                          <>
+                            <span>•</span>
+                            <span className={`msg-status-pill ${msgStatus}`} title={statusTooltip} aria-label={statusTooltip}>
+                              {msgStatus === 'sending' && (
+                                <>
+                                  <i className="far fa-circle msg-status-icon sending"></i>
+                                  <span className="status-label">{statusLabel}</span>
+                                </>
+                              )}
+                              {msgStatus === 'sent' && (
+                                <>
+                                  <i className="far fa-circle-check msg-status-icon sent"></i>
+                                  <span className="status-label">{statusLabel}</span>
+                                </>
+                              )}
+                              {msgStatus === 'delivered' && (
+                                <>
+                                  <i className="fas fa-circle-check msg-status-icon delivered"></i>
+                                  <span className="status-label">{statusLabel}</span>
+                                </>
+                              )}
+                              {msgStatus === 'seen' && (
+                                <>
+                                  <span className="seen-avatar-badge" title={`Seen by ${recipientName}`}>
+                                    {recipientInitials}
+                                  </span>
+                                  <i className="fas fa-check-double msg-status-icon seen"></i>
+                                  <span className="status-label">{statusLabel}</span>
+                                </>
+                              )}
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1081,20 +1310,17 @@ export default function AnonChat() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Counselor Canned Responses Chips */}
-            {isProfessional && activeSession?.status === 'ACTIVE' && (
-              <div style={{ padding: '0.5rem 1.25rem', background: '#F8FAFC', borderTop: '1px solid #E2E8F0', display: 'flex', gap: '0.4rem', overflowX: 'auto' }}>
-                {CANNED_RESPONSES.map((res, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => handleSendMessage(res)}
-                    style={{ whiteSpace: 'nowrap', padding: '0.35rem 0.75rem', borderRadius: '999px', border: '1px solid #CBD5E1', background: '#fff', fontSize: '0.76rem', color: '#475569', cursor: 'pointer', fontWeight: 600 }}
-                  >
-                    💬 {res}
-                  </button>
-                ))}
-              </div>
+            {/* Jump to Recent Messages floating pill */}
+            {showScrollBottomBtn && (
+              <button
+                type="button"
+                className="chat-jump-latest-btn"
+                id="jumpToLatestBtn"
+                onClick={() => scrollToBottom('smooth')}
+                title="Scroll down to latest messages"
+              >
+                <i className="fas fa-arrow-down"></i> Recent messages
+              </button>
             )}
 
             {/* Input Composer (Active Sessions) */}

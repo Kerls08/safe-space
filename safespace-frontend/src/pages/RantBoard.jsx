@@ -544,7 +544,7 @@ export default function RantBoard() {
         <div className="rant-welcome-inner">
           <div className="rant-welcome-left">
             <div className="rant-welcome-icon">
-              <i className="fas fa-shield-heart"></i>
+              <img src="/SafeSpace logo v2.svg" alt="SafeSpace Logo" className="brand-logo-img" />
             </div>
             <div>
               <h1>Welcome back, <span className="welcome-greeting" id="welcomeName">{(fullName || username || 'Friend').split(' ')[0]}</span></h1>

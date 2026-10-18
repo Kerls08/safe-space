@@ -460,6 +460,7 @@ body.has-student-bottom-nav .chat-layout {
 
 /* Chat view container — flex column filling chat-main */
 .chat-view {
+  position: relative;
   display: none;
   flex: 1;
   flex-direction: column;
@@ -805,6 +806,46 @@ body.has-student-bottom-nav .chat-layout {
   border-radius: 3px;
 }
 
+/* Floating jump-to-recent button when scrolled up */
+.chat-jump-latest-btn {
+  position: absolute;
+  bottom: 82px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 25;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #161F36;
+  color: #FAF7F2;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(22, 31, 54, 0.35);
+  padding: 0.48rem 1.15rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: fadeInJump 0.22s ease-out;
+}
+
+.chat-jump-latest-btn:hover {
+  background: #253354;
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 6px 20px rgba(22, 31, 54, 0.45);
+}
+
+.chat-jump-latest-btn i {
+  font-size: 0.75rem;
+  color: #38BDF8;
+}
+
+@keyframes fadeInJump {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.95); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
 /* Message bubble */
 .message {
   display: flex;
@@ -893,8 +934,90 @@ body.has-student-bottom-nav .chat-layout {
 }
 
 .message-read-icon {
-  color: #161F36;
+  color: #0284C7;
   font-size: 0.65rem;
+}
+
+/* ── Messenger-Style Delivery Status Indicators (Sent, Delivered, Seen) ── */
+.msg-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  font-size: 0.67rem;
+  font-weight: 600;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  line-height: 1.2;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.msg-status-pill .msg-status-icon {
+  font-size: 0.72rem;
+  display: inline-block;
+  line-height: 1;
+}
+
+/* 1. Sending */
+.msg-status-pill.sending {
+  color: #94A3B8;
+  background: rgba(148, 163, 184, 0.12);
+}
+.msg-status-pill.sending .msg-status-icon {
+  animation: pulse-sending 1.2s infinite ease-in-out;
+}
+@keyframes pulse-sending {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+/* 2. Sent: Messenger hollow circle with checkmark */
+.msg-status-pill.sent {
+  color: #475569;
+  background: rgba(100, 116, 139, 0.1);
+  border: 1px solid rgba(100, 116, 139, 0.18);
+}
+.msg-status-pill.sent .msg-status-icon {
+  color: #0284C7; /* Messenger blue */
+  font-size: 0.75rem;
+}
+
+/* 3. Delivered: Messenger solid filled circle with white checkmark */
+.msg-status-pill.delivered {
+  color: #0369A1;
+  background: rgba(2, 132, 199, 0.12);
+  border: 1px solid rgba(2, 132, 199, 0.25);
+}
+.msg-status-pill.delivered .msg-status-icon {
+  color: #0284C7; /* Solid blue circle with white checkmark */
+  font-size: 0.75rem;
+}
+
+/* 4. Seen: Messenger mini recipient avatar + seen text */
+.msg-status-pill.seen {
+  color: #0F766E;
+  background: rgba(13, 148, 136, 0.12);
+  border: 1px solid rgba(13, 148, 136, 0.25);
+}
+.msg-status-pill.seen .seen-avatar-badge {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #0D9488;
+  color: #FFFFFF;
+  font-size: 0.52rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  box-shadow: 0 0 0 1.5px #FFFFFF;
+  flex-shrink: 0;
+}
+.msg-status-pill.seen .msg-status-icon {
+  color: #0D9488;
+  font-size: 0.68rem;
 }
 
 /* System messages */
@@ -1302,28 +1425,32 @@ body.has-student-bottom-nav .chat-layout {
 }
 
 .availability-indicator.online {
-  background: var(--primary-100);
-  color: var(--primary);
+  background: #ECFDF5;
+  color: #059669;
+  border: 1px solid #A7F3D0;
 }
 
 .availability-indicator.offline {
-  background: #fef3c7;
-  color: #b45309;
+  background: #F1F5F9;
+  color: #64748B;
+  border: 1px solid #CBD5E1;
 }
 
 .availability-indicator .avail-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .availability-indicator.online .avail-dot {
-  background: var(--primary);
+  background: #10B981;
   animation: pulse-dot 2s ease-in-out infinite;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
 }
 
 .availability-indicator.offline .avail-dot {
-  background: #d97706;
+  background: #94A3B8;
 }
 
 /* ═══════════════════════════════════════════════

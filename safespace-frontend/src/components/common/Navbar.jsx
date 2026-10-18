@@ -278,7 +278,7 @@ export default function Navbar() {
     <nav className="navbar" id="navbar">
       <div className="navbar-inner">
         <Link to={brandLink} className="navbar-brand">
-          <i className="fas fa-shield-heart"></i>
+          <img src="/SafeSpace logo v2.svg" alt="SafeSpace Logo" className="navbar-brand-logo" />
           <span className="brand-text">Safe<span>Space</span></span>
         </Link>
 

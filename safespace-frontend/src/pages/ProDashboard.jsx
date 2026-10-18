@@ -156,6 +156,7 @@ function SvgDonutChart({ emotions = [], total = 0 }) {
 
 function SvgLineTrendChart({ snapshots = [] }) {
   const [hoveredPoint, setHoveredPoint] = useState(null);
+  const svgRef = useRef(null);
 
   if (!snapshots || snapshots.length === 0) {
     return (
@@ -215,13 +216,57 @@ function SvgLineTrendChart({ snapshots = [] }) {
 
   const thresholdY = getY(8.0);
 
+  const handlePointerMove = (e) => {
+    if (!svgRef.current || points.length === 0) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    const clientX = e.clientX - rect.left;
+    const clientY = e.clientY - rect.top;
+    const svgX = (clientX / rect.width) * width;
+    const svgY = (clientY / rect.height) * height;
+
+    // Generous boundary check within chart bounds
+    if (
+      svgY < paddingTop - 25 ||
+      svgY > height - 5 ||
+      svgX < paddingLeft - 30 ||
+      svgX > width - paddingRight + 30
+    ) {
+      setHoveredPoint(null);
+      return;
+    }
+
+    // Find the closest point along the X axis
+    let closest = points[0];
+    let minDiff = Math.abs(points[0].x - svgX);
+    for (let i = 1; i < points.length; i++) {
+      const diff = Math.abs(points[i].x - svgX);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = points[i];
+      }
+    }
+
+    setHoveredPoint((prev) => (prev?.date === closest.date ? prev : closest));
+  };
+
+  const handlePointerLeave = () => {
+    setHoveredPoint(null);
+  };
+
   return (
     <div className="svg-trend-wrap">
       <div className="trend-chart-container">
         <svg
+          ref={svgRef}
           viewBox={`0 0 ${width} ${height}`}
           className="trend-svg"
           preserveAspectRatio="xMidYMid meet"
+          onMouseMove={handlePointerMove}
+          onMouseLeave={handlePointerLeave}
+          onTouchMove={handlePointerMove}
+          onTouchEnd={handlePointerLeave}
         >
           <defs>
             <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
@@ -234,7 +279,7 @@ function SvgLineTrendChart({ snapshots = [] }) {
           {[10, 8, 6, 4, 2].map((val) => {
             const y = getY(val);
             return (
-              <g key={val}>
+              <g key={val} style={{ pointerEvents: 'none' }}>
                 <line
                   x1={paddingLeft}
                   y1={y}
@@ -266,6 +311,7 @@ function SvgLineTrendChart({ snapshots = [] }) {
             stroke="#DC2626"
             strokeWidth="1.5"
             strokeDasharray="4 4"
+            style={{ pointerEvents: 'none' }}
           />
           <text
             x={width - paddingRight - 4}
@@ -274,11 +320,12 @@ function SvgLineTrendChart({ snapshots = [] }) {
             textAnchor="end"
             fill="#DC2626"
             fontWeight="700"
+            style={{ pointerEvents: 'none' }}
           >
             Clinical Threshold (8.0)
           </text>
 
-          {areaD && <path d={areaD} fill="url(#areaGradient)" />}
+          {areaD && <path d={areaD} fill="url(#areaGradient)" style={{ pointerEvents: 'none' }} />}
 
           <path
             d={pathD}
@@ -286,69 +333,107 @@ function SvgLineTrendChart({ snapshots = [] }) {
             stroke="#DC2626"
             strokeWidth="2.5"
             strokeLinecap="round"
+            style={{ pointerEvents: 'none' }}
           />
 
-          {points.map((p, idx) => (
-            <g key={idx}>
-              <circle
-                cx={p.x}
-                cy={p.y}
-                r="14"
-                fill="transparent"
-                style={{ cursor: 'pointer' }}
-                onMouseEnter={() => setHoveredPoint(p)}
-                onMouseLeave={() => setHoveredPoint(null)}
-              />
-              <circle
-                cx={p.x}
-                cy={p.y}
-                r={hoveredPoint?.date === p.date ? "6" : "4.5"}
-                fill="#FFFFFF"
-                stroke={p.band.color}
-                strokeWidth="2.5"
-                className="trend-point"
-              />
-              <text
-                x={p.x}
-                y={height - 12}
-                fontSize="10"
-                textAnchor="middle"
-                fill="#6B7280"
-                fontWeight="600"
-              >
-                {p.date ? p.date.substring(5) : ''}
-              </text>
-              <text
-                x={p.x}
-                y={height - 2}
-                fontSize="8.5"
-                textAnchor="middle"
-                fill="#8C8270"
-              >
-                {p.postCount} posts
-              </text>
-            </g>
-          ))}
+          {/* Seamless crosshair guideline when hovering anywhere on curve */}
+          {hoveredPoint && (
+            <line
+              x1={hoveredPoint.x}
+              y1={paddingTop}
+              x2={hoveredPoint.x}
+              y2={bottomY}
+              stroke="#CBD5E1"
+              strokeWidth="1.5"
+              strokeDasharray="3 3"
+              style={{ pointerEvents: 'none' }}
+            />
+          )}
+
+          {points.map((p, idx) => {
+            const isHovered = hoveredPoint?.date === p.date;
+            return (
+              <g key={idx} style={{ pointerEvents: 'none' }}>
+                {isHovered && (
+                  <circle
+                    cx={p.x}
+                    cy={p.y}
+                    r="12"
+                    fill={p.band.color}
+                    fillOpacity="0.2"
+                    className="trend-point-halo"
+                  />
+                )}
+                <circle
+                  cx={p.x}
+                  cy={p.y}
+                  r={isHovered ? 6.5 : 4.5}
+                  fill="#FFFFFF"
+                  stroke={p.band.color}
+                  strokeWidth={isHovered ? 3 : 2.5}
+                  className={`trend-point ${isHovered ? 'active' : ''}`}
+                />
+                <text
+                  x={p.x}
+                  y={height - 12}
+                  fontSize="10"
+                  textAnchor="middle"
+                  fill={isHovered ? '#161F36' : '#6B7280'}
+                  fontWeight={isHovered ? '700' : '600'}
+                >
+                  {p.date ? p.date.substring(5) : ''}
+                </text>
+                <text
+                  x={p.x}
+                  y={height - 2}
+                  fontSize="8.5"
+                  textAnchor="middle"
+                  fill={isHovered ? '#161F36' : '#8C8270'}
+                  fontWeight={isHovered ? '600' : '400'}
+                >
+                  {p.postCount} posts
+                </text>
+              </g>
+            );
+          })}
         </svg>
 
-        {hoveredPoint && (
-          <div
-            className="svg-chart-tooltip"
-            style={{
-              left: `${(hoveredPoint.x / width) * 100}%`,
-              top: `${Math.max(10, (hoveredPoint.y / height) * 100 - 30)}%`
-            }}
-          >
-            <div className="tooltip-date">{hoveredPoint.date}</div>
-            <div className="tooltip-score">
-              <strong>{hoveredPoint.avgEnergy ? hoveredPoint.avgEnergy.toFixed(1) : '—'} / 10</strong>
-              <span className="tooltip-band" style={{ color: hoveredPoint.band.color }}>
-                {hoveredPoint.band.label}
-              </span>
+        {hoveredPoint && (() => {
+          const leftPct = (hoveredPoint.x / width) * 100;
+          const isNearTop = hoveredPoint.y < 65;
+          let translateX = '-50%';
+          let arrowLeft = '50%';
+          if (leftPct < 18) {
+            translateX = '-15%';
+            arrowLeft = '18%';
+          } else if (leftPct > 82) {
+            translateX = '-85%';
+            arrowLeft = '82%';
+          }
+
+          return (
+            <div
+              className={`svg-chart-tooltip ${isNearTop ? 'tooltip-bottom' : 'tooltip-top'}`}
+              style={{
+                left: `${leftPct}%`,
+                top: `${(hoveredPoint.y / height) * 100}%`,
+                transform: isNearTop
+                  ? `translate(${translateX}, 16px)`
+                  : `translate(${translateX}, calc(-100% - 16px))`,
+                '--arrow-left': arrowLeft
+              }}
+            >
+              <div className="tooltip-date">{hoveredPoint.date}</div>
+              <div className="tooltip-score">
+                <strong>{hoveredPoint.avgEnergy ? hoveredPoint.avgEnergy.toFixed(1) : '—'} / 10</strong>
+                <span className="tooltip-band" style={{ color: hoveredPoint.band.color }}>
+                  {hoveredPoint.band.label}
+                </span>
+              </div>
+              <div className="tooltip-volume">{hoveredPoint.postCount} student expressions</div>
             </div>
-            <div className="tooltip-volume">{hoveredPoint.postCount} student expressions</div>
-          </div>
-        )}
+          );
+        })()}
       </div>
 
       <div className="trend-legend-bar">
@@ -1034,7 +1119,7 @@ export default function ProDashboard() {
                   <div className="rep-top-row">
                     <div className="rep-institution-block">
                       <div className="rep-logo-seal">
-                        <i className="fas fa-shield-heart"></i>
+                        <img src="/SafeSpace logo v2.svg" alt="SafeSpace Logo" className="brand-logo-img" />
                       </div>
                       <div className="rep-inst-titles">
                         <h3>University of Science and Technology of Southern Philippines</h3>
