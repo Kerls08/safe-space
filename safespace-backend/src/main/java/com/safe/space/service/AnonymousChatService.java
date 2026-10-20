@@ -864,6 +864,9 @@ public class AnonymousChatService {
 
     private ChatSessionResponse toSessionResponse(ChatSession s, long unreadCount) {
         boolean isStudentOnline = fallbackResponseService.isStudentOnline(s.getSessionId());
+        boolean isProfessionalOnline = s.getProfessionalId() != null && !s.getProfessionalId().isBlank()
+                ? fallbackResponseService.isProfessionalOnline(s.getProfessionalId())
+                : fallbackResponseService.isAnyProfessionalOnline();
         return ChatSessionResponse.builder()
                 .sessionId(s.getSessionId())
                 .studentPseudonym(s.getStudentPseudonym())
@@ -879,6 +882,7 @@ public class AnonymousChatService {
                 .unreadCount(unreadCount)
                 .closedBy(s.getClosedBy())
                 .studentOnline(isStudentOnline)
+                .professionalOnline(isProfessionalOnline)
                 .createdAt(s.getCreatedAt())
                 .acceptedAt(s.getAcceptedAt())
                 .closedAt(s.getClosedAt())

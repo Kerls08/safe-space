@@ -9,6 +9,7 @@ import com.safe.space.repository.ChatSessionRepository;
 import com.safe.space.repository.CrisisAlertRepository;
 import com.safe.space.repository.PostRepository;
 import com.safe.space.repository.UserRepository;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -49,6 +50,7 @@ public class CrisisAlertService {
     private final PostRepository postRepository;
     private final EmailService emailService;
     private final UserRepository userRepository;
+    private final CrisisKeywordService crisisKeywordService;
 
     // Cache to debounce email notifications per student pseudonym (15 minutes)
     private final Map<String, LocalDateTime> lastEmailDispatchPerPseudonym = new java.util.concurrent.ConcurrentHashMap<>();
@@ -144,12 +146,116 @@ public class CrisisAlertService {
 
     private String mapEnergySeverity(int energyScore, String content) {
         if (isRepetitiveOrKeyboardMash(content)) {
-            // Repetitive keyboard mash / venting: cap severity at HIGH so it doesn't trigger false CRITICAL sirens
+            // Repetitive keyboard mash / venting: cap severity at HIGH so it doesn't trigger false sirens
             return energyScore >= 9 ? "HIGH" : "MODERATE";
         }
-        if (energyScore >= 10) return "CRITICAL";
+        // High-energy venting without explicit crisis keywords is capped at HIGH,
+        // strictly reserving CRITICAL for acute life-safety emergencies (suicidal ideation / lethal crisis)
         if (energyScore >= 9) return "HIGH";
         return "MODERATE";
+    }
+
+    /**
+     * Startup alignment: Calibrates existing alerts and posts in the database
+     * to match the clinical crisis severity standards:
+     * - CRISIS_POST with explicit keywords ("die", "suicide", "kill", etc.) → CRITICAL
+     * - HIGH_ENERGY_POST (non-crisis venting) → capped at HIGH
+     */
+    @PostConstruct
+    @Transactional
+    public void calibrateLegacyAlertSeverities() {
+        try {
+            List<CrisisAlert> allAlerts = alertRepository.findAll();
+            int updatedAlerts = 0;
+            for (CrisisAlert a : allAlerts) {
+                boolean changed = false;
+                if ("CRISIS_POST".equalsIgnoreCase(a.getAlertType())) {
+                    String combined = (a.getTitle() != null ? a.getTitle() : "") + " "
+                            + (a.getMessage() != null ? a.getMessage() : "") + " "
+                            + (a.getFlaggedKeywords() != null ? a.getFlaggedKeywords() : "");
+                    List<CrisisKeywordService.KeywordMatch> matches = crisisKeywordService.scan(combined);
+                    String clinicalSev = crisisKeywordService.determineSeverity(matches).toUpperCase();
+                    if ("CRITICAL".equals(clinicalSev) && !"CRITICAL".equalsIgnoreCase(a.getSeverity())) {
+                        a.setSeverity("CRITICAL");
+                        changed = true;
+                    }
+                } else if ("HIGH_ENERGY_POST".equalsIgnoreCase(a.getAlertType())) {
+                    if ("CRITICAL".equalsIgnoreCase(a.getSeverity())) {
+                        a.setSeverity("HIGH");
+                        changed = true;
+                    }
+                }
+
+                // Also calibrate outreachStatus based on the latest linked chat session state
+                ChatSession targetSess = null;
+                if (a.getChatSessionId() != null && !a.getChatSessionId().isBlank()) {
+                    targetSess = sessionRepository.findBySessionId(a.getChatSessionId()).orElse(null);
+                }
+                if (targetSess == null && a.getPseudonym() != null && !a.getPseudonym().isBlank()) {
+                    List<ChatSession> pSessions = sessionRepository.findByStudentPseudonymOrderByCreatedAtDesc(a.getPseudonym());
+                    if (!pSessions.isEmpty()) {
+                        targetSess = pSessions.get(0);
+                        a.setChatSessionId(targetSess.getSessionId());
+                        changed = true;
+                    }
+                }
+                if (targetSess != null) {
+                    if (targetSess.isDeletedByStudent() || "CLOSED".equals(targetSess.getStatus())) {
+                        if (!"CONCLUDED".equals(a.getOutreachStatus())) {
+                            a.setOutreachStatus("CONCLUDED");
+                            changed = true;
+                        }
+                    } else if ("ACTIVE".equals(targetSess.getStatus())) {
+                        if (!"ACTIVE".equals(a.getOutreachStatus())) {
+                            a.setOutreachStatus("ACTIVE");
+                            changed = true;
+                        }
+                    } else if ("DECLINED".equals(targetSess.getStatus())) {
+                        if (!"DECLINED".equals(a.getOutreachStatus())) {
+                            a.setOutreachStatus("DECLINED");
+                            changed = true;
+                        }
+                    } else if ("INVITED".equals(targetSess.getStatus())) {
+                        if (!"INVITED".equals(a.getOutreachStatus())) {
+                            a.setOutreachStatus("INVITED");
+                            changed = true;
+                        }
+                    }
+                }
+
+                // Also clean up redundant/duplicate resolution notes in database
+                if (a.getResolutionNotes() != null && !a.getResolutionNotes().isBlank()) {
+                    String cleanedNotes = cleanLegacyResolutionNotes(a.getResolutionNotes());
+                    if (!Objects.equals(cleanedNotes, a.getResolutionNotes())) {
+                        a.setResolutionNotes(cleanedNotes);
+                        changed = true;
+                    }
+                }
+
+                if (changed) {
+                    alertRepository.save(a);
+                    updatedAlerts++;
+                }
+            }
+            if (updatedAlerts > 0) {
+                log.info("Calibrated {} legacy alert(s) to match clinical crisis severity standards.", updatedAlerts);
+            }
+
+            // Also synchronize flagged post entities
+            List<com.safe.space.model.Post> flaggedPosts = postRepository.findAll();
+            for (com.safe.space.model.Post p : flaggedPosts) {
+                if (p.isFlagged() && p.getContent() != null) {
+                    List<CrisisKeywordService.KeywordMatch> matches = crisisKeywordService.scan(p.getContent());
+                    String clinicalSev = crisisKeywordService.determineSeverity(matches);
+                    if ("critical".equalsIgnoreCase(clinicalSev) && !"critical".equalsIgnoreCase(p.getSeverity())) {
+                        p.setSeverity("critical");
+                        postRepository.save(p);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Could not calibrate legacy alert severities: {}", e.getMessage());
+        }
     }
 
     private boolean isRepetitiveOrKeyboardMash(String content) {
@@ -856,39 +962,27 @@ public class CrisisAlertService {
             }
         }
 
-        // Check if student recently declined outreach (within last 2 hours) unless force is requested
+        // Check if student declined outreach (prefers to vent only) unless force is requested
         if (!force) {
             List<ChatSession> pastSessions = sessionRepository.findByStudentPseudonymOrderByCreatedAtDesc(alert.getPseudonym());
-            Optional<ChatSession> recentDeclined = pastSessions.stream()
-                    .filter(s -> "DECLINED".equals(s.getStatus()))
-                    .filter(s -> s.getCreatedAt() != null && s.getCreatedAt().isAfter(LocalDateTime.now().minusHours(2)))
-                    .findFirst();
-
-            if (recentDeclined.isPresent()) {
-                ChatSession decSession = recentDeclined.get();
-                return Map.of(
-                        "status", "recently_declined",
-                        "sessionId", decSession.getSessionId(),
-                        "pseudonym", alert.getPseudonym(),
-                        "professionalName", professionalName,
-                        "declinedAt", decSession.getCreatedAt().toString(),
-                        "message", "Student " + alert.getPseudonym() + " declined outreach recently (prefers to vent only). Repeated invitations may feel intrusive. Re-inviting requires clinical confirmation.");
-            }
-
-            List<CrisisAlert> studentAlerts = alertRepository.findByPseudonymAndStatusInOrderByCreatedAtDesc(
-                    alert.getPseudonym(), List.of("ACTIVE", "ACKNOWLEDGED", "RESOLVED"));
-            Optional<CrisisAlert> declinedAlert = studentAlerts.stream()
-                    .filter(a -> "DECLINED".equals(a.getOutreachStatus()) || (a.getResolutionNotes() != null && a.getResolutionNotes().toLowerCase().contains("declined")))
-                    .filter(a -> a.getCreatedAt() != null && a.getCreatedAt().isAfter(LocalDateTime.now().minusHours(2)))
-                    .findFirst();
-
-            if (declinedAlert.isPresent()) {
+            if (!pastSessions.isEmpty()) {
+                ChatSession latestSession = pastSessions.get(0);
+                if ("DECLINED".equals(latestSession.getStatus())) {
+                    return Map.of(
+                            "status", "recently_declined",
+                            "sessionId", latestSession.getSessionId(),
+                            "pseudonym", alert.getPseudonym(),
+                            "professionalName", professionalName,
+                            "declinedAt", latestSession.getCreatedAt() != null ? latestSession.getCreatedAt().toString() : "",
+                            "message", "Student " + alert.getPseudonym() + " declined outreach (prefers to vent only). Repeated invitations may feel intrusive. Re-inviting requires clinical confirmation.");
+                }
+            } else if ("DECLINED".equalsIgnoreCase(alert.getOutreachStatus())) {
                 return Map.of(
                         "status", "recently_declined",
                         "pseudonym", alert.getPseudonym(),
                         "professionalName", professionalName,
-                        "declinedAt", declinedAlert.get().getCreatedAt().toString(),
-                        "message", "Student " + alert.getPseudonym() + " declined outreach recently (prefers to vent only). Repeated invitations may feel intrusive. Re-inviting requires clinical confirmation.");
+                        "declinedAt", alert.getCreatedAt() != null ? alert.getCreatedAt().toString() : "",
+                        "message", "Student " + alert.getPseudonym() + " declined outreach (prefers to vent only). Repeated invitations may feel intrusive. Re-inviting requires clinical confirmation.");
             }
         }
 
@@ -970,7 +1064,7 @@ public class CrisisAlertService {
                 a.setOutreachStatus(outreachStatus);
                 if (notes != null && !notes.isBlank()) {
                     String existing = a.getResolutionNotes();
-                    a.setResolutionNotes(existing != null ? existing + "\n" + notes : notes);
+                    a.setResolutionNotes(appendDeduplicatedNote(existing, notes));
                 }
             }
             alertRepository.saveAll(alerts);
@@ -1050,36 +1144,34 @@ public class CrisisAlertService {
         map.put("severity", a.getSeverity());
         map.put("status", a.getStatus());
         String outreachStatus = a.getOutreachStatus() != null ? a.getOutreachStatus() : "NONE";
-        if ("NONE".equals(outreachStatus)) {
-            String notes = a.getResolutionNotes();
-            if (notes != null && (notes.toLowerCase().contains("declined") || notes.toLowerCase().contains("vent only"))) {
+        com.safe.space.model.ChatSession sess = null;
+        if (a.getChatSessionId() != null && !a.getChatSessionId().isBlank()) {
+            sess = sessionRepository.findBySessionId(a.getChatSessionId()).orElse(null);
+        }
+        if (sess == null && a.getPseudonym() != null && !a.getPseudonym().isBlank()) {
+            List<com.safe.space.model.ChatSession> pSessions = sessionRepository.findByStudentPseudonymOrderByCreatedAtDesc(a.getPseudonym());
+            if (!pSessions.isEmpty()) {
+                sess = pSessions.get(0);
+            }
+        }
+        if (sess != null) {
+            String sessStatus = sess.getStatus();
+            if (sess.isDeletedByStudent() || "CLOSED".equals(sessStatus)) {
+                outreachStatus = "CONCLUDED";
+            } else if ("ACTIVE".equals(sessStatus)) {
+                if ("ACTIVE".equals(a.getStatus()) && (a.getAcknowledgedBy() == null || a.getAcknowledgedBy().isBlank())) {
+                    outreachStatus = "NONE";
+                } else {
+                    outreachStatus = "ACTIVE";
+                }
+            } else if ("DECLINED".equals(sessStatus)) {
                 outreachStatus = "DECLINED";
-            } else if (notes != null && notes.toLowerCase().contains("invite")) {
+            } else if ("INVITED".equals(sessStatus)) {
                 outreachStatus = "INVITED";
             }
         }
-        if (a.getChatSessionId() != null && !a.getChatSessionId().isBlank()) {
-            Optional<com.safe.space.model.ChatSession> optSession = sessionRepository.findBySessionId(a.getChatSessionId());
-            if (optSession.isPresent()) {
-                com.safe.space.model.ChatSession sess = optSession.get();
-                String sessStatus = sess.getStatus();
-                if (sess.isDeletedByStudent()) {
-                    outreachStatus = "CONCLUDED";
-                } else if ("ACTIVE".equals(sessStatus) && !"DECLINED".equals(outreachStatus)) {
-                    if ("ACTIVE".equals(a.getStatus()) && (a.getAcknowledgedBy() == null || a.getAcknowledgedBy().isBlank())) {
-                        outreachStatus = "NONE";
-                    } else {
-                        outreachStatus = "ACTIVE";
-                    }
-                } else if ("DECLINED".equals(sessStatus)) {
-                    outreachStatus = "DECLINED";
-                } else if ("CLOSED".equals(sessStatus) && !"DECLINED".equals(outreachStatus)) {
-                    outreachStatus = "CONCLUDED";
-                }
-            }
-        }
         map.put("outreachStatus", outreachStatus);
-        map.put("chatSessionId", a.getChatSessionId());
+        map.put("chatSessionId", sess != null ? sess.getSessionId() : a.getChatSessionId());
         map.put("referenceId", a.getReferenceId());
         map.put("referenceType", a.getReferenceType());
         map.put("title", a.getTitle());
@@ -1106,12 +1198,63 @@ public class CrisisAlertService {
         }
         map.put("resolvedByName", resByName);
         map.put("resolvedAt", a.getResolvedAt());
-        map.put("resolutionNotes", a.getResolutionNotes());
+        map.put("resolutionNotes", cleanLegacyResolutionNotes(a.getResolutionNotes()));
         map.put("archived", a.isArchived());
         map.put("archivedAt", a.getArchivedAt());
         map.put("archivedBy", a.getArchivedBy());
         map.put("createdAt", a.getCreatedAt());
         return map;
+    }
+
+    public static String cleanLegacyResolutionNotes(String notes) {
+        if (notes == null || notes.isBlank()) return null;
+
+        List<String> rawParts = new ArrayList<>();
+        for (String line : notes.split("\\r?\\n")) {
+            String trimmed = line.trim();
+            if (!trimmed.isEmpty()) {
+                String[] sentences = trimmed.split("(?<=[.!?])\\s+");
+                for (String s : sentences) {
+                    String st = s.trim();
+                    if (!st.isEmpty()) {
+                        rawParts.add(st);
+                    }
+                }
+            }
+        }
+
+        Set<String> unique = new LinkedHashSet<>();
+        Set<String> seenLower = new HashSet<>();
+        for (String part : rawParts) {
+            String lower = part.toLowerCase();
+            if (!seenLower.contains(lower)) {
+                seenLower.add(lower);
+                unique.add(part);
+            }
+        }
+
+        boolean hasClosed = unique.stream().anyMatch(l ->
+                l.toLowerCase().contains("session closed") || l.toLowerCase().contains("concluded"));
+
+        List<String> filtered = new ArrayList<>();
+        for (String item : unique) {
+            if (hasClosed && (item.toLowerCase().contains("in active counseling")
+                    || item.toLowerCase().contains("accepted outreach check-in"))) {
+                continue;
+            }
+            filtered.add(item);
+        }
+
+        if (filtered.isEmpty()) {
+            return unique.isEmpty() ? null : String.join(" ", unique);
+        }
+        return String.join(" ", filtered);
+    }
+
+    public static String appendDeduplicatedNote(String existing, String newNote) {
+        if (newNote == null || newNote.isBlank()) return existing;
+        String combined = (existing != null && !existing.isBlank()) ? existing + "\n" + newNote : newNote;
+        return cleanLegacyResolutionNotes(combined);
     }
 
     private String mapSeverity(String crisisSeverity) {

@@ -122,12 +122,48 @@ public class CrisisKeywordService {
     }
 
     /**
-     * Determine severity based on matched categories.
-     * explicit / selfharm → "high", otherwise → "medium".
+     * Determine severity based on matched categories:
+     * - explicit suicidal ideation / lethal self-harm → "critical"
+     * - non-lethal self-harm / physical injury → "high"
+     * - otherwise → "medium"
      */
     public String determineSeverity(List<KeywordMatch> matches) {
-        boolean hasHighSeverity = matches.stream()
-                .anyMatch(m -> "explicit".equals(m.category()) || "selfharm".equals(m.category()));
-        return hasHighSeverity ? "high" : "medium";
+        if (matches == null || matches.isEmpty()) {
+            return "medium";
+        }
+
+        // 1. Critical: Explicit suicidal ideation or lethal self-harm statements
+        boolean hasCritical = matches.stream().anyMatch(m -> {
+            if ("explicit".equalsIgnoreCase(m.category())) {
+                return true;
+            }
+            if ("selfharm".equalsIgnoreCase(m.category())) {
+                String phrase = m.phrase().toLowerCase();
+                return phrase.contains("overdose")
+                        || phrase.contains("slit")
+                        || phrase.contains("poison")
+                        || phrase.contains("hang")
+                        || phrase.contains("shoot")
+                        || phrase.contains("magpakamatay")
+                        || phrase.contains("magpapatiwakal")
+                        || phrase.contains("patayin")
+                        || phrase.contains("patyon")
+                        || phrase.contains("mopatay");
+            }
+            return false;
+        });
+
+        if (hasCritical) {
+            return "critical";
+        }
+
+        // 2. High: Non-lethal self-injury or physical self-harm expressions
+        boolean hasHigh = matches.stream()
+                .anyMatch(m -> "selfharm".equalsIgnoreCase(m.category()));
+        if (hasHigh) {
+            return "high";
+        }
+
+        return "medium";
     }
 }

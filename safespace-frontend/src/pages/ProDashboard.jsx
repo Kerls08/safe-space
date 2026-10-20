@@ -556,12 +556,13 @@ function PriorityTriageWidget({ alerts = [], totalAlerts = 0, overview }) {
 
             const isCritical =
               severityStr === 'critical' ||
-              (energyVal !== null && energyVal >= 10) ||
-              (a.alertType || '').toLowerCase().includes('crisis');
+              (a.alertType || '').toLowerCase() === 'crisis_post' ||
+              (a.alertType || '').toLowerCase() === 'crisis_chat' ||
+              (a.alertType || '').toLowerCase() === 'repeat_crisis';
 
             const isHigh =
               !isCritical &&
-              (severityStr === 'high' || (energyVal !== null && energyVal === 9));
+              (severityStr === 'high' || (energyVal !== null && energyVal >= 9));
 
             const isElevated =
               !isCritical &&

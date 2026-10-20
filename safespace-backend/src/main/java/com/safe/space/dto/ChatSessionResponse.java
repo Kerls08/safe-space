@@ -26,6 +26,7 @@ public class ChatSessionResponse {
     private long unreadCount;
     private String closedBy;
     private boolean studentOnline;
+    private boolean professionalOnline;
     private LocalDateTime createdAt;
     private LocalDateTime acceptedAt;
     private LocalDateTime closedAt;
@@ -37,7 +38,7 @@ public class ChatSessionResponse {
                                String professionalId, String professionalName, String status,
                                String topic, String emotionTag, Integer energyScore,
                                boolean crisisFlag, int messageCount, long unreadCount,
-                               String closedBy, boolean studentOnline,
+                               String closedBy, boolean studentOnline, boolean professionalOnline,
                                LocalDateTime createdAt, LocalDateTime acceptedAt, LocalDateTime closedAt) {
         this.sessionId = sessionId;
         this.studentPseudonym = studentPseudonym;
@@ -53,6 +54,7 @@ public class ChatSessionResponse {
         this.unreadCount = unreadCount;
         this.closedBy = closedBy;
         this.studentOnline = studentOnline;
+        this.professionalOnline = professionalOnline;
         this.createdAt = createdAt;
         this.acceptedAt = acceptedAt;
         this.closedAt = closedAt;

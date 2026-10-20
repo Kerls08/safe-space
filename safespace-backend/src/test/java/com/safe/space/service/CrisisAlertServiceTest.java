@@ -28,6 +28,7 @@ class CrisisAlertServiceTest {
     @Mock private PostRepository postRepository;
     @Mock private EmailService emailService;
     @Mock private UserRepository userRepository;
+    @Mock private CrisisKeywordService crisisKeywordService;
 
     private CrisisAlertService alertService;
 
@@ -40,7 +41,8 @@ class CrisisAlertServiceTest {
                 sessionRepository,
                 postRepository,
                 emailService,
-                userRepository
+                userRepository,
+                crisisKeywordService
         );
     }
 
@@ -226,7 +228,7 @@ class CrisisAlertServiceTest {
 
         assertEquals("recently_declined", result.get("status"));
         assertEquals("sess-declined-123", result.get("sessionId"));
-        assertTrue(result.get("message").toString().contains("declined outreach recently"));
+        assertTrue(result.get("message").toString().contains("declined outreach"));
         verify(chatService, never()).createOutreachInvite(any(), any(), any(), any(), any(), any(), any());
     }
 
@@ -307,6 +309,18 @@ class CrisisAlertServiceTest {
         assertNull(newAlert.getAcknowledgedBy(), "New alert should not be marked as acknowledged yet");
         assertEquals("chat-session-open", newAlert.getChatSessionId());
         assertEquals("INVITED", newAlert.getOutreachStatus());
+    }
+
+    @Test
+    @DisplayName("cleanLegacyResolutionNotes deduplicates redundant text and cleans intermediate statuses")
+    void testCleanLegacyResolutionNotes() {
+        String redundant = "Student accepted outreach check-in. In active counseling.\nSession closed by student.\nStudent accepted outreach check-in. In active counseling.\nSession closed by student.";
+        String cleaned = CrisisAlertService.cleanLegacyResolutionNotes(redundant);
+        assertEquals("Session closed by student.", cleaned);
+
+        String withCustomNotes = "Session closed by student.\nClinician follow-up: confirmed safe.";
+        String cleanedCustom = CrisisAlertService.cleanLegacyResolutionNotes(withCustomNotes);
+        assertEquals("Session closed by student. Clinician follow-up: confirmed safe.", cleanedCustom);
     }
 }
 

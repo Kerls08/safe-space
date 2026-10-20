@@ -235,6 +235,24 @@
   color: #FFFFFF;
 }
 
+.sev-pill.pill-concluded.active {
+  background: #0D9488;
+  border-color: #0D9488;
+  color: #FFFFFF;
+}
+
+.sev-pill.sev-pill-critical.active {
+  background: #DC2626;
+  border-color: #DC2626;
+  color: #FFFFFF;
+}
+
+.sev-pill.sev-pill-high.active {
+  background: #EA580C;
+  border-color: #EA580C;
+  color: #FFFFFF;
+}
+
 /*  Alert Card  */
 .alert-card {
   background: #FFFFFF;
@@ -270,6 +288,25 @@
 
 .alert-critical-badge i {
   color: #DC2626;
+  font-size: 0.76rem;
+}
+
+/* High Priority Badge */
+.alert-high-badge {
+  background: transparent !important;
+  color: #EA580C !important;
+  border: none !important;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  letter-spacing: 0.02em;
+}
+
+.alert-high-badge i {
+  color: #EA580C;
   font-size: 0.76rem;
 }
 
@@ -386,7 +423,7 @@
 .alert-tag.status-declined { color: #C2410C; font-weight: 600; }
 .alert-tag.status-invited { color: #0284C7; font-weight: 600; }
 .alert-tag.status-chat-active { color: #1D4ED8; font-weight: 600; }
-.alert-tag.status-concluded { color: #51646E; font-weight: 500; }
+.alert-tag.status-concluded { color: #0D9488; font-weight: 600; }
 .alert-tag.archived-tag { color: #728590; font-weight: 500; }
 
 /*  Dedicated Outreach Declined Callout Banner  */
@@ -460,6 +497,31 @@
 }
 
 .alert-invited-callout .invited-callout-text span {
+  font-size: 0.75rem;
+  color: #51646E;
+}
+
+/*  Dedicated Session Concluded Callout Banner  */
+.alert-concluded-callout {
+  margin-top: 0.65rem;
+  padding: 0.55rem 0.85rem;
+  background: #F8FAFC;
+  border: 1px solid #E1E8EB;
+  border-left: 3px solid #0D9488;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #51646E;
+}
+
+.alert-concluded-callout .concluded-callout-text strong {
+  display: block;
+  font-size: 0.82rem;
+  color: #182A34;
+  margin-bottom: 0.15rem;
+}
+
+.alert-concluded-callout .concluded-callout-text span {
   font-size: 0.75rem;
   color: #51646E;
 }
@@ -541,6 +603,7 @@
   align-items: flex-start;
   gap: 0.45rem;
   line-height: 1.5;
+  white-space: pre-line;
 }
 
 .alert-notes-box .notes-label {

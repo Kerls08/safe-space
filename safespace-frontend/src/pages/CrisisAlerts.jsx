@@ -111,23 +111,27 @@ export default function CrisisAlerts() {
       if (a.chatSessionId && sessionsMap[a.chatSessionId]) {
         const res = matchSession(sessionsMap[a.chatSessionId]);
         if (res) return res;
-      } else if (a.pseudonym && sessionsMap[a.pseudonym]) {
+      }
+
+      if (a.outreachStatus && a.outreachStatus !== 'NONE') {
+        if (a.outreachStatus === 'CONCLUDED' || a.outreachStatus === 'ACTIVE') {
+          return a.outreachStatus;
+        }
+      }
+
+      if (a.pseudonym && sessionsMap[a.pseudonym]) {
         const res = matchSession(sessionsMap[a.pseudonym]);
         if (res) return res;
       }
 
       if (a.outreachStatus && a.outreachStatus !== 'NONE') return a.outreachStatus;
-      const notes = (a.resolutionNotes || '').toLowerCase();
-      if (notes.includes('declined') || notes.includes('vent only')) return 'DECLINED';
-      if (notes.includes('invite')) return 'INVITED';
-      if (notes.includes('concluded') || notes.includes('closed')) return 'CONCLUDED';
       return 'NONE';
     },
     [sessionsMap]
   );
 
   // Student Context Map across all alerts: detects if a student already has an active session,
-  // pending invite, or recently declined outreach anywhere in the system
+  // concluded session, pending invite, or recently declined outreach anywhere in the system
   const studentStateMap = useMemo(() => {
     const map = {};
     const allKnown = [...inProgressAlerts, ...needsActionAlerts];
@@ -149,11 +153,14 @@ export default function CrisisAlerts() {
       if (eff === 'ACTIVE' && isAck) {
         entry.outreachStatus = 'ACTIVE';
         entry.chatSessionId = a.chatSessionId || entry.chatSessionId;
-      } else if (eff === 'DECLINED' && entry.outreachStatus !== 'ACTIVE') {
+      } else if (eff === 'CONCLUDED' && entry.outreachStatus !== 'ACTIVE') {
+        entry.outreachStatus = 'CONCLUDED';
+        entry.chatSessionId = a.chatSessionId || entry.chatSessionId;
+      } else if (eff === 'DECLINED' && entry.outreachStatus !== 'ACTIVE' && entry.outreachStatus !== 'CONCLUDED') {
         // DECLINED overrides INVITED to accurately reflect student's decision
         entry.outreachStatus = 'DECLINED';
         entry.chatSessionId = a.chatSessionId || entry.chatSessionId;
-      } else if (eff === 'INVITED' && entry.outreachStatus !== 'ACTIVE' && entry.outreachStatus !== 'DECLINED') {
+      } else if (eff === 'INVITED' && entry.outreachStatus !== 'ACTIVE' && entry.outreachStatus !== 'CONCLUDED' && entry.outreachStatus !== 'DECLINED') {
         entry.outreachStatus = 'INVITED';
         entry.chatSessionId = a.chatSessionId || entry.chatSessionId;
       }
@@ -178,6 +185,9 @@ export default function CrisisAlerts() {
 
       if ((st === 'NONE' || st === 'INVITED') && a.pseudonym && studentStateMap[a.pseudonym]) {
         const sState = studentStateMap[a.pseudonym];
+        if (sState.outreachStatus === 'CONCLUDED') {
+          return 'CONCLUDED';
+        }
         if (sState.outreachStatus === 'DECLINED') {
           return sState.outreachStatus;
         }
@@ -281,6 +291,40 @@ export default function CrisisAlerts() {
     [colleagueDirectory]
   );
 
+  const formatResolutionNotes = useCallback((notes) => {
+    if (!notes || typeof notes !== 'string') return null;
+    const parts = notes
+      .split(/\r?\n/)
+      .flatMap((line) => line.split(/(?<=[.!?])\s+/))
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const seen = new Set();
+    const unique = [];
+    for (const p of parts) {
+      const lower = p.toLowerCase();
+      if (!seen.has(lower)) {
+        seen.add(lower);
+        unique.push(p);
+      }
+    }
+
+    const hasClosed = unique.some(
+      (l) => l.toLowerCase().includes('session closed') || l.toLowerCase().includes('concluded')
+    );
+
+    const filtered = hasClosed
+      ? unique.filter(
+          (l) =>
+            !l.toLowerCase().includes('in active counseling') &&
+            !l.toLowerCase().includes('accepted outreach check-in')
+        )
+      : unique;
+
+    const finalParts = filtered.length > 0 ? filtered : unique;
+    return finalParts.join(' ');
+  }, []);
+
   // Load Stats
   const loadStats = useCallback(
     async (silent = false) => {
@@ -344,14 +388,14 @@ export default function CrisisAlerts() {
           ...(sessData.active || []),
           ...(sessData.waiting || []),
           ...(sessData.invited || []),
-          ...(sessData.declined || [])
+          ...(sessData.declined || []),
+          ...(sessData.closed || [])
         ];
         all.forEach((s) => {
-          if (s.deletedByStudent) return;
           if (s.sessionId) map[s.sessionId] = s;
           if (s.studentPseudonym) {
             const existing = map[s.studentPseudonym];
-            if (!existing || existing.status === 'INVITED' || s.status === 'ACTIVE') {
+            if (!existing || existing.status === 'INVITED' || s.status === 'ACTIVE' || s.status === 'CLOSED') {
               map[s.studentPseudonym] = s;
             }
           }
@@ -428,14 +472,14 @@ export default function CrisisAlerts() {
             ...(sessRes.active || []),
             ...(sessRes.waiting || []),
             ...(sessRes.invited || []),
-            ...(sessRes.declined || [])
+            ...(sessRes.declined || []),
+            ...(sessRes.closed || [])
           ];
           all.forEach((s) => {
-            if (s.deletedByStudent) return;
             if (s.sessionId) map[s.sessionId] = s;
             if (s.studentPseudonym) {
               const existing = map[s.studentPseudonym];
-              if (!existing || existing.status === 'INVITED' || s.status === 'ACTIVE') {
+              if (!existing || existing.status === 'INVITED' || s.status === 'ACTIVE' || s.status === 'CLOSED') {
                 map[s.studentPseudonym] = s;
               }
             }
@@ -827,6 +871,8 @@ export default function CrisisAlerts() {
     const totalCount = allAlerts.length;
 
     const isCritical = allAlerts.some((al) => al.severity === 'CRITICAL');
+    const isHigh = !isCritical && allAlerts.some((al) => al.severity === 'HIGH');
+    const effectiveSeverity = isCritical ? 'CRITICAL' : isHigh ? 'HIGH' : (a.severity || 'MODERATE');
 
     // Cross-tab student state lookup
     const studentState = a.pseudonym ? studentStateMap[a.pseudonym] : null;
@@ -909,9 +955,9 @@ export default function CrisisAlerts() {
     }
 
     return (
-      <div key={groupKey} className={`alert-card sev-${a.severity} ${a.archived ? 'is-archived' : ''}`}>
-        <div className={`alert-sev-icon ${a.severity}`}>
-          <i className={`fas ${SEV_ICONS[a.severity] || 'fa-bell'}`}></i>
+      <div key={groupKey} className={`alert-card sev-${effectiveSeverity} ${a.archived ? 'is-archived' : ''}`}>
+        <div className={`alert-sev-icon ${effectiveSeverity}`}>
+          <i className={`fas ${SEV_ICONS[effectiveSeverity] || 'fa-bell'}`}></i>
         </div>
         <div className="alert-body">
           <div className="alert-top">
@@ -933,11 +979,15 @@ export default function CrisisAlerts() {
                   ({totalCount} expressions logged)
                 </span>
               )}
-              {isCritical && (
+              {isCritical ? (
                 <span className="alert-critical-badge">
                   <i className="fas fa-circle-exclamation"></i> CRITICAL: IMMEDIATE ACTION
                 </span>
-              )}
+              ) : isHigh ? (
+                <span className="alert-high-badge" title="High emotional distress / acute expression requiring clinician check-in">
+                  <i className="fas fa-triangle-exclamation"></i> HIGH PRIORITY
+                </span>
+              ) : null}
               {canAck && !resolvedUser && ackUser && (
                 isFreshActive ? (
                   <span
@@ -1026,7 +1076,7 @@ export default function CrisisAlerts() {
           {/* Clinical Signals & Status Tags */}
           <div className="alert-meta">
             <span className="alert-tag type">{TYPE_LABELS[a.alertType] || a.alertType}</span>
-            <span className={`alert-tag sev-${a.severity?.toLowerCase()}`}>{a.severity}</span>
+            <span className={`alert-tag sev-${effectiveSeverity?.toLowerCase()}`}>{effectiveSeverity}</span>
             {a.emotionTag && (
               <span className="alert-tag emotion">
                 {a.emotionTag}
@@ -1074,6 +1124,15 @@ export default function CrisisAlerts() {
                   </div>
                 </div>
               )}
+
+              {outreachStatus === 'CONCLUDED' && (
+                <div className="alert-concluded-callout">
+                  <div className="concluded-callout-text">
+                    <strong>Counseling session concluded.</strong>
+                    <span>The anonymous counseling conversation with this student has completed. Review notes and resolve case when ready.</span>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
@@ -1098,11 +1157,11 @@ export default function CrisisAlerts() {
           </div>
 
           {/* Resolution Notes (if any) */}
-          {a.resolutionNotes && (
+          {a.resolutionNotes && formatResolutionNotes(a.resolutionNotes) && (
             <div className="alert-notes-box">
               <div className="notes-content">
                 <span className="notes-label">Resolution Notes:</span>
-                {a.resolutionNotes}
+                {formatResolutionNotes(a.resolutionNotes)}
               </div>
             </div>
           )}
@@ -1151,7 +1210,12 @@ export default function CrisisAlerts() {
                   disabled={initiatingAlertId === targetAlertId}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleInitiateChat(targetAlertId);
+                    setReOutreachModal({
+                      open: true,
+                      alertId: targetAlertId,
+                      pseudonym: a.pseudonym || 'Student',
+                      message: 'Student previously declined outreach and preferred to vent only.'
+                    });
                   }}
                   title="Review before sending re-invitation to a student who preferred to vent"
                 >
@@ -1196,6 +1260,58 @@ export default function CrisisAlerts() {
                     }}
                   >
                     <i className="fas fa-check"></i> Resolve{totalCount > 1 ? ` Case (${totalCount})` : ''}
+                  </button>
+                )}
+              </>
+            ) : outreachStatus === 'CONCLUDED' ? (
+              <>
+                {canResolve && (
+                  <button
+                    type="button"
+                    className="btn-alert resolve"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openResolveModal(targetAlertId, 'resolve', a.pseudonym);
+                    }}
+                    title="Session completed. Conclude and resolve case."
+                  >
+                    <i className="fas fa-check-double"></i> Resolve Case{totalCount > 1 ? ` (${totalCount})` : ''}
+                  </button>
+                )}
+                {targetChatSessionId && (
+                  <button
+                    type="button"
+                    className="btn-alert"
+                    style={{ background: '#F0FDFA', color: '#0D9488', borderColor: '#CCFBF1' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/anon-chat?session=${targetChatSessionId}`);
+                    }}
+                    title="View completed conversation history"
+                  >
+                    <i className="fas fa-comments"></i> View Chat
+                  </button>
+                )}
+                {canResolve && a.pseudonym && (
+                  <button
+                    type="button"
+                    className="btn-alert chat"
+                    disabled={initiatingAlertId === targetAlertId}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleInitiateChat(targetAlertId);
+                    }}
+                    title="Follow up with a new outreach invitation if needed"
+                  >
+                    {initiatingAlertId === targetAlertId ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin"></i> Reaching Out...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-paper-plane"></i> Follow-up
+                      </>
+                    )}
                   </button>
                 )}
               </>
@@ -1476,6 +1592,12 @@ export default function CrisisAlerts() {
     ).length;
   }, [allInProgressCases, getCaseOutreachStatus]);
 
+  const countConcludedCases = useMemo(() => {
+    return allInProgressCases.filter(
+      (g) => getCaseOutreachStatus(g.primaryAlert) === 'CONCLUDED'
+    ).length;
+  }, [allInProgressCases, getCaseOutreachStatus]);
+
   return (
     <div className="alerts-layout">
       {/* Header */}
@@ -1562,6 +1684,10 @@ export default function CrisisAlerts() {
         >
           <div className="severity-filters" id="sevFilters">
             {['ALL', 'CRITICAL', 'HIGH', 'MODERATE', 'LOW'].map((sev) => {
+              const count =
+                sev === 'ALL'
+                  ? activeNeedsActionAlerts.length
+                  : activeNeedsActionAlerts.filter((al) => al.severity === sev).length;
               const label =
                 sev === 'ALL'
                   ? 'All'
@@ -1575,10 +1701,11 @@ export default function CrisisAlerts() {
               return (
                 <button
                   key={sev}
-                  className={`sev-pill ${currentSevFilter === sev ? 'active' : ''}`}
+                  className={`sev-pill ${currentSevFilter === sev ? 'active' : ''} ${sev !== 'ALL' ? `sev-pill-${sev.toLowerCase()}` : ''}`}
                   onClick={() => setCurrentSevFilter(sev)}
                 >
                   {label}
+                  <span className="pill-count">{count}</span>
                 </button>
               );
             })}
@@ -1629,6 +1756,12 @@ export default function CrisisAlerts() {
             >
               Invite Pending <span className="pill-count" id="countProgInvited">{countInvitedCases}</span>
             </button>
+            <button
+              className={`sev-pill pill-concluded ${currentProgressFilter === 'CONCLUDED' ? 'active' : ''}`}
+              onClick={() => setCurrentProgressFilter('CONCLUDED')}
+            >
+              Session Concluded <span className="pill-count" id="countProgConcluded">{countConcludedCases}</span>
+            </button>
           </div>
           <div id="inProgressContainer">
             {groupedInProgress.length === 0 ? (
@@ -1641,6 +1774,8 @@ export default function CrisisAlerts() {
                     ? 'No active counseling sessions in progress'
                     : currentProgressFilter === 'INVITED'
                     ? 'No pending outreach invitations'
+                    : currentProgressFilter === 'CONCLUDED'
+                    ? 'No concluded counseling sessions pending resolution'
                     : 'No alerts currently in progress'}
                 </p>
               </div>

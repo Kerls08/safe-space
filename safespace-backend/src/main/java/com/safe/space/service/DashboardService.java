@@ -160,18 +160,16 @@ public class DashboardService {
             String alertType = a.getAlertType() != null ? a.getAlertType().toLowerCase() : "alert";
             String severity = a.getSeverity() != null ? a.getSeverity().toLowerCase() : "moderate";
 
-            // Clinically calibrate severity by energy score and alert type
-            if (a.getEnergyScore() != null) {
+            // Clinically calibrate severity by alert type and true stored severity
+            if ("CRISIS_POST".equalsIgnoreCase(a.getAlertType()) || "CRISIS_CHAT".equalsIgnoreCase(a.getAlertType()) || "REPEAT_CRISIS".equalsIgnoreCase(a.getAlertType())) {
+                severity = a.getSeverity() != null ? a.getSeverity().toLowerCase() : "critical";
+            } else if (a.getEnergyScore() != null) {
                 int score = a.getEnergyScore();
-                if (score >= 10 || "CRISIS_POST".equalsIgnoreCase(a.getAlertType()) || "REPEAT_CRISIS".equalsIgnoreCase(a.getAlertType())) {
-                    severity = "critical";
-                } else if (score >= 9) {
+                if (score >= 9) {
                     severity = "high";
                 } else if (score >= 8) {
                     severity = "elevated";
                 }
-            } else if ("CRISIS_POST".equalsIgnoreCase(a.getAlertType()) || "REPEAT_CRISIS".equalsIgnoreCase(a.getAlertType())) {
-                severity = "critical";
             }
 
             alerts.add(DashboardAlertsResponse.Alert.builder()
