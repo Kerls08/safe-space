@@ -1073,9 +1073,6 @@ export default function AnonChat() {
                     handleOpenOptionsModal(s);
                   }}
                 >
-                  {isProfessional && s.crisisFlag && s.status === 'WAITING' && (
-                    <div className="session-crisis-dot" title="Crisis Alert"></div>
-                  )}
                   <div className="session-avatar">
                     {displayIcon ? <i className={`fas ${displayIcon}`}></i> : (displayInitials || 'AN')}
                     <span
@@ -1087,9 +1084,6 @@ export default function AnonChat() {
                     <div className="session-info-top">
                       <span className="session-name" title={displayTitle}>{displayTitle}</span>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                        {hasUnread && displayCount > 0 && (
-                          <span className="session-unread-badge">{displayCount > 9 ? '9+' : displayCount}</span>
-                        )}
                         <span className="session-time">{time}</span>
                         <button
                           type="button"
