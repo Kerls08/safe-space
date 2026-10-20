@@ -79,14 +79,13 @@
 }
 .back-link:hover {
   color: #7E9F9D;
-  transform: translateX(-3px);
 }
 .back-link i {
   font-size: 0.8rem;
-  transition: transform 0.2s ease;
+  transition: color 0.2s ease;
 }
 .back-link:hover i {
-  transform: translateX(-2px);
+  color: #7E9F9D;
 }
 
 @keyframes card-entrance {
@@ -309,9 +308,8 @@
 }
 
 .login-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
   background: #1A313D;
-  box-shadow: 0 8px 24px rgba(24, 42, 52, 0.22);
+  box-shadow: 0 4px 14px rgba(24, 42, 52, 0.2);
 }
 
 .login-btn:disabled {
@@ -510,9 +508,8 @@
 }
 
 .cred-btn-primary:hover {
-  transform: translateY(-1px);
   background: #1A313D;
-  box-shadow: 0 4px 14px rgba(24, 42, 52, 0.18);
+  box-shadow: 0 2px 8px rgba(24, 42, 52, 0.16);
 }
 
 .cred-btn-outline {
@@ -525,7 +522,6 @@
   border-color: #243E4C;
   color: #182A34;
   background: #F4F7F7;
-  transform: translateY(-1px);
 }
 
 /* Stats Cards */
@@ -547,8 +543,7 @@
 }
 
 .cred-stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(24, 42, 52, 0.08);
+  box-shadow: 0 4px 12px rgba(24, 42, 52, 0.06);
   border-color: #243E4C;
 }
 
@@ -1425,7 +1420,6 @@
 .recovery-option-card:hover {
   border-color: #7E9F9D;
   background: #F9FBFA;
-  transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(24, 42, 52, 0.05);
 }
 

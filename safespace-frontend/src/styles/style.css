@@ -65,9 +65,9 @@ body {
 .section { padding:3.5rem 0; }
 .btn { display:inline-flex; align-items:center; gap:0.5rem; padding:0.6rem 1.15rem; border-radius:0.65rem; cursor:pointer; font-family: var(--font-sans); font-size: 0.85rem; font-weight: 600; transition: all 0.25s ease; }
 .btn-primary { background: var(--compass-navy); color: var(--white); border: 1.5px solid var(--compass-navy); box-shadow: 0 4px 14px rgba(36, 62, 76, 0.22); }
-.btn-primary:hover { background: #1A313D; border-color: #1A313D; transform: translateY(-1.5px); box-shadow: 0 8px 22px rgba(36, 62, 76, 0.32); }
+.btn-primary:hover { background: #1A313D; border-color: #1A313D; box-shadow: 0 4px 14px rgba(36, 62, 76, 0.25); }
 .btn-ghost { background: var(--white); border: 1.5px solid var(--cream-border); color: var(--compass-navy); }
-.btn-ghost:hover { background: var(--compass-cream); border-color: var(--compass-blue); transform: translateY(-1.5px); }
+.btn-ghost:hover { background: var(--compass-cream); border-color: var(--compass-blue); }
 .card { background: var(--white); border-radius: var(--radius-xl); border: 1px solid var(--cream-border); padding: 1.5rem; box-shadow: 0 8px 24px rgba(24, 42, 52, 0.04); }
 .muted { color: var(--gray); }
 
@@ -363,7 +363,7 @@ body {
 .dropdown-menu-item i.fa-user-circle { color: #2563eb; }
 .dropdown-menu-item i.fa-id-badge { color: #d97706; }
 .dropdown-menu-item:hover i {
-  transform: scale(1.1);
+  color: var(--compass-navy);
 }
 
 .dropdown-divider {
@@ -577,7 +577,6 @@ body {
 }
 
 .pro-nav-btn.active i {
-  transform: translateY(-2px);
   color: var(--compass-navy);
 }
 
@@ -716,7 +715,6 @@ body {
 }
 
 .student-nav-btn.active i {
-  transform: translateY(-2px);
   color: var(--compass-navy);
 }
 

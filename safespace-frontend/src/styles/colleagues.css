@@ -70,8 +70,7 @@
     .dash-btn-primary:hover {
       background: #1A313D;
       border-color: #1A313D;
-      transform: translateY(-1.5px);
-      box-shadow: 0 6px 18px rgba(36, 62, 76, 0.22);
+      box-shadow: 0 4px 14px rgba(36, 62, 76, 0.2);
       color: #FFFFFF;
     }
     .dash-btn-primary i {
@@ -98,8 +97,7 @@
       transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     }
     .stat-card.interactive:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(36, 62, 76, 0.08);
+      box-shadow: 0 4px 14px rgba(36, 62, 76, 0.06);
       border-color: #7E9F9D;
     }
     .stat-card.interactive.active-filter {
@@ -248,8 +246,7 @@
       position: relative;
     }
     .colleague-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 12px 28px rgba(36, 62, 76, 0.08);
+      box-shadow: 0 6px 20px rgba(36, 62, 76, 0.06);
       border-color: #7E9F9D;
     }
 
@@ -446,7 +443,6 @@
       background: #243E4C;
       color: #FFFFFF;
       border-color: #243E4C;
-      transform: translateY(-1px);
     }
     .btn-resend-welcome i {
       color: #0284C7;
@@ -473,8 +469,7 @@
     .colleague-add-card:hover {
       border-color: #243E4C;
       background: #FFFFFF;
-      box-shadow: 0 8px 24px rgba(36, 62, 76, 0.06);
-      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(36, 62, 76, 0.06);
     }
     .colleague-add-icon {
       width: 3.5rem;
@@ -490,7 +485,6 @@
       transition: transform 0.2s ease;
     }
     .colleague-add-card:hover .colleague-add-icon {
-      transform: scale(1.08);
       background: #243E4C;
       color: #FFFFFF;
     }

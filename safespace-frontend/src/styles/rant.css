@@ -324,7 +324,6 @@ body.has-student-bottom-nav .rant-layout {
 .mood-card:hover {
   border-color: #7E9F9D;
   background: #F4F7F7;
-  transform: translateY(-1px);
 }
 
 .mood-card.selected {
@@ -417,7 +416,6 @@ body.has-student-bottom-nav .rant-layout {
 
 .energy-gauge-track input[type="range"]::-webkit-slider-thumb:hover {
   box-shadow: 0 2px 12px rgba(24, 42, 52, 0.3);
-  transform: scale(1.05);
 }
 
 .energy-gauge-track input[type="range"]::-moz-range-thumb {
@@ -536,8 +534,7 @@ body.has-student-bottom-nav .rant-layout {
 
 .btn-share:hover {
   background: #1A313D;
-  transform: translateY(-1.5px);
-  box-shadow: 0 8px 22px rgba(24, 42, 52, 0.25);
+  box-shadow: 0 4px 14px rgba(24, 42, 52, 0.2);
 }
 
 .btn-share:disabled {
@@ -688,8 +685,7 @@ body.has-student-bottom-nav .rant-layout {
 
 .calm-kit-start:hover {
   background: #1A313D;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(24, 42, 52, 0.25);
+  box-shadow: 0 4px 14px rgba(24, 42, 52, 0.2);
 }
 
 .auto-reply-card p {
@@ -750,7 +746,6 @@ body.has-student-bottom-nav .rant-layout {
 
 .post-card:hover {
   box-shadow: 0 4px 14px rgba(24, 42, 52, 0.06);
-  transform: translateY(-1px);
 }
 
 .post-card.flagged {
@@ -837,7 +832,6 @@ body.has-student-bottom-nav .rant-layout {
   background: #F1F5F9;
   color: #51646E;
   border-color: #E2E8F0;
-  transform: translateY(-1px);
 }
 
 .btn-post-action.archive:hover:not(:disabled) {
@@ -1015,7 +1009,6 @@ body.has-student-bottom-nav .rant-layout {
 .kit-card:hover {
   border-color: #182A34;
   box-shadow: 0 4px 14px rgba(24, 42, 52, 0.08);
-  transform: translateY(-2px);
 }
 
 .kit-card.active-kit {
@@ -1037,7 +1030,7 @@ body.has-student-bottom-nav .rant-layout {
 }
 
 .kit-card:hover .kit-icon {
-  transform: scale(1.08);
+  opacity: 0.9;
 }
 
 .kit-icon.breathing {
@@ -1177,7 +1170,6 @@ body.has-student-bottom-nav .rant-layout {
 .kit-modal-close:hover {
   background: #F4F7F7;
   color: #182A34;
-  transform: rotate(90deg);
 }
 
 .kit-modal-body {
@@ -1314,7 +1306,6 @@ body.has-student-bottom-nav .rant-layout {
   border-color: #3b82f6;
   color: #1d4ed8;
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
-  transform: translateY(-2px);
 }
 
 /*  5-4-3-2-1 Grounding Components  */
@@ -1504,8 +1495,7 @@ body.has-student-bottom-nav .rant-layout {
 
 .btn-kit-primary:hover {
   background: #1A313D;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(24, 42, 52, 0.25);
+  box-shadow: 0 4px 12px rgba(24, 42, 52, 0.2);
 }
 
 .btn-kit-secondary {
@@ -1961,7 +1951,6 @@ body.has-student-bottom-nav .rant-layout {
   border-color: #CBD5E1;
   background: #FFFFFF;
   box-shadow: 0 4px 14px rgba(24, 42, 52, 0.05);
-  transform: translateY(-1px);
 }
 
 .resource-card.urgent {
@@ -2057,7 +2046,6 @@ body.has-student-bottom-nav .rant-layout {
 
 .resource-card:hover .resource-card-arrow {
   color: #243E4C;
-  transform: translate(1px, -1px);
 }
 
 /*  Pre-Submission Crisis Banner  */
@@ -2156,7 +2144,6 @@ body.has-student-bottom-nav .rant-layout {
 .crisis-banner-link:hover {
   background: #fef2f2;
   border-color: #f87171;
-  transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
 }
 

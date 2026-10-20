@@ -373,16 +373,15 @@
 
 .back-link:hover {
   color: #7E9F9D;
-  transform: translateX(-3px);
 }
 
 .back-link i {
   font-size: 0.8rem;
-  transition: transform 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .back-link:hover i {
-  transform: translateX(-2px);
+  color: #7E9F9D;
 }
 
 /* Terms and Conditions Checkbox */
@@ -726,7 +725,6 @@
 .terms-btn-primary:hover {
   background: #1A313D;
   border-color: #1A313D;
-  transform: translateY(-1px);
 }
 
 @media (max-width: 640px) {

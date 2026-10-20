@@ -269,7 +269,6 @@
 .alert-card:hover {
   box-shadow: 0 4px 16px rgba(36, 62, 76, 0.08);
   border-color: #243E4C;
-  transform: translateY(-1px);
 }
 
 /* Critical Pulse Badge */

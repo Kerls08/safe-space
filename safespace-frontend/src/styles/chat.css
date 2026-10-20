@@ -82,7 +82,6 @@ body.has-student-bottom-nav .chat-layout {
 .sidebar-icon-btn:hover {
   background: #E2E8F0;
   color: #182A34;
-  transform: translateY(-1px);
 }
 
 .sidebar-icon-btn.primary {
@@ -559,8 +558,7 @@ body.has-student-bottom-nav .chat-layout {
 
 .welcome-cta-btn:hover {
   background: #182A34;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(24, 42, 52, 0.22);
+  box-shadow: 0 4px 14px rgba(24, 42, 52, 0.2);
 }
 
 .welcome-privacy-notice {
@@ -802,7 +800,6 @@ body.has-student-bottom-nav .chat-layout {
   background: #FEF2F2;
   color: #DC2626;
   border-color: #FECACA;
-  transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(220, 38, 38, 0.08);
 }
 
@@ -966,8 +963,8 @@ body.has-student-bottom-nav .chat-layout {
   background: #F8FAFC;
   color: #0F172A;
   border-color: #CBD5E1;
-  transform: translateX(-50%) translateY(-2px);
-  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.16), 0 3px 8px -2px rgba(15, 23, 42, 0.08);
+  transform: translateX(-50%);
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.12);
 }
 
 .chat-jump-latest-btn:active {
@@ -981,7 +978,6 @@ body.has-student-bottom-nav .chat-layout {
 }
 
 .chat-jump-latest-btn:hover i {
-  transform: translateY(1.5px);
   color: #0369A1;
 }
 
@@ -1233,7 +1229,6 @@ body.has-student-bottom-nav .chat-layout {
 }
 
 .send-btn:hover:not(:disabled) {
-  transform: scale(1.05);
   background: #1A313D;
   box-shadow: 0 4px 12px rgba(24, 42, 52, 0.25);
 }
@@ -1797,7 +1792,6 @@ body.has-student-bottom-nav .chat-layout {
 
 .pro-accept-btn:hover {
   background: #182A34;
-  transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(24, 42, 52, 0.18);
 }
 
@@ -2016,7 +2010,6 @@ body.has-student-bottom-nav .chat-layout {
 .btn-outreach-accept:hover {
   background: #0F172A;
   border-color: #0F172A;
-  transform: translateY(-1px);
 }
 
 .btn-outreach-decline {
@@ -2121,7 +2114,6 @@ body.has-student-bottom-nav .chat-layout {
 .session-card-delete-btn:hover {
   background: #FEE2E2;
   color: #EF4444;
-  transform: scale(1.1);
 }
 
 .session-card-delete-btn:active {
@@ -2401,8 +2393,7 @@ body.has-student-bottom-nav .chat-layout {
 
 .btn-delete-confirm:hover {
   background: #DC2626 !important;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3) !important;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3) !important;
 }
 
 .btn-end-session-confirm {
@@ -2421,7 +2412,6 @@ body.has-student-bottom-nav .chat-layout {
 .btn-end-session-confirm:hover {
   background: #B91C1C !important;
   border-color: #B91C1C !important;
-  transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3) !important;
 }
 

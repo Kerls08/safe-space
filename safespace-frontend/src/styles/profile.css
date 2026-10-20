@@ -308,8 +308,7 @@ body.has-maint-bottom-nav .profile-content {
 
 .btn-profile-save:hover {
   background: #1A313D;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(24, 42, 52, 0.25);
+  box-shadow: 0 2px 8px rgba(24, 42, 52, 0.2);
 }
 
 .btn-profile-save:disabled {

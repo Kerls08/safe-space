@@ -198,8 +198,7 @@
 
 .landing-register-btn:hover {
   background: #1A313D;
-  box-shadow: 0 6px 20px rgba(36, 62, 76, 0.32);
-  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(36, 62, 76, 0.25);
 }
 
 /* Mobile Nav Toggle */
@@ -332,9 +331,8 @@
 }
 
 .hero-btn-primary:hover {
-  transform: translateY(-2px);
   background: #1A313D;
-  box-shadow: 0 8px 24px rgba(36, 62, 76, 0.32);
+  box-shadow: 0 6px 20px rgba(36, 62, 76, 0.25);
 }
 
 .hero-btn-ghost {
@@ -358,7 +356,6 @@
   background: #F4F7F7;
   border-color: #7E9F9D;
   color: #182A34;
-  transform: translateY(-1px);
 }
 
 /* Hero Trust Bar: Clean Typographic Trust Signals */
@@ -460,7 +457,6 @@
 
 .spotlight-link:hover {
   color: #182A34;
-  transform: translateX(3px);
 }
 
 .preview-header {
@@ -675,8 +671,7 @@
 }
 
 .pillar-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 24px rgba(24, 42, 52, 0.07);
+  box-shadow: 0 6px 20px rgba(24, 42, 52, 0.06);
   border-color: #7E9F9D;
 }
 
@@ -767,10 +762,9 @@
 }
 
 .step-card:hover {
-  transform: translateY(-5px);
   border-color: #243E4C;
   background: #FFFFFF;
-  box-shadow: 0 16px 36px rgba(24, 42, 52, 0.08);
+  box-shadow: 0 8px 24px rgba(24, 42, 52, 0.06);
 }
 
 .step-badge {
@@ -1014,7 +1008,6 @@
 .sensory-step-item:hover {
   background: #FFFFFF;
   border-color: #243E4C;
-  transform: translateX(3px);
 }
 
 .sensory-step-item.completed {
@@ -1143,8 +1136,7 @@
 
 .features-slide .feature-card:hover {
   border-color: #7E9F9D;
-  box-shadow: 0 16px 40px rgba(24, 42, 52, 0.08);
-  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(24, 42, 52, 0.06);
 }
 
 .features-slide .feature-card:hover::before {
@@ -1201,12 +1193,12 @@
   background: #243E4C;
   color: #FFFFFF;
   border-color: #243E4C;
-  transform: translateY(-50%) scale(1.08);
-  box-shadow: 0 8px 24px rgba(36, 62, 76, 0.2);
+  transform: translateY(-50%);
+  box-shadow: 0 4px 16px rgba(36, 62, 76, 0.2);
 }
 
 .carousel-nav-btn:active {
-  transform: translateY(-50%) scale(0.94);
+  transform: translateY(-50%);
 }
 
 .carousel-nav-btn:focus-visible {
@@ -1236,7 +1228,6 @@
 
 .carousel-dot:hover {
   background: #7E9F9D;
-  transform: scale(1.15);
 }
 
 .carousel-dot.active {

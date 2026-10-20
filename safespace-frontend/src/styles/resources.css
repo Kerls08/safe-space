@@ -286,7 +286,6 @@
 
 .btn-add-resource:hover {
   background: #182A34;
-  transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(24, 42, 52, 0.16);
 }
 
@@ -313,7 +312,6 @@
 .res-card:hover {
   border-color: #CBD5E1;
   box-shadow: 0 6px 18px rgba(24, 42, 52, 0.06);
-  transform: translateY(-2px);
 }
 
 .res-card.inactive {

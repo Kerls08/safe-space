@@ -62,8 +62,7 @@
 .btn-action-primary:hover {
   background: #1A313D;
   border-color: #1A313D;
-  transform: translateY(-1.5px);
-  box-shadow: 0 6px 18px rgba(36, 62, 76, 0.2);
+  box-shadow: 0 4px 14px rgba(36, 62, 76, 0.2);
   color: #FFFFFF;
 }
 .btn-action-primary:disabled {
@@ -497,7 +496,6 @@ input:checked + .slider:before { transform: translateX(20px); }
   font-weight: 800;
 }
 .maint-nav-btn.active i {
-  transform: translateY(-2px);
   color: #243E4C;
 }
 

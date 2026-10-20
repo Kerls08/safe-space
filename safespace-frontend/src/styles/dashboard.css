@@ -60,7 +60,6 @@
   border-color: #243E4C;
   color: #243E4C;
   background: #F4F7F7;
-  transform: translateY(-1px);
 }
 
 .refresh-btn.spinning i { animation: spin 0.8s linear infinite; }
@@ -107,8 +106,7 @@
 
 .stat-card:hover {
   border-color: #7E9F9D;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(36, 62, 76, 0.08);
+  box-shadow: 0 4px 14px rgba(36, 62, 76, 0.06);
 }
 
 .stat-card.blue:hover { border-color: #2563eb; }
@@ -456,7 +454,6 @@
 .donut-legend-item.is-active {
   background: #EEF2F4;
   border-color: #E1E8EB;
-  transform: translateX(2px);
 }
 
 .donut-legend-left {
@@ -788,7 +785,6 @@
   background: #243E4C;
   color: #FFFFFF;
   border-color: #243E4C;
-  transform: translateY(-1px);
 }
 
 .triage-count-badge {
@@ -882,7 +878,6 @@
 .triage-mini-item:hover {
   background: #FFFFFF;
   border-color: #7E9F9D;
-  transform: translateX(2px);
   box-shadow: 0 2px 8px rgba(36, 62, 76, 0.04);
 }
 
@@ -1191,7 +1186,7 @@
   border-radius: 0.75rem; transition: all 0.25s ease;
 }
 
-.energy-segment:hover { transform: translateY(-2px); }
+.energy-segment:hover { filter: brightness(0.97); }
 .energy-segment.low { background: #F4F7F7; border: 1.5px solid #7E9F9D; }
 .energy-segment.mod { background: #fffbeb; border: 1.5px solid #fde68a; }
 .energy-segment.high { background: #fef2f2; border: 1.5px solid #fecaca; }
@@ -1326,8 +1321,7 @@
 .monthly-report-trigger-btn:hover {
   background: #1A313D;
   border-color: #1A313D;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(36, 62, 76, 0.25);
+  box-shadow: 0 2px 8px rgba(36, 62, 76, 0.2);
 }
 
 .monthly-report-trigger-btn i {
@@ -1471,7 +1465,6 @@
 
 .report-action-btn.print:hover {
   background: #1D4ED8;
-  transform: translateY(-1px);
 }
 
 .report-action-btn.close {
