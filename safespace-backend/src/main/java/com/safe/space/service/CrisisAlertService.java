@@ -333,9 +333,22 @@ public class CrisisAlertService {
                 pseudonym, List.of("ACKNOWLEDGED"));
         if (!openCases.isEmpty()) {
             CrisisAlert activeCase = openCases.get(0);
-            // Attach to ongoing case session/outreach while keeping status ACTIVE so clinicians are alerted to the new rant
+            String currentOutreach = activeCase.getOutreachStatus();
+            if ("ACTIVE".equalsIgnoreCase(currentOutreach) && activeCase.getChatSessionId() != null) {
+                try {
+                    java.util.Optional<com.safe.space.model.ChatSession> sessOpt = sessionRepository.findBySessionId(activeCase.getChatSessionId());
+                    if (sessOpt.isEmpty() || !"ACTIVE".equalsIgnoreCase(sessOpt.get().getStatus()) || sessOpt.get().isDeletedByStudent()) {
+                        currentOutreach = "CONCLUDED";
+                        activeCase.setOutreachStatus("CONCLUDED");
+                        alertRepository.save(activeCase);
+                    }
+                } catch (Exception ignored) {}
+            }
+            // For a brand new incoming alert requiring triage action, never inherit ACTIVE outreach
+            if (!"ACTIVE".equalsIgnoreCase(currentOutreach)) {
+                alert.setOutreachStatus(currentOutreach);
+            }
             alert.setChatSessionId(activeCase.getChatSessionId());
-            alert.setOutreachStatus(activeCase.getOutreachStatus());
             log.info("Attached new alert [{}] to existing in-progress case for pseudonym '{}' (assigned to {})",
                     alert.getAlertId(), pseudonym, activeCase.getAcknowledgedBy());
         }
@@ -1048,9 +1061,16 @@ public class CrisisAlertService {
         if (a.getChatSessionId() != null && !a.getChatSessionId().isBlank()) {
             Optional<com.safe.space.model.ChatSession> optSession = sessionRepository.findBySessionId(a.getChatSessionId());
             if (optSession.isPresent()) {
-                String sessStatus = optSession.get().getStatus();
-                if ("ACTIVE".equals(sessStatus) && !"DECLINED".equals(outreachStatus)) {
-                    outreachStatus = "ACTIVE";
+                com.safe.space.model.ChatSession sess = optSession.get();
+                String sessStatus = sess.getStatus();
+                if (sess.isDeletedByStudent()) {
+                    outreachStatus = "CONCLUDED";
+                } else if ("ACTIVE".equals(sessStatus) && !"DECLINED".equals(outreachStatus)) {
+                    if ("ACTIVE".equals(a.getStatus()) && (a.getAcknowledgedBy() == null || a.getAcknowledgedBy().isBlank())) {
+                        outreachStatus = "NONE";
+                    } else {
+                        outreachStatus = "ACTIVE";
+                    }
                 } else if ("DECLINED".equals(sessStatus)) {
                     outreachStatus = "DECLINED";
                 } else if ("CLOSED".equals(sessStatus) && !"DECLINED".equals(outreachStatus)) {

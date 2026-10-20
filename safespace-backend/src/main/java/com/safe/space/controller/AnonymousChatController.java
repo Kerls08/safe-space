@@ -39,11 +39,15 @@ import java.util.NoSuchElementException;
  */
 @RestController
 @RequestMapping("/api/chat")
-@RequiredArgsConstructor
 public class AnonymousChatController {
 
     private final AnonymousChatService chatService;
     private final FallbackResponseService fallbackResponseService;
+
+    public AnonymousChatController(AnonymousChatService chatService, FallbackResponseService fallbackResponseService) {
+        this.chatService = chatService;
+        this.fallbackResponseService = fallbackResponseService;
+    }
 
     // ── Session Endpoints ──
 

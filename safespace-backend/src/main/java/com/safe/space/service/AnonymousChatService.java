@@ -70,11 +70,23 @@ public class AnonymousChatService {
         if (request.getStudentUserId() != null && !request.getStudentUserId().isBlank()) {
             List<ChatSession> open = sessionRepository.findOpenSessionsForStudent(request.getStudentUserId(), request.getPseudonym());
             if (!open.isEmpty()) {
-                ChatSession existing = open.get(0);
-                log.info("Student '{}' already has an open chat session: {} (status: {}). Returning existing.",
-                        request.getStudentUserId(), existing.getSessionId(), existing.getStatus());
-                long unread = messageRepository.countBySessionIdAndSenderTypeNotAndReadFalse(existing.getSessionId(), "student");
-                return toSessionResponse(existing, unread);
+                boolean allWaitingOrInvited = open.stream().allMatch(s -> "WAITING".equals(s.getStatus()) || "INVITED".equals(s.getStatus()));
+                if (request.isForceNew() || allWaitingOrInvited) {
+                    for (ChatSession oldSession : open) {
+                        oldSession.setStatus("CLOSED");
+                        oldSession.setClosedBy("student");
+                        oldSession.setClosedAt(LocalDateTime.now());
+                        sessionRepository.save(oldSession);
+                        log.info("Closed previous open session {} ({}) for student '{}' to create new session.",
+                                oldSession.getSessionId(), oldSession.getStatus(), request.getStudentUserId());
+                    }
+                } else {
+                    ChatSession existing = open.get(0);
+                    log.info("Student '{}' already has an active chat session: {} (status: {}). Returning existing.",
+                            request.getStudentUserId(), existing.getSessionId(), existing.getStatus());
+                    long unread = messageRepository.countBySessionIdAndSenderTypeNotAndReadFalse(existing.getSessionId(), "student");
+                    return toSessionResponse(existing, unread);
+                }
             }
         }
 
@@ -196,6 +208,7 @@ public class AnonymousChatService {
                 .senderName("System")
                 .content("Student accepted the invitation and joined the chat.")
                 .read(false)
+                .delivered(true)
                 .build();
         messageRepository.save(sysMsg);
 
@@ -239,7 +252,8 @@ public class AnonymousChatService {
                 .senderType("system")
                 .senderName("System")
                 .content("Student politely declined the invitation (prefers to vent only).")
-                .read(false)
+                .read(true)
+                .delivered(true)
                 .build();
         messageRepository.save(sysMsg);
 
@@ -273,6 +287,7 @@ public class AnonymousChatService {
         session.setProfessionalId(professionalId);
         session.setProfessionalName(professionalName);
         session.setAcceptedAt(LocalDateTime.now());
+        session.setMessageCount(session.getMessageCount() + 1);
         sessionRepository.save(session);
 
         // Mark any waiting intake messages as delivered
@@ -283,6 +298,19 @@ public class AnonymousChatService {
                 messageRepository.save(m);
             }
         }
+
+        String msgId = "msg-" + Long.toString(System.currentTimeMillis(), 36)
+                + "-" + UUID.randomUUID().toString().substring(0, 6);
+        ChatMessage sysMsg = ChatMessage.builder()
+                .messageId(msgId)
+                .sessionId(sessionId)
+                .senderType("system")
+                .senderName("System")
+                .content(professionalName + " has joined the conversation. This space is active, private, and confidential.")
+                .read(false)
+                .delivered(true)
+                .build();
+        messageRepository.save(sysMsg);
 
         log.info("Chat session accepted: sessionId={}, professional={}", sessionId, professionalName);
 
@@ -407,6 +435,19 @@ public class AnonymousChatService {
                 } catch (Exception e) {
                     log.warn("Could not update linked alert on session deletion: {}", e.getMessage());
                 }
+            } else if ("ACTIVE".equalsIgnoreCase(session.getStatus())) {
+                // When an active session is deleted by the student, the session is formally terminated
+                session.setStatus("CLOSED");
+                session.setClosedBy("student_deleted");
+                session.setClosedAt(LocalDateTime.now());
+                try {
+                    CrisisAlertService alertSvc = crisisAlertServiceProvider.getIfAvailable();
+                    if (alertSvc != null) {
+                        alertSvc.updateAlertOutreachStatus(sessionId, "CONCLUDED", "Student closed/deleted active counseling conversation.");
+                    }
+                } catch (Exception e) {
+                    log.warn("Could not update linked alert on active session deletion: {}", e.getMessage());
+                }
             }
 
             // If it was a student-only waiting session (never assigned to a counselor),
@@ -465,8 +506,11 @@ public class AnonymousChatService {
     public List<ChatSessionResponse> getStudentSessions(String pseudonym) {
         return sessionRepository.findByStudentPseudonymAndDeletedByStudentFalseOrderByCreatedAtDesc(pseudonym).stream()
                 .map(s -> {
-                    long unread = messageRepository.countBySessionIdAndSenderTypeNotAndReadFalse(
-                            s.getSessionId(), "student");
+                    long unread = 0;
+                    if ("ACTIVE".equals(s.getStatus()) || "WAITING".equals(s.getStatus())) {
+                        unread = messageRepository.countBySessionIdAndSenderTypeNotAndReadFalse(
+                                s.getSessionId(), "student");
+                    }
                     return toSessionResponse(s, unread);
                 })
                 .collect(Collectors.toList());
@@ -481,8 +525,11 @@ public class AnonymousChatService {
     public List<ChatSessionResponse> getStudentSessionsByUserId(String userId) {
         return sessionRepository.findByStudentUserIdAndDeletedByStudentFalseOrderByCreatedAtDesc(userId).stream()
                 .map(s -> {
-                    long unread = messageRepository.countBySessionIdAndSenderTypeNotAndReadFalse(
-                            s.getSessionId(), "student");
+                    long unread = 0;
+                    if ("ACTIVE".equals(s.getStatus()) || "WAITING".equals(s.getStatus())) {
+                        unread = messageRepository.countBySessionIdAndSenderTypeNotAndReadFalse(
+                                s.getSessionId(), "student");
+                    }
                     return toSessionResponse(s, unread);
                 })
                 .collect(Collectors.toList());
@@ -510,9 +557,27 @@ public class AnonymousChatService {
         nonCrisisWaiting.forEach(s -> waitingQueue.add(toSessionResponse(s, 0)));
 
         boolean isSuperUser = professionalId != null && ("superadmin".equalsIgnoreCase(professionalId) || "admin".equalsIgnoreCase(professionalId));
-        List<ChatSession> rawActive = isSuperUser
+        List<ChatSession> rawActive = (isSuperUser
                 ? sessionRepository.findByStatusAndDeletedByProfessionalFalseOrderByCreatedAtDesc("ACTIVE")
-                : sessionRepository.findByProfessionalIdAndStatusAndDeletedByProfessionalFalseOrderByCreatedAtDesc(professionalId, "ACTIVE");
+                : sessionRepository.findByProfessionalIdAndStatusAndDeletedByProfessionalFalseOrderByCreatedAtDesc(professionalId, "ACTIVE"))
+                .stream()
+                .filter(s -> {
+                    if (s.isDeletedByStudent()) {
+                        s.setStatus("CLOSED");
+                        s.setClosedBy("student_deleted");
+                        s.setClosedAt(LocalDateTime.now());
+                        sessionRepository.save(s);
+                        try {
+                            CrisisAlertService alertSvc = crisisAlertServiceProvider.getIfAvailable();
+                            if (alertSvc != null) {
+                                alertSvc.updateAlertOutreachStatus(s.getSessionId(), "CONCLUDED", "Student closed/deleted active counseling conversation.");
+                            }
+                        } catch (Exception ignored) {}
+                        return false;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
 
         // Active sessions for this professional
         List<ChatSessionResponse> activeSessions = rawActive.stream()
@@ -644,10 +709,12 @@ public class AnonymousChatService {
                         }
                     }
                 } else if ("student".equals(viewerType)) {
-                    // Student reads counselor messages or assistant automated replies
-                    // Crucially, student must NOT mark student-action notifications (e.g. outreach accept/decline) as read!
-                    if ("professional".equals(msg.getSenderType()) 
-                            || ("system".equals(msg.getSenderType()) && "SafeSpace Assistant".equals(msg.getSenderName()))) {
+                    // Student marks non-student messages as read, except system notifications meant for the professional
+                    boolean isSystemNotificationForProfessional = "system".equals(msg.getSenderType())
+                            && msg.getContent() != null
+                            && msg.getContent().contains("accepted the invitation");
+
+                    if (!"student".equals(msg.getSenderType()) && !isSystemNotificationForProfessional) {
                         if (!msg.isDelivered()) {
                             msg.setDelivered(true);
                             modified = true;
@@ -717,7 +784,19 @@ public class AnonymousChatService {
 
         if (!shouldFallback) return;
 
-        // Count existing fallback messages to determine if this is the first
+        boolean isCrisis = messageContent != null && crisisKeywordService.isCrisis(messageContent);
+
+        // Ethical rule: Automated notices must NEVER spam on every student message.
+        // Send at most one system away acknowledgment per session, unless crisis keywords require emergency hotline safety.
+        long existingSystemNotices = messageRepository.countBySessionIdAndSenderType(
+                session.getSessionId(), "system");
+
+        if (existingSystemNotices > 0 && !isCrisis) {
+            log.debug("System notice already sent for session {}. Skipping duplicate auto-reply.", session.getSessionId());
+            return;
+        }
+
+        // Count existing student messages to determine if this is the first
         long studentMsgCount = messageRepository.countBySessionIdAndSenderType(
                 session.getSessionId(), "student");
         boolean isFirstMessage = studentMsgCount <= 1;
@@ -730,6 +809,10 @@ public class AnonymousChatService {
                 isFirstMessage
         );
 
+        if (fallback == null || fallback.message() == null || fallback.message().isBlank()) {
+            return;
+        }
+
         // Insert system fallback message
         String fbMessageId = "fb-" + Long.toString(System.currentTimeMillis(), 36)
                 + "-" + UUID.randomUUID().toString().substring(0, 6);
@@ -738,7 +821,7 @@ public class AnonymousChatService {
                 .messageId(fbMessageId)
                 .sessionId(session.getSessionId())
                 .senderType("system")
-                .senderName("SafeSpace Assistant")
+                .senderName("System Notice")
                 .content(fallback.message())
                 .read(false)
                 .build();

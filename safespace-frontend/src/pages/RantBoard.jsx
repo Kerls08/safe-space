@@ -5,14 +5,14 @@ import { postsApi } from '../services/api';
 import '../styles/rant.css';
 
 const EMOTIONS = [
-  { label: 'Sad', emoji: '😢' },
-  { label: 'Angry', emoji: '😤' },
-  { label: 'Anxious', emoji: '😰' },
-  { label: 'Lonely', emoji: '🥺' },
-  { label: 'Frustrated', emoji: '😩' },
-  { label: 'Neutral', emoji: '😐' },
-  { label: 'Relieved', emoji: '😌' },
-  { label: 'Happy', emoji: '😊' }
+  { label: 'Sad' },
+  { label: 'Angry' },
+  { label: 'Anxious' },
+  { label: 'Lonely' },
+  { label: 'Frustrated' },
+  { label: 'Neutral' },
+  { label: 'Relieved' },
+  { label: 'Happy' }
 ];
 
 const PROFANITY_WORDS = [
@@ -29,11 +29,11 @@ const BOX_BREATHING_DATA = [
 ];
 
 const GROUNDING_DATA = [
-  { count: 5, sense: 'SEE', icon: '👁️', prompt: '5 things you can SEE', desc: 'Look around you. Find 5 things you can see (like a pen, a wall, a shoe, or a window).', items: ['1. Something you can see', '2. Something you can see', '3. Something you can see', '4. Something you can see', '5. Something you can see'] },
-  { count: 4, sense: 'TOUCH', icon: '✋', prompt: '4 things you can TOUCH', desc: 'Find 4 things you can feel with your hands or body (like your shirt, a smooth desk, or the floor).', items: ['1. Something you can touch', '2. Something you can touch', '3. Something you can touch', '4. Something you can touch'] },
-  { count: 3, sense: 'HEAR', icon: '👂', prompt: '3 things you can HEAR', desc: 'Listen quietly. Find 3 sounds you can hear (like people talking far away, a fan humming, or your breath).', items: ['1. A sound you can hear', '2. A sound you can hear', '3. A sound you can hear'] },
-  { count: 2, sense: 'SMELL', icon: '👃', prompt: '2 things you can SMELL', desc: 'Breathe in gently. Find 2 smells around you (like soap, fresh air, paper, food, or your clothes).', items: ['1. A smell around you', '2. A smell around you'] },
-  { count: 1, sense: 'TASTE', icon: '👅', prompt: '1 thing you can TASTE', desc: 'Notice 1 taste in your mouth (like water, mint, food you ate earlier, or take a sip of water).', items: ['1. A taste in your mouth'] }
+  { count: 5, sense: 'SEE', icon: 'fas fa-eye', prompt: '5 things you can SEE', desc: 'Look around you. Find 5 things you can see (like a pen, a wall, a shoe, or a window).', items: ['1. Something you can see', '2. Something you can see', '3. Something you can see', '4. Something you can see', '5. Something you can see'] },
+  { count: 4, sense: 'TOUCH', icon: 'fas fa-hand', prompt: '4 things you can TOUCH', desc: 'Find 4 things you can feel with your hands or body (like your shirt, a smooth desk, or the floor).', items: ['1. Something you can touch', '2. Something you can touch', '3. Something you can touch', '4. Something you can touch'] },
+  { count: 3, sense: 'HEAR', icon: 'fas fa-ear-listen', prompt: '3 things you can HEAR', desc: 'Listen quietly. Find 3 sounds you can hear (like people talking far away, a fan humming, or your breath).', items: ['1. A sound you can hear', '2. A sound you can hear', '3. A sound you can hear'] },
+  { count: 2, sense: 'SMELL', icon: 'fas fa-wind', prompt: '2 things you can SMELL', desc: 'Breathe in gently. Find 2 smells around you (like soap, fresh air, paper, food, or your clothes).', items: ['1. A smell around you', '2. A smell around you'] },
+  { count: 1, sense: 'TASTE', icon: 'fas fa-droplet', prompt: '1 thing you can TASTE', desc: 'Notice 1 taste in your mouth (like water, mint, food you ate earlier, or take a sip of water).', items: ['1. A taste in your mouth'] }
 ];
 
 const PMR_DATA = [
@@ -58,9 +58,8 @@ function getTimeAgo(dateStr) {
   return `${diffDay}d ago`;
 }
 
-function getEmoji(tag) {
-  const match = EMOTIONS.find(e => e.label.toLowerCase() === (tag || '').toLowerCase());
-  return match ? match.emoji : '💬';
+function getEmoji() {
+  return '';
 }
 
 function getCategoryIcon(cat) {
@@ -348,7 +347,7 @@ export default function RantBoard() {
     try {
       setPostActionLoadingId(`archive-${postId}`);
       await postsApi.archivePost(postId);
-      showToast('Post moved to archive 📦');
+      showToast('Post moved to archive.');
       await loadMyPosts(true);
     } catch (err) {
       console.error('Failed to archive post:', err);
@@ -363,7 +362,7 @@ export default function RantBoard() {
     try {
       setPostActionLoadingId(`restore-${postId}`);
       await postsApi.unarchivePost(postId);
-      showToast('Post restored to active posts ↺');
+      showToast('Post restored to active posts.');
       await loadMyPosts(true);
     } catch (err) {
       console.error('Failed to restore post:', err);
@@ -392,7 +391,7 @@ export default function RantBoard() {
       setPostActionLoadingId(`delete-${deleteModal.postId}`);
       await postsApi.deletePost(deleteModal.postId);
       closeDeleteModal();
-      showToast('Post permanently deleted 🗑');
+      showToast('Post permanently deleted.');
       await loadMyPosts(true);
     } catch (err) {
       console.error('Failed to delete post:', err);
@@ -427,7 +426,7 @@ export default function RantBoard() {
           contextualResources: post.contextualResources || [],
           calmDownKit: post.calmDownKit
         });
-        showToast('Your thoughts have been heard. Help is on the way 💚');
+        showToast('Your thoughts have been heard. Help is available.');
       } else {
         setAutoReplyData({
           flagged: false,
@@ -435,7 +434,7 @@ export default function RantBoard() {
           contextualResources: post.contextualResources || [],
           calmDownKit: post.calmDownKit
         });
-        showToast('Your post has been shared anonymously ✓');
+        showToast('Your post has been shared anonymously.');
       }
 
       setCooldownSeconds(20);
@@ -450,7 +449,7 @@ export default function RantBoard() {
     }
   };
 
-  // ── Calm-Down Kit Controllers ──
+  // Calm-Down Kit Controllers
   const openKit = (type) => {
     setActiveKit(type);
     setIsKitPaused(false);
@@ -470,7 +469,7 @@ export default function RantBoard() {
     setKitModalOpen(false);
     setActiveKit(null);
     document.body.style.overflow = '';
-    showToast('Great job taking care of yourself 💚');
+    showToast('Great job taking care of yourself.');
   };
 
   const handleSelectBreathingPhase = (phaseIndex) => {
@@ -522,11 +521,12 @@ export default function RantBoard() {
           position: 'fixed',
           bottom: '2rem',
           right: '2rem',
-          background: '#161F36',
-          color: '#FAF7F2',
+          background: '#243E4C',
+          color: '#F9FBFA',
           padding: '0.85rem 1.4rem',
           borderRadius: '0.75rem',
-          boxShadow: '0 10px 25px rgba(22, 31, 54, 0.25)',
+          boxShadow: '0 10px 25px rgba(24, 42, 52, 0.25)',
+          border: '1px solid rgba(126, 159, 157, 0.4)',
           zIndex: 11000,
           fontWeight: 600,
           fontSize: '0.88rem',
@@ -539,7 +539,7 @@ export default function RantBoard() {
         </div>
       )}
 
-      {/* ── Welcome Banner ── */}
+      {/* Page Header */}
       <header className="rant-welcome" id="welcomeBanner">
         <div className="rant-welcome-inner">
           <div className="rant-welcome-left">
@@ -547,18 +547,18 @@ export default function RantBoard() {
               <img src="/SafeSpace logo v2.svg" alt="SafeSpace Logo" className="brand-logo-img" />
             </div>
             <div>
-              <h1>Welcome back, <span className="welcome-greeting" id="welcomeName">{(fullName || username || 'Friend').split(' ')[0]}</span></h1>
-              <p>This is your anonymous, judgment-free space. Share what you feel — your identity is always protected.</p>
+              <h1>{isProfessional ? 'Student Expression Stream' : 'Community Reflections'}</h1>
+              <p>
+                {isProfessional
+                  ? 'Observational clinical feed for campus sentiment tracking and early crisis detection.'
+                  : 'An anonymous, confidential space to share thoughts, vent, and read shared student experiences.'}
+              </p>
             </div>
-          </div>
-          <div className="welcome-badge-pill">
-            <i className={isProfessional ? "fas fa-eye" : "fas fa-shield-halved"}></i>{' '}
-            {isProfessional ? "Clinical Observational Stream" : "100% Voluntary & Decoupled Anonymity"}
           </div>
         </div>
       </header>
 
-      {/* ── Tab Navigation ── */}
+      {/* Tab Navigation */}
       {!isProfessional && (
         <div className="rant-tabs" id="rantTabs">
           <button
@@ -602,22 +602,20 @@ export default function RantBoard() {
         </div>
       )}
 
-      {/* ── Main Content ── */}
+      {/* Main Content */}
       <div className="rant-content">
 
-        {/* ── TAB 1: Share ── */}
+        {/* TAB 1: Share */}
         {!isProfessional && activeTab === 'share' && (
           <div className="tab-panel active" id="panelShare">
             <div className="compose-studio">
 
               {/* Header */}
               <div className="compose-header">
-                <div className="compose-header-icon">
-                  <i className="fas fa-feather"></i>
-                </div>
+                
                 <div>
                   <h2>Express Yourself</h2>
-                  <p>Your identity stays completely detached. Be honest — this is your safe space.</p>
+                  <p>Your identity stays completely detached. Be honest; this is your safe space.</p>
                 </div>
               </div>
 
@@ -669,7 +667,6 @@ export default function RantBoard() {
                         className={`mood-card ${selectedEmotion === e.label ? 'selected' : ''}`}
                         onClick={() => setSelectedEmotion(e.label)}
                       >
-                        <span className="mood-emoji">{e.emoji}</span>
                         <span className="mood-label">{e.label}</span>
                       </button>
                     ))}
@@ -684,16 +681,19 @@ export default function RantBoard() {
                   </div>
                   <div className="energy-gauge">
                     <div className="energy-gauge-track">
-                      <span className="energy-endpoint"><i className="fas fa-leaf"></i> Calm</span>
+                      <span className="energy-endpoint">Calm (1)</span>
                       <input
                         type="range"
                         id="energySlider"
                         min="1"
                         max="10"
                         value={energyScore}
+                        style={{
+                          background: `linear-gradient(to right, #7E9F9D 0%, #243E4C ${((energyScore - 1) / 9) * 100}%, #E1E8EB ${((energyScore - 1) / 9) * 100}%, #E1E8EB 100%)`
+                        }}
                         onChange={(e) => setEnergyScore(parseInt(e.target.value, 10))}
                       />
-                      <span className="energy-endpoint intense"><i className="fas fa-fire"></i> Intense</span>
+                      <span className="energy-endpoint">Intense (10)</span>
                     </div>
                     <div className={`energy-level-badge ${getEnergyClass(energyScore)}`} id="energyNumber">
                       {energyScore}
@@ -742,8 +742,7 @@ export default function RantBoard() {
                 {/* Action Bar */}
                 <div className="compose-action-bar">
                   <div className="action-bar-info">
-                    <i className="fas fa-shield-halved"></i>
-                    <span>Your identity is fully protected</span>
+                    <span>Your post is completely anonymous.</span>
                   </div>
                   <button
                     type="submit"
@@ -779,13 +778,13 @@ export default function RantBoard() {
                     <div className="auto-reply-card crisis">
                       <h4><i className="fas fa-hand-holding-heart"></i> Your thoughts have been heard</h4>
                       <p>
-                        We hear you, and we care about how you're feeling. Your post has been received — 
-                        a counselor has been notified and may reach out to you through the{' '}
-                        <Link to="/anon-chat" style={{ color: '#161F36', fontWeight: 700, textDecoration: 'none', borderBottom: '1.5px solid #BACBD8' }}>
+                        We hear you, and we care about how you're feeling. Your post has been received. 
+                        A counselor has been notified and may reach out to you through the{' '}
+                        <Link to="/anon-chat" style={{ color: '#243E4C', fontWeight: 700, textDecoration: 'none', borderBottom: '1.5px solid #7E9F9D' }}>
                           Anonymous Chat
                         </Link>.
                       </p>
-                      <p style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#6b7280' }}>
+                      <p style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#51646E' }}>
                         To protect other students who may be vulnerable, your post will not appear on the Peer Mirror. 
                         But your voice matters and help is on the way.
                       </p>
@@ -805,7 +804,7 @@ export default function RantBoard() {
                           <i className={`fas fa-${energyScore >= 8 ? 'exclamation-triangle' : 'hand-holding-heart'}`}></i>
                           <span>
                             {energyScore >= 8
-                              ? 'We noticed your energy is high — here are some immediate support options:'
+                              ? 'We noticed your energy is high: here are some immediate support options:'
                               : 'Here are some resources that may help you right now:'}
                           </span>
                         </div>
@@ -818,19 +817,19 @@ export default function RantBoard() {
 
                   {/* Adaptive Calm-Down Kit Recommendation */}
                   {autoReplyData.calmDownKit && (
-                    <div style={{ marginTop: '1rem', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '0.75rem', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div style={{ marginTop: '1rem', background: '#F4F7F7', border: '1px solid #E1E8EB', borderRadius: '0.75rem', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#1E3A8A' }}>
-                          <i className="fas fa-spa" style={{ marginRight: '6px', color: '#2563EB' }}></i> Recommended Calm-Down Exercise
+                        <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#182A34' }}>
+                          <i className="fas fa-spa" style={{ marginRight: '6px', color: '#243E4C' }}></i> Recommended Calm-Down Exercise
                         </div>
-                        <div style={{ fontSize: '0.8rem', color: '#3B82F6', marginTop: '2px' }}>
-                          {autoReplyData.calmDownKit.exerciseType || 'Box Breathing'} — take a moment to regain composure.
+                        <div style={{ fontSize: '0.8rem', color: '#51646E', marginTop: '2px' }}>
+                          {autoReplyData.calmDownKit.exerciseType || 'Box Breathing'}. Take a moment to regain composure.
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={() => openKit(autoReplyData.calmDownKit.exerciseType === '5-4-3-2-1 Grounding' ? 'grounding' : autoReplyData.calmDownKit.exerciseType === 'Progressive Muscle Relaxation' ? 'muscle' : 'breathing')}
-                        style={{ background: '#2563EB', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        style={{ background: '#243E4C', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                       >
                         <i className="fas fa-play"></i> Start Exercise
                       </button>
@@ -842,24 +841,24 @@ export default function RantBoard() {
           </div>
         )}
 
-        {/* ── TAB 2: Peer Mirror Feed ── */}
+        {/* TAB 2: Peer Mirror Feed */}
         {(activeTab === 'feed' || isProfessional) && (
           <div className="tab-panel active" id="panelFeed">
 
             {/* Professional Stream Header */}
             {isProfessional && (
-              <div id="proFeedHeader" style={{ display: 'flex', marginBottom: '1.25rem', padding: '0.9rem 1.25rem', background: '#FFFFFF', border: '1px solid #E0D7C6', borderRadius: '0.85rem', boxShadow: '0 2px 10px rgba(22,31,54,0.03)', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div id="proFeedHeader" style={{ display: 'flex', marginBottom: '1.25rem', padding: '0.9rem 1.25rem', background: '#FFFFFF', border: '1px solid #E1E8EB', borderRadius: '0.85rem', boxShadow: '0 2px 10px rgba(24,42,52,0.03)', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ width: '2.25rem', height: '2.25rem', borderRadius: '0.6rem', background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563EB', fontSize: '1rem' }}>
+                  <div style={{ width: '2.25rem', height: '2.25rem', borderRadius: '0.6rem', background: '#F4F7F7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#243E4C', fontSize: '1rem' }}>
                     <i className="fas fa-users-viewfinder"></i>
                   </div>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#161F36' }}>Student Sentiment Stream</div>
-                    <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>Real-time anonymous expressions &amp; emotional check-ins across campus</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#182A34' }}>Student Sentiment Stream</div>
+                    <div style={{ fontSize: '0.78rem', color: '#51646E' }}>Real-time anonymous expressions &amp; emotional check-ins across campus</div>
                   </div>
                 </div>
-                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1D4ED8', background: '#EFF6FF', padding: '0.35rem 0.75rem', borderRadius: '999px', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <i className="fas fa-eye" style={{ color: '#2563EB' }}></i> Observational Stream
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#243E4C', background: '#F4F7F7', padding: '0.25rem 0.65rem', borderRadius: '0.35rem', border: '1px solid #E1E8EB', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <i className="fas fa-eye" style={{ color: '#243E4C' }}></i> Observational Stream
                 </span>
               </div>
             )}
@@ -881,11 +880,11 @@ export default function RantBoard() {
                     className={`feed-pill ${feedEmotion === e.label ? 'active' : ''}`}
                     onClick={() => setFeedEmotion(e.label)}
                   >
-                    {e.emoji} {e.label}
+                    {e.label}
                   </button>
                 ))}
               </div>
-              <span style={{ fontSize: '0.72rem', color: '#9ca3af' }} id="feedCount">
+              <span style={{ fontSize: '0.72rem', color: '#728590' }} id="feedCount">
                 {feedLoading ? 'Loading...' : `${feedTotalElements} post${feedTotalElements !== 1 ? 's' : ''}`}
               </span>
             </div>
@@ -893,7 +892,7 @@ export default function RantBoard() {
             {/* Feed Cards Container */}
             <div id="feedContainer">
               {feedLoading && posts.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#6C7A92' }}>
+                <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#51646E' }}>
                   <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.8rem', marginBottom: '0.75rem' }}></i>
                   <p>Loading rants from the SafeSpace community...</p>
                 </div>
@@ -922,15 +921,16 @@ export default function RantBoard() {
                       <div className="post-body">{post.content}</div>
                       <div className="post-tags">
                         <span className="tag-emotion">
-                          {getEmoji(post.emotionTag)} {post.emotionTag}
+                          {post.emotionTag}
                         </span>
+                        <span className="post-meta-dot">•</span>
                         <span className={`tag-energy ${getEnergyTagClass(energyScoreVal)}`}>
-                          ⚡ {energyScoreVal}/10
+                          Intensity {energyScoreVal}/10
                         </span>
                       </div>
                       {post.autoReply && (
                         <div className="post-reply">
-                          <strong>💚 Safe Space:</strong> {post.autoReply}
+                          <strong>SafeSpace Support:</strong> {post.autoReply}
                         </div>
                       )}
                     </div>
@@ -955,7 +955,7 @@ export default function RantBoard() {
           </div>
         )}
 
-        {/* ── TAB 3: My Posts ── */}
+        {/* TAB 3: My Posts */}
         {!isProfessional && activeTab === 'mine' && (
           <div className="tab-panel active" id="panelMine">
             {/* Sub-filter Bar */}
@@ -972,13 +972,13 @@ export default function RantBoard() {
                 className={`my-posts-filter-pill ${myPostsFilter === 'ARCHIVED' ? 'active' : ''}`}
                 onClick={() => setMyPostsFilter('ARCHIVED')}
               >
-                📦 Archived ({archivedMyPosts.length})
+                Archived ({archivedMyPosts.length})
               </button>
             </div>
 
             <div id="myPostsContainer">
               {myPostsLoading ? (
-                <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#6C7A92' }}>
+                <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#51646E' }}>
                   <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.8rem', marginBottom: '0.75rem' }}></i>
                   <p>Loading your saved posts...</p>
                 </div>
@@ -1074,20 +1074,22 @@ export default function RantBoard() {
                       <div className="post-body">{post.content}</div>
                       <div className="post-tags">
                         <span className="tag-emotion">
-                          {getEmoji(post.emotionTag)} {post.emotionTag}
+                          {post.emotionTag}
                         </span>
+                        <span className="post-meta-dot">•</span>
                         <span className={`tag-energy ${getEnergyTagClass(energyScoreVal)}`}>
-                          ⚡ {energyScoreVal}/10
+                          Intensity {energyScoreVal}/10
                         </span>
                         {isArchived && (
-                          <span className="tag-archived">
-                            <i className="fas fa-box-archive"></i> Archived
-                          </span>
+                          <>
+                            <span className="post-meta-dot">•</span>
+                            <span className="tag-archived">Archived</span>
+                          </>
                         )}
                       </div>
                       {post.autoReply && (
                         <div className="post-reply">
-                          <strong>💚 Safe Space:</strong> {post.autoReply}
+                          <strong>SafeSpace Support:</strong> {post.autoReply}
                         </div>
                       )}
                     </div>
@@ -1098,7 +1100,7 @@ export default function RantBoard() {
           </div>
         )}
 
-        {/* ── TAB 4: Calm-Down Kit ── */}
+        {/* TAB 4: Calm-Down Kit */}
         {!isProfessional && activeTab === 'calm' && (
           <div className="tab-panel active" id="panelCalm">
             <div className="kit-grid">
@@ -1108,12 +1110,12 @@ export default function RantBoard() {
                 <p>Breathe in, hold, and breathe out for 4 seconds</p>
               </div>
               <div className="kit-card" data-kit="grounding" onClick={() => openKit('grounding')}>
-                <div className="kit-icon grounding"><i className="fas fa-hand-holding-heart"></i></div>
+                <div className="kit-icon grounding"><i className="fas fa-hand"></i></div>
                 <h4>5-4-3-2-1 Grounding</h4>
                 <p>Use your 5 senses to feel calm and peaceful</p>
               </div>
               <div className="kit-card" data-kit="muscle" onClick={() => openKit('muscle')}>
-                <div className="kit-icon muscle"><i className="fas fa-dumbbell"></i></div>
+                <div className="kit-icon muscle"><i className="fas fa-child-reaching"></i></div>
                 <h4>Muscle Relaxation</h4>
                 <p>Tighten and relax your body to let go of stress</p>
               </div>
@@ -1126,20 +1128,20 @@ export default function RantBoard() {
           </div>
         )}
 
-        {/* ── TAB 5: Resources ── */}
+        {/* TAB 5: Resources */}
         {!isProfessional && activeTab === 'resources' && (
           <div className="tab-panel active" id="panelResources">
             <div className="resources-browser-card">
               <h2><i className="fas fa-hand-holding-heart"></i> Wellness Resources</h2>
-              <p className="resources-subtitle">Support resources available to you — hotlines, campus services, and professional support.</p>
+              <p className="resources-subtitle">Support resources available to you: hotlines, campus services, and professional support.</p>
               
               {resourcesLoading ? (
-                <div id="studentResourceEmpty" style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
+                <div id="studentResourceEmpty" style={{ textAlign: 'center', padding: '2rem', color: '#728590' }}>
                   <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.5rem' }}></i>
                   <p style={{ marginTop: '0.5rem' }}>Loading resources...</p>
                 </div>
               ) : resources.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#728590' }}>
                   <i className="fas fa-box-open" style={{ fontSize: '1.5rem' }}></i>
                   <p style={{ marginTop: '0.5rem' }}>No resources available at this time.</p>
                 </div>
@@ -1170,8 +1172,8 @@ export default function RantBoard() {
               <div className={`kit-modal-badge ${activeKit || 'breathing'}`} id="kitModalBadge">
                 <i className={
                   activeKit === 'breathing' ? 'fas fa-wind' :
-                  activeKit === 'grounding' ? 'fas fa-hand-holding-heart' :
-                  activeKit === 'muscle' ? 'fas fa-dumbbell' : 'fas fa-pen-fancy'
+                  activeKit === 'grounding' ? 'fas fa-hand' :
+                  activeKit === 'muscle' ? 'fas fa-child-reaching' : 'fas fa-pen-fancy'
                 } id="kitModalIcon"></i>
               </div>
               <div>
@@ -1208,7 +1210,7 @@ export default function RantBoard() {
                 <div className="kit-phase-instruction" id="breathingPhaseName">{BOX_BREATHING_DATA[kitStep].name}</div>
                 <div className="kit-phase-sub" id="breathingPhaseSub">{BOX_BREATHING_DATA[kitStep].sub}</div>
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
-                  <span style={{ background: '#eff6ff', color: '#1d4ed8', padding: '0.25rem 0.85rem', borderRadius: '999px', fontSize: '0.78rem', fontWeight: 700 }} id="breathingCycleCounter">
+                  <span style={{ background: '#F4F7F7', color: '#243E4C', border: '1px solid #E1E8EB', padding: '0.25rem 0.85rem', borderRadius: '0.35rem', fontSize: '0.78rem', fontWeight: 700 }} id="breathingCycleCounter">
                     Cycle {breathingCycle}
                   </span>
                 </div>
@@ -1256,7 +1258,7 @@ export default function RantBoard() {
                         width: '12px',
                         height: '12px',
                         borderRadius: '50%',
-                        background: idx === kitStep ? '#161F36' : idx < kitStep ? '#10B981' : '#E2E8F0',
+                        background: idx === kitStep ? '#243E4C' : idx < kitStep ? '#10B981' : '#E1E8EB',
                         cursor: 'pointer'
                       }}
                       onClick={() => setKitStep(idx)}
@@ -1265,9 +1267,11 @@ export default function RantBoard() {
                 </div>
 
                 <div className="grounding-step-box" style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{GROUNDING_DATA[kitStep].icon}</div>
-                  <h4 style={{ fontSize: '1.25rem', color: '#161F36', marginBottom: '0.4rem', fontWeight: 800 }}>{GROUNDING_DATA[kitStep].prompt}</h4>
-                  <p style={{ fontSize: '0.85rem', color: '#64748B', maxWidth: '380px', margin: '0 auto 1.25rem' }}>{GROUNDING_DATA[kitStep].desc}</p>
+                  <div style={{ width: '3.25rem', height: '3.25rem', borderRadius: '50%', background: '#EBF2F3', color: '#243E4C', fontSize: '1.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem' }}>
+                    <i className={GROUNDING_DATA[kitStep].icon}></i>
+                  </div>
+                  <h4 style={{ fontSize: '1.25rem', color: '#182A34', marginBottom: '0.4rem', fontWeight: 800 }}>{GROUNDING_DATA[kitStep].prompt}</h4>
+                  <p style={{ fontSize: '0.85rem', color: '#51646E', maxWidth: '380px', margin: '0 auto 1.25rem' }}>{GROUNDING_DATA[kitStep].desc}</p>
                 </div>
 
                 <div style={{ display: 'grid', gap: '0.5rem', maxWidth: '400px', margin: '0 auto' }}>
@@ -1285,15 +1289,15 @@ export default function RantBoard() {
                           gap: '0.75rem',
                           padding: '0.75rem 1rem',
                           borderRadius: '0.75rem',
-                          border: isChecked ? '1.5px solid #10B981' : '1.5px solid #E2E8F0',
+                          border: isChecked ? '1.5px solid #10B981' : '1.5px solid #E1E8EB',
                           background: isChecked ? '#F0FDF4' : '#fff',
                           cursor: 'pointer',
                           fontSize: '0.88rem',
-                          color: isChecked ? '#166534' : '#334155',
+                          color: isChecked ? '#166534' : '#182A34',
                           fontWeight: isChecked ? 600 : 400
                         }}
                       >
-                        <i className={isChecked ? 'fas fa-circle-check' : 'far fa-circle'} style={{ color: isChecked ? '#10B981' : '#94A3B8' }}></i>
+                        <i className={isChecked ? 'fas fa-circle-check' : 'far fa-circle'} style={{ color: isChecked ? '#10B981' : '#728590' }}></i>
                         <span>{itemText}</span>
                       </div>
                     );
@@ -1305,10 +1309,10 @@ export default function RantBoard() {
             {/* 3. Progressive Muscle Relaxation UI */}
             {activeKit === 'muscle' && (
               <div style={{ textAlign: 'center' }}>
-                <div style={{ width: '4rem', height: '4rem', borderRadius: '50%', background: '#ede9fe', color: '#7c3aed', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', marginBottom: '1rem' }}>
+                <div style={{ width: '4rem', height: '4rem', borderRadius: '50%', background: '#F4F7F7', color: '#243E4C', border: '1.5px solid #E1E8EB', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', marginBottom: '1rem' }}>
                   <i className={`fas ${PMR_DATA[kitStep].icon}`}></i>
                 </div>
-                <h4 style={{ fontSize: '1.2rem', color: '#161F36', fontWeight: 800, marginBottom: '0.5rem' }}>
+                <h4 style={{ fontSize: '1.2rem', color: '#182A34', fontWeight: 800, marginBottom: '0.5rem' }}>
                   Step {kitStep + 1} of {PMR_DATA.length}: {PMR_DATA[kitStep].target}
                 </h4>
                 
@@ -1325,7 +1329,7 @@ export default function RantBoard() {
             {/* 4. 3 Good Things Journal UI */}
             {activeKit === 'journal' && (
               <div>
-                <p style={{ fontSize: '0.85rem', color: '#64748B', textAlign: 'center', marginBottom: '1.25rem' }}>
+                <p style={{ fontSize: '0.85rem', color: '#51646E', textAlign: 'center', marginBottom: '1.25rem' }}>
                   Take a slow breath. Write down 3 small things that made you smile or feel thankful today:
                 </p>
 
@@ -1335,21 +1339,21 @@ export default function RantBoard() {
                     placeholder="1. A kind person, a sweet moment, or someone who helped you..."
                     value={journalEntries.one}
                     onChange={(e) => setJournalEntries({ ...journalEntries, one: e.target.value })}
-                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '0.75rem', border: '1.5px solid #E0D7C6', fontSize: '0.88rem' }}
+                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '0.75rem', border: '1.5px solid #E1E8EB', fontSize: '0.88rem' }}
                   />
                   <input
                     type="text"
                     placeholder="2. Something nice you saw, heard, or ate today..."
                     value={journalEntries.two}
                     onChange={(e) => setJournalEntries({ ...journalEntries, two: e.target.value })}
-                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '0.75rem', border: '1.5px solid #E0D7C6', fontSize: '0.88rem' }}
+                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '0.75rem', border: '1.5px solid #E1E8EB', fontSize: '0.88rem' }}
                   />
                   <input
                     type="text"
                     placeholder="3. Something you did well today, or a kind thought for yourself..."
                     value={journalEntries.three}
                     onChange={(e) => setJournalEntries({ ...journalEntries, three: e.target.value })}
-                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '0.75rem', border: '1.5px solid #E0D7C6', fontSize: '0.88rem' }}
+                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '0.75rem', border: '1.5px solid #E1E8EB', fontSize: '0.88rem' }}
                   />
                 </div>
 
@@ -1438,13 +1442,13 @@ export default function RantBoard() {
             <div className="delete-modal-icon">
               <i className="fas fa-triangle-exclamation"></i>
             </div>
-            <h3 style={{ margin: '0 0 0.5rem', color: '#161F36', fontSize: '1.15rem' }}>
+            <h3 style={{ margin: '0 0 0.5rem', color: '#182A34', fontSize: '1.15rem' }}>
               Permanently Delete Post?
             </h3>
             <p className="delete-modal-desc">
               Are you sure you want to delete this post?
               {deleteModal.content && (
-                <span style={{ display: 'block', fontStyle: 'italic', color: '#6B7280', marginTop: '0.4rem' }}>
+                <span style={{ display: 'block', fontStyle: 'italic', color: '#51646E', marginTop: '0.4rem' }}>
                   "{deleteModal.content}"
                 </span>
               )}

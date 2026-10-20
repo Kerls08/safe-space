@@ -190,7 +190,7 @@ export default function Register() {
             <img src="/SafeSpace logo v2.svg" alt="SafeSpace Logo" className="brand-logo-img" />
           </div>
           <h1>Create Your <span>Student Account</span></h1>
-          <p>Voluntary self-registration for USTP Balubal students — your privacy is protected</p>
+          <p>Voluntary self-registration for USTP Balubal students. Your privacy is protected.</p>
         </div>
 
         {/* Error Banner */}
@@ -322,8 +322,8 @@ export default function Register() {
                   <i className="fas fa-circle-exclamation"></i> <span>{fieldErrors.email}</span>
                 </div>
               )}
-              <div style={{ fontSize: '0.73rem', color: '#6C7A92', marginTop: '5px', display: 'flex', alignItems: 'center', gap: '6px', lineHeight: 1.35 }}>
-                <i className="fas fa-shield-halved" style={{ color: '#566F3E', flexShrink: 0 }}></i>
+              <div style={{ fontSize: '0.73rem', color: '#728590', marginTop: '5px', display: 'flex', alignItems: 'center', gap: '6px', lineHeight: 1.35 }}>
+                <i className="fas fa-shield-halved" style={{ color: '#7E9F9D', flexShrink: 0 }}></i>
                 <span>Required for official registration notification &amp; support access. Kept strictly confidential.</span>
               </div>
             </div>
@@ -541,16 +541,16 @@ export default function Register() {
           </div>
         )}
 
-        <div style={{ margin: '1.25rem 0 0', paddingTop: '1rem', borderTop: '1px solid #E0D7C6', textAlign: 'center' }}>
-          <p style={{ fontSize: '0.76rem', color: '#6C7A92', margin: 0, lineHeight: 1.4 }}>
-            <i className="fas fa-user-doctor" style={{ color: '#566F3E', marginRight: '0.3rem' }}></i>
+        <div style={{ margin: '1.25rem 0 0', paddingTop: '1rem', borderTop: '1px solid #E1E8EB', textAlign: 'center' }}>
+          <p style={{ fontSize: '0.76rem', color: '#728590', margin: 0, lineHeight: 1.4 }}>
+            <i className="fas fa-user-doctor" style={{ color: '#7E9F9D', marginRight: '0.3rem' }}></i>
             <strong>Are you a campus counselor or professional?</strong><br />
-            <span style={{ fontSize: '0.72rem', color: '#8F9EB4' }}>Professional accounts are provisioned directly by the System Administrator.</span>
+            <span style={{ fontSize: '0.72rem', color: '#728590' }}>Professional accounts are provisioned directly by the System Administrator.</span>
           </p>
         </div>
       </div>
 
-      {/* ── Terms and Conditions Modal ── */}
+      {/* Terms and Conditions Modal */}
       <div 
         className={`terms-modal-overlay ${termsModalOpen ? 'open' : ''}`} 
         id="termsModal"

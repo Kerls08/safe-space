@@ -2,7 +2,7 @@
     .dash-layout {
       margin-top: 4.5rem;
       min-height: calc(100vh - 4.5rem);
-      background: #FAF7F2;
+      background: #F4F7F7;
       padding: 1.75rem 1.5rem 5.5rem 1.5rem;
     }
     @media (max-width: 640px) {
@@ -26,7 +26,7 @@
     .colleagues-header-info h1 {
       font-size: 1.6rem;
       font-weight: 800;
-      color: #161F36;
+      color: #243E4C;
       display: flex;
       align-items: center;
       gap: 0.65rem;
@@ -34,11 +34,11 @@
       letter-spacing: -0.02em;
     }
     .colleagues-header-info h1 i {
-      color: #161F36;
+      color: #243E4C;
     }
     .colleagues-header-desc {
       font-size: 0.88rem;
-      color: #64748b;
+      color: #728590;
       margin: 0;
       max-width: 680px;
       line-height: 1.5;
@@ -55,27 +55,27 @@
       align-items: center;
       gap: 0.5rem;
       padding: 0.6rem 1.25rem;
-      background: #161F36;
+      background: #243E4C;
       color: #FFFFFF;
-      border: 1.5px solid #161F36;
+      border: 1.5px solid #243E4C;
       border-radius: 0.75rem;
       font-size: 0.84rem;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s ease;
       font-family: var(--font-sans);
-      box-shadow: 0 3px 10px rgba(22, 31, 54, 0.15);
+      box-shadow: 0 3px 10px rgba(36, 62, 76, 0.15);
       text-decoration: none;
     }
     .dash-btn-primary:hover {
-      background: #243356;
-      border-color: #243356;
+      background: #1A313D;
+      border-color: #1A313D;
       transform: translateY(-1.5px);
-      box-shadow: 0 6px 18px rgba(22, 31, 54, 0.22);
+      box-shadow: 0 6px 18px rgba(36, 62, 76, 0.22);
       color: #FFFFFF;
     }
     .dash-btn-primary i {
-      color: #BACBD8;
+      color: #7E9F9D;
       font-size: 0.88rem;
     }
 
@@ -99,19 +99,19 @@
     }
     .stat-card.interactive:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(22, 31, 54, 0.08);
-      border-color: #BACBD8;
+      box-shadow: 0 6px 20px rgba(36, 62, 76, 0.08);
+      border-color: #7E9F9D;
     }
     .stat-card.interactive.active-filter {
-      border-color: #161F36;
-      box-shadow: 0 0 0 2px #161F36, 0 6px 20px rgba(22, 31, 54, 0.1);
+      border-color: #243E4C;
+      box-shadow: 0 0 0 2px #243E4C, 0 6px 20px rgba(36, 62, 76, 0.1);
       background: #FFFFFF;
     }
 
     /* Directory Toolbar */
     .directory-toolbar {
       background: #FFFFFF;
-      border: 1.5px solid #E0D7C6;
+      border: 1.5px solid #E1E8EB;
       border-radius: 1rem;
       padding: 0.85rem 1.25rem;
       margin-bottom: 1.75rem;
@@ -120,7 +120,7 @@
       align-items: center;
       gap: 1.25rem;
       flex-wrap: wrap;
-      box-shadow: 0 2px 8px rgba(22, 31, 54, 0.04);
+      box-shadow: 0 2px 8px rgba(36, 62, 76, 0.04);
     }
     .directory-search {
       position: relative;
@@ -132,7 +132,7 @@
       left: 1.1rem;
       top: 50%;
       transform: translateY(-50%);
-      color: #94a3b8;
+      color: #728590;
       font-size: 0.92rem;
       pointer-events: none;
     }
@@ -140,10 +140,10 @@
       width: 100%;
       padding: 0.65rem 2.6rem 0.65rem 2.75rem;
       border-radius: 0.75rem;
-      border: 1.5px solid #E0D7C6;
-      background: #FAF7F2;
+      border: 1.5px solid #E1E8EB;
+      background: #F4F7F7;
       font-size: 0.86rem;
-      color: #161F36;
+      color: #243E4C;
       font-family: var(--font-sans);
       box-sizing: border-box;
       outline: none;
@@ -151,17 +151,17 @@
     }
     .directory-search input:focus {
       background: #FFFFFF;
-      border-color: #161F36;
-      box-shadow: 0 0 0 3px rgba(22, 31, 54, 0.08);
+      border-color: #243E4C;
+      box-shadow: 0 0 0 3px rgba(36, 62, 76, 0.08);
     }
     .clear-search-btn {
       position: absolute;
       right: 0.85rem;
       top: 50%;
       transform: translateY(-50%);
-      background: #E8EFF4;
+      background: #EBF2F3;
       border: none;
-      color: #475569;
+      color: #51646E;
       width: 1.5rem;
       height: 1.5rem;
       border-radius: 50%;
@@ -173,7 +173,7 @@
       transition: all 0.15s ease;
     }
     .clear-search-btn:hover {
-      background: #161F36;
+      background: #243E4C;
       color: #FFFFFF;
     }
 
@@ -183,9 +183,9 @@
       flex-wrap: wrap;
     }
     .directory-filter-btn {
-      background: #FAF7F2;
-      border: 1.5px solid #E0D7C6;
-      color: #475569;
+      background: #F4F7F7;
+      border: 1.5px solid #E1E8EB;
+      color: #51646E;
       font-size: 0.82rem;
       font-weight: 600;
       padding: 0.5rem 0.9rem;
@@ -198,23 +198,23 @@
       gap: 0.45rem;
     }
     .directory-filter-btn:hover {
-      background: #F2EDE2;
-      border-color: #BACBD8;
-      color: #161F36;
+      background: #F4F7F7;
+      border-color: #7E9F9D;
+      color: #243E4C;
     }
     .directory-filter-btn.active {
-      background: #161F36;
+      background: #243E4C;
       color: #FFFFFF;
-      border-color: #161F36;
-      box-shadow: 0 2px 8px rgba(22, 31, 54, 0.15);
+      border-color: #243E4C;
+      box-shadow: 0 2px 8px rgba(36, 62, 76, 0.15);
     }
     .filter-count {
       font-size: 0.72rem;
       font-weight: 700;
       padding: 0.15rem 0.45rem;
       border-radius: 999px;
-      background: #E8EFF4;
-      color: #161F36;
+      background: #EBF2F3;
+      color: #243E4C;
       line-height: 1;
     }
     .directory-filter-btn.active .filter-count {
@@ -237,10 +237,10 @@
 
     .colleague-card {
       background: #FFFFFF;
-      border: 1.5px solid #E0D7C6;
+      border: 1.5px solid #E1E8EB;
       border-radius: 1.15rem;
       padding: 1.5rem;
-      box-shadow: 0 2px 10px rgba(22, 31, 54, 0.04);
+      box-shadow: 0 2px 10px rgba(36, 62, 76, 0.04);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -249,8 +249,8 @@
     }
     .colleague-card:hover {
       transform: translateY(-3px);
-      box-shadow: 0 12px 28px rgba(22, 31, 54, 0.08);
-      border-color: #BACBD8;
+      box-shadow: 0 12px 28px rgba(36, 62, 76, 0.08);
+      border-color: #7E9F9D;
     }
 
     .colleague-card-header {
@@ -263,7 +263,7 @@
       width: 3.25rem;
       height: 3.25rem;
       border-radius: 50%;
-      background: linear-gradient(135deg, #161F36 0%, #243356 100%);
+      background: linear-gradient(135deg, #243E4C 0%, #1A313D 100%);
       color: #FFFFFF;
       display: flex;
       align-items: center;
@@ -271,11 +271,11 @@
       font-size: 1.15rem;
       font-weight: 800;
       flex-shrink: 0;
-      box-shadow: 0 4px 10px rgba(22, 31, 54, 0.15);
+      box-shadow: 0 4px 10px rgba(36, 62, 76, 0.15);
       letter-spacing: 0.5px;
     }
     .colleague-avatar.self {
-      box-shadow: 0 0 0 2.5px #FFFFFF, 0 0 0 4.5px #BACBD8;
+      box-shadow: 0 0 0 2.5px #FFFFFF, 0 0 0 4.5px #7E9F9D;
     }
     .colleague-meta {
       flex: 1;
@@ -291,16 +291,16 @@
     .colleague-name {
       font-size: 1.08rem;
       font-weight: 800;
-      color: #161F36;
+      color: #243E4C;
       line-height: 1.3;
       word-break: break-word;
     }
     .colleague-you-pill {
       font-size: 0.68rem;
       font-weight: 700;
-      color: #161F36;
-      background: #E8EFF4;
-      border: 1px solid #BACBD8;
+      color: #243E4C;
+      background: #EBF2F3;
+      border: 1px solid #7E9F9D;
       padding: 0.15rem 0.5rem;
       border-radius: 999px;
       display: inline-flex;
@@ -332,8 +332,8 @@
 
     /* Colleague Details Card Box */
     .colleague-details-box {
-      background: #FAF7F2;
-      border: 1px solid #E0D7C6;
+      background: #F4F7F7;
+      border: 1px solid #E1E8EB;
       border-radius: 0.85rem;
       padding: 0.85rem 1rem;
       margin-bottom: 1.25rem;
@@ -347,11 +347,11 @@
       gap: 0.75rem;
       font-size: 0.83rem;
       line-height: 1.45;
-      color: #475569;
+      color: #51646E;
     }
     .colleague-detail-icon {
       width: 1.1rem;
-      color: #64748b;
+      color: #728590;
       font-size: 0.85rem;
       margin-top: 0.15rem;
       flex-shrink: 0;
@@ -364,7 +364,7 @@
       white-space: normal; /* CRITICAL FIX: allow natural multi-line wrapping so department names are never sliced mid-word! */
     }
     .colleague-detail-content strong {
-      color: #161F36;
+      color: #243E4C;
       font-weight: 700;
     }
     .colleague-detail-content a {
@@ -382,12 +382,12 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-weight: 700;
       font-size: 0.82rem;
-      color: #161F36;
+      color: #243E4C;
     }
     .btn-copy-id {
       background: transparent;
       border: none;
-      color: #94a3b8;
+      color: #728590;
       cursor: pointer;
       padding: 0.1rem 0.35rem;
       margin-left: 0.35rem;
@@ -396,8 +396,8 @@
       transition: all 0.15s ease;
     }
     .btn-copy-id:hover {
-      color: #161F36;
-      background: #E8EFF4;
+      color: #243E4C;
+      background: #EBF2F3;
     }
 
     /* Colleague Card Footer */
@@ -406,7 +406,7 @@
       justify-content: space-between;
       align-items: center;
       padding-top: 0.9rem;
-      border-top: 1px solid #EFEAE1;
+      border-top: 1px solid #F4F7F7;
       gap: 0.75rem;
       margin-top: auto;
     }
@@ -428,9 +428,9 @@
     }
 
     .btn-resend-welcome {
-      background: #FAF7F2;
-      border: 1.5px solid #E0D7C6;
-      color: #161F36;
+      background: #F4F7F7;
+      border: 1.5px solid #E1E8EB;
+      color: #243E4C;
       font-size: 0.78rem;
       font-weight: 700;
       padding: 0.45rem 0.85rem;
@@ -443,9 +443,9 @@
       font-family: var(--font-sans);
     }
     .btn-resend-welcome:hover {
-      background: #161F36;
+      background: #243E4C;
       color: #FFFFFF;
-      border-color: #161F36;
+      border-color: #243E4C;
       transform: translateY(-1px);
     }
     .btn-resend-welcome i {
@@ -453,12 +453,12 @@
       transition: color 0.18s ease;
     }
     .btn-resend-welcome:hover i {
-      color: #BACBD8;
+      color: #7E9F9D;
     }
 
     /* Quick Add Invitation Card (Gracefully fills space when 1 colleague exists) */
     .colleague-add-card {
-      border: 2px dashed #BACBD8;
+      border: 2px dashed #7E9F9D;
       border-radius: 1.15rem;
       background: rgba(255, 255, 255, 0.7);
       display: flex;
@@ -471,17 +471,17 @@
       min-height: 290px;
     }
     .colleague-add-card:hover {
-      border-color: #161F36;
+      border-color: #243E4C;
       background: #FFFFFF;
-      box-shadow: 0 8px 24px rgba(22, 31, 54, 0.06);
+      box-shadow: 0 8px 24px rgba(36, 62, 76, 0.06);
       transform: translateY(-2px);
     }
     .colleague-add-icon {
       width: 3.5rem;
       height: 3.5rem;
       border-radius: 50%;
-      background: #E8EFF4;
-      color: #161F36;
+      background: #EBF2F3;
+      color: #243E4C;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -491,18 +491,18 @@
     }
     .colleague-add-card:hover .colleague-add-icon {
       transform: scale(1.08);
-      background: #161F36;
+      background: #243E4C;
       color: #FFFFFF;
     }
     .colleague-add-card h4 {
       font-size: 1.05rem;
       font-weight: 800;
-      color: #161F36;
+      color: #243E4C;
       margin: 0 0 0.4rem 0;
     }
     .colleague-add-card p {
       font-size: 0.84rem;
-      color: #64748b;
+      color: #728590;
       margin: 0 0 1.25rem 0;
       max-width: 280px;
       line-height: 1.45;
@@ -546,7 +546,7 @@
       position: fixed;
       bottom: 2rem;
       right: 2rem;
-      background: #161F36;
+      background: #243E4C;
       color: #FFFFFF;
       padding: 0.8rem 1.25rem;
       border-radius: 0.75rem;

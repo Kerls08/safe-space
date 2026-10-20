@@ -17,7 +17,7 @@ function formatRole(role) {
 }
 
 function formatDateTime(dateStr) {
-  if (!dateStr) return '—';
+  if (!dateStr) return 'N/A';
   try {
     const d = new Date(dateStr);
     return d.toLocaleDateString('en-US', {
@@ -250,8 +250,8 @@ export default function Profile() {
   if (loading) {
     return (
       <div className="profile-layout" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', color: '#64748B' }}>
-          <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', marginBottom: '1rem', color: '#161F36' }}></i>
+        <div style={{ textAlign: 'center', color: '#51646E' }}>
+          <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', marginBottom: '1rem', color: '#243E4C' }}></i>
           <p style={{ fontWeight: 600 }}>Loading profile...</p>
         </div>
       </div>
@@ -267,12 +267,12 @@ export default function Profile() {
         </div>
       )}
 
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="profile-header" id="profileHeader">
         <div
           className="profile-avatar"
           id="profileAvatar"
-          style={isProfessional ? { background: 'linear-gradient(135deg, #a78bfa, #7c3aed)' } : {}}
+          style={isProfessional ? { background: 'linear-gradient(135deg, #7E9F9D, #243E4C)' } : {}}
         >
           {initials}
         </div>
@@ -288,7 +288,7 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* ── Content ── */}
+      {/* Content */}
       <div className="profile-content">
         {/* Personal Information Card */}
         <div className="profile-card">
@@ -420,7 +420,7 @@ export default function Profile() {
           <div className="security-row">
             <span className="security-label">Account Created</span>
             <span className="security-value" id="secCreatedAt">
-              {profileData?.createdAt ? formatDateTime(profileData.createdAt) : '—'}
+              {profileData?.createdAt ? formatDateTime(profileData.createdAt) : 'N/A'}
             </span>
           </div>
 
@@ -432,7 +432,7 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* ── Change Password Modal ── */}
+      {/* Change Password Modal */}
       {pwModalOpen && (
         <div className="pw-modal-overlay" id="pwModal" onClick={closeChangePasswordModal}>
           <div className="pw-modal" onClick={(e) => e.stopPropagation()}>

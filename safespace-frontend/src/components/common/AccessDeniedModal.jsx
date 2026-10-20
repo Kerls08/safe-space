@@ -32,7 +32,7 @@ export default function AccessDeniedModal({ isOpen, onClose }) {
     <div style={{
       position: 'fixed',
       inset: 0,
-      background: 'rgba(17,24,39,0.85)',
+      background: 'rgba(24, 42, 52, 0.75)',
       backdropFilter: 'blur(8px)',
       zIndex: 9999,
       display: 'flex',
@@ -40,13 +40,13 @@ export default function AccessDeniedModal({ isOpen, onClose }) {
       justifyContent: 'center'
     }}>
       <div style={{
-        background: '#fff',
+        background: '#FFFFFF',
         borderRadius: '1.5rem',
         padding: '2.5rem',
         maxWidth: '420px',
         width: '90%',
         textAlign: 'center',
-        boxShadow: '0 25px 50px rgba(0,0,0,0.2)'
+        boxShadow: '0 25px 50px rgba(24, 42, 52, 0.2)'
       }}>
         <div style={{
           width: '4rem',
@@ -62,10 +62,10 @@ export default function AccessDeniedModal({ isOpen, onClose }) {
         }}>
           <i className="fas fa-shield-halved"></i>
         </div>
-        <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#111827', marginBottom: '0.5rem' }}>
+        <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#182A34', marginBottom: '0.5rem' }}>
           Access Denied
         </h2>
-        <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '1.5rem', lineHeight: '1.4' }}>
+        <p style={{ fontSize: '0.85rem', color: '#51646E', marginBottom: '1.5rem', lineHeight: '1.4' }}>
           Your role <strong style={{ color: '#dc2626' }}>{role || 'UNKNOWN'}</strong> does not have permission to access this area.
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
@@ -75,9 +75,9 @@ export default function AccessDeniedModal({ isOpen, onClose }) {
             style={{
               padding: '0.65rem 1.2rem',
               borderRadius: '0.75rem',
-              border: '1.5px solid #E0D7C6',
-              background: '#fff',
-              color: '#161F36',
+              border: '1.5px solid #E1E8EB',
+              background: '#FFFFFF',
+              color: '#243E4C',
               fontSize: '0.85rem',
               fontWeight: 600,
               cursor: 'pointer',
@@ -93,13 +93,13 @@ export default function AccessDeniedModal({ isOpen, onClose }) {
               padding: '0.65rem 1.2rem',
               borderRadius: '0.75rem',
               border: 'none',
-              background: '#161F36',
-              color: '#fff',
+              background: '#243E4C',
+              color: '#FFFFFF',
               fontSize: '0.85rem',
               fontWeight: 600,
               cursor: 'pointer',
               fontFamily: 'Inter, sans-serif',
-              boxShadow: '0 3px 10px rgba(22,31,54,0.3)'
+              boxShadow: '0 3px 10px rgba(24, 42, 52, 0.2)'
             }}
           >
             Switch Account

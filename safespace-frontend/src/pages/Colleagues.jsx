@@ -462,14 +462,14 @@ export default function Colleagues() {
                 padding: '3.5rem 1.5rem',
                 background: '#FFFFFF',
                 borderRadius: '1rem',
-                border: '1.5px solid #E0D7C6'
+                border: '1.5px solid #E1E8EB'
               }}
             >
               <i
                 className="fas fa-spinner fa-spin"
-                style={{ fontSize: '2rem', color: '#161F36', marginBottom: '0.75rem' }}
+                style={{ fontSize: '2rem', color: '#243E4C', marginBottom: '0.75rem' }}
               ></i>
-              <p style={{ color: '#64748b', fontSize: '0.92rem', margin: 0, fontWeight: 600 }}>
+              <p style={{ color: '#728590', fontSize: '0.92rem', margin: 0, fontWeight: 600 }}>
                 Loading campus counseling colleagues...
               </p>
             </div>
@@ -481,7 +481,7 @@ export default function Colleagues() {
                 padding: '3.5rem 1.5rem',
                 background: '#FFFFFF',
                 borderRadius: '1rem',
-                border: '1.5px solid #E0D7C6'
+                border: '1.5px solid #E1E8EB'
               }}
             >
               <div
@@ -500,10 +500,10 @@ export default function Colleagues() {
               >
                 <i className="fas fa-triangle-exclamation"></i>
               </div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#161F36', margin: '0 0 0.4rem 0' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#243E4C', margin: '0 0 0.4rem 0' }}>
                 Could not load colleagues directory
               </h3>
-              <p style={{ color: '#64748b', fontSize: '0.86rem', margin: '0 0 1.25rem 0' }}>
+              <p style={{ color: '#728590', fontSize: '0.86rem', margin: '0 0 1.25rem 0' }}>
                 {errorMsg}
               </p>
               <button className="dash-btn-primary" onClick={loadColleagues}>
@@ -518,7 +518,7 @@ export default function Colleagues() {
                 padding: '3.5rem 1.5rem',
                 background: '#FFFFFF',
                 borderRadius: '1.15rem',
-                border: '1.5px dashed #BACBD8'
+                border: '1.5px dashed #7E9F9D'
               }}
             >
               <div
@@ -526,24 +526,24 @@ export default function Colleagues() {
                   width: '3.5rem',
                   height: '3.5rem',
                   borderRadius: '50%',
-                  background: '#F2EDE2',
+                  background: '#F4F7F7',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: '1.5rem',
-                  color: '#161F36',
+                  color: '#243E4C',
                   marginBottom: '1rem'
                 }}
               >
                 <i className="fas fa-user-doctor"></i>
               </div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#161F36', margin: '0 0 0.4rem 0' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#243E4C', margin: '0 0 0.4rem 0' }}>
                 No Colleagues Found
               </h3>
               <p
                 style={{
                   fontSize: '0.86rem',
-                  color: '#64748b',
+                  color: '#728590',
                   margin: '0 0 1.25rem 0',
                   maxWidth: '420px',
                   marginLeft: 'auto',
@@ -613,7 +613,7 @@ export default function Colleagues() {
                         <div className="colleague-detail-row">
                           <i className="fas fa-id-badge colleague-detail-icon" title="Staff ID"></i>
                           <div className="colleague-detail-content">
-                            <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.1rem' }}>
+                            <span style={{ color: '#728590', fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.1rem' }}>
                               Staff ID
                             </span>
                             <span className="staff-id-pill">{staffId}</span>
@@ -630,7 +630,7 @@ export default function Colleagues() {
                         <div className="colleague-detail-row">
                           <i className="fas fa-envelope colleague-detail-icon" title="Work Email"></i>
                           <div className="colleague-detail-content">
-                            <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.1rem' }}>
+                            <span style={{ color: '#728590', fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.1rem' }}>
                               Work Email
                             </span>
                             {c.email ? (
@@ -644,10 +644,10 @@ export default function Colleagues() {
                         <div className="colleague-detail-row">
                           <i className="fas fa-building colleague-detail-icon" title="Department / Office"></i>
                           <div className="colleague-detail-content">
-                            <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.1rem' }}>
+                            <span style={{ color: '#728590', fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.1rem' }}>
                               Department / Office
                             </span>
-                            <strong style={{ color: '#161F36' }}>{deptText}</strong>
+                            <strong style={{ color: '#243E4C' }}>{deptText}</strong>
                           </div>
                         </div>
 
@@ -655,7 +655,7 @@ export default function Colleagues() {
                           <div className="colleague-detail-row">
                             <i className="fas fa-phone colleague-detail-icon" title="Contact Number"></i>
                             <div className="colleague-detail-content">
-                              <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.1rem' }}>
+                              <span style={{ color: '#728590', fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.1rem' }}>
                                 Contact
                               </span>
                               <a href={`tel:${c.phoneNumber}`}>{c.phoneNumber}</a>
@@ -700,7 +700,7 @@ export default function Colleagues() {
                           c.username !== 'psychometrician' ? (
                           <button
                             className="btn-transfer-admin"
-                            style={{ background: '#F1F5F9', borderColor: '#CBD5E1', color: '#475569' }}
+                            style={{ background: '#F4F7F7', borderColor: '#E1E8EB', color: '#51646E' }}
                             onClick={() => revokeAdminColleague(c.username, c.fullName)}
                           >
                             <i className="fas fa-user-minus"></i> Demote
@@ -752,7 +752,7 @@ export default function Colleagues() {
           <div className="cred-modal" style={{ maxWidth: '520px' }}>
             <div className="cred-modal-header">
               <h3>
-                <i className="fas fa-user-plus" style={{ color: '#161F36' }}></i> Register Guidance Colleague
+                <i className="fas fa-user-plus" style={{ color: '#243E4C' }}></i> Register Guidance Colleague
               </h3>
               <button className="cred-modal-close" onClick={closeRegisterModal}>
                 <i className="fas fa-xmark"></i>
@@ -774,7 +774,7 @@ export default function Colleagues() {
                       <option value="PROFESSIONAL">Counseling Staff (Psychologist / Psychometrician)</option>
                       <option value="SUPER_ADMIN">Guidance Supervisor (Lead Psychometrician)</option>
                     </select>
-                    <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', display: 'block' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#728590', marginTop: '0.25rem', display: 'block' }}>
                       Guidance Supervisors have clinical oversight authority to manage the team and clinic operations.
                     </span>
                   </div>
@@ -898,8 +898,8 @@ export default function Colleagues() {
 
                   <div
                     style={{
-                      background: '#FAF7F2',
-                      border: '1.5px solid #E0D7C6',
+                      background: '#F4F7F7',
+                      border: '1.5px solid #E1E8EB',
                       borderRadius: '0.85rem',
                       padding: '1.25rem',
                       marginBottom: '1.5rem'
@@ -910,7 +910,7 @@ export default function Colleagues() {
                         fontSize: '0.75rem',
                         fontWeight: 800,
                         textTransform: 'uppercase',
-                        color: '#64748b',
+                        color: '#728590',
                         letterSpacing: '0.5px',
                         marginBottom: '0.75rem'
                       }}
@@ -924,11 +924,11 @@ export default function Colleagues() {
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         padding: '0.6rem 0',
-                        borderBottom: '1px solid #EDE8E0'
+                        borderBottom: '1px solid #E1E8EB'
                       }}
                     >
-                      <span style={{ fontSize: '0.85rem', color: '#475569' }}>Name:</span>
-                      <strong style={{ color: '#161F36' }}>
+                      <span style={{ fontSize: '0.85rem', color: '#51646E' }}>Name:</span>
+                      <strong style={{ color: '#243E4C' }}>
                         {registerResult.fullName || regForm.name}
                       </strong>
                     </div>
@@ -939,10 +939,10 @@ export default function Colleagues() {
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         padding: '0.6rem 0',
-                        borderBottom: '1px solid #EDE8E0'
+                        borderBottom: '1px solid #E1E8EB'
                       }}
                     >
-                      <span style={{ fontSize: '0.85rem', color: '#475569' }}>System Role:</span>
+                      <span style={{ fontSize: '0.85rem', color: '#51646E' }}>System Role:</span>
                       <span
                         className="role-badge"
                         style={{
@@ -964,17 +964,17 @@ export default function Colleagues() {
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         padding: '0.6rem 0',
-                        borderBottom: '1px solid #EDE8E0'
+                        borderBottom: '1px solid #E1E8EB'
                       }}
                     >
-                      <span style={{ fontSize: '0.85rem', color: '#475569' }}>Staff Sign-In ID:</span>
+                      <span style={{ fontSize: '0.85rem', color: '#51646E' }}>Staff Sign-In ID:</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                         <span
                           style={{
                             fontFamily: 'monospace',
                             fontWeight: 700,
                             fontSize: '0.95rem',
-                            color: '#161F36'
+                            color: '#243E4C'
                           }}
                         >
                           {registerResult.institutionalId || regForm.instId}
@@ -997,7 +997,7 @@ export default function Colleagues() {
                         padding: '0.6rem 0'
                       }}
                     >
-                      <span style={{ fontSize: '0.85rem', color: '#475569' }}>Temporary Password:</span>
+                      <span style={{ fontSize: '0.85rem', color: '#51646E' }}>Temporary Password:</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                         <span
                           style={{
@@ -1082,9 +1082,9 @@ export default function Colleagues() {
               </button>
             </div>
             <div className="cred-modal-body">
-              <p style={{ fontSize: '0.88rem', color: '#475569', marginBottom: '1rem', lineHeight: 1.5 }}>
+              <p style={{ fontSize: '0.88rem', color: '#51646E', marginBottom: '1rem', lineHeight: 1.5 }}>
                 You are about to transfer administrative leadership to{' '}
-                <strong id="transferTargetName" style={{ color: '#161F36' }}>
+                <strong id="transferTargetName" style={{ color: '#243E4C' }}>
                   {transferTarget.fullName}
                 </strong>{' '}
                 (<span id="transferTargetUsername" style={{ fontFamily: 'monospace', color: '#7C3AED' }}>
@@ -1114,7 +1114,7 @@ export default function Colleagues() {
                 </div>
               </div>
               <div className="form-group">
-                <label className="form-label" style={{ fontWeight: 700, color: '#161F36' }}>
+                <label className="form-label" style={{ fontWeight: 700, color: '#243E4C' }}>
                   Transfer Mode
                 </label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.4rem' }}>
@@ -1124,7 +1124,7 @@ export default function Colleagues() {
                       alignItems: 'flex-start',
                       gap: '0.5rem',
                       fontSize: '0.84rem',
-                      color: '#334155',
+                      color: '#51646E',
                       cursor: 'pointer',
                       background: '#F8FAFC',
                       padding: '0.65rem 0.75rem',
@@ -1142,7 +1142,7 @@ export default function Colleagues() {
                     />
                     <div>
                       <strong>Primary Leadership Transfer</strong>
-                      <div style={{ color: '#64748b', fontSize: '0.77rem', marginTop: '0.1rem' }}>
+                      <div style={{ color: '#728590', fontSize: '0.77rem', marginTop: '0.1rem' }}>
                         Transfer primary admin to this colleague and transition my account to regular Professional.
                       </div>
                     </div>
@@ -1153,7 +1153,7 @@ export default function Colleagues() {
                       alignItems: 'flex-start',
                       gap: '0.5rem',
                       fontSize: '0.84rem',
-                      color: '#334155',
+                      color: '#51646E',
                       cursor: 'pointer',
                       background: '#F8FAFC',
                       padding: '0.65rem 0.75rem',
@@ -1171,7 +1171,7 @@ export default function Colleagues() {
                     />
                     <div>
                       <strong>Appoint Co-Administrator</strong>
-                      <div style={{ color: '#64748b', fontSize: '0.77rem', marginTop: '0.1rem' }}>
+                      <div style={{ color: '#728590', fontSize: '0.77rem', marginTop: '0.1rem' }}>
                         Grant administrative privileges to this colleague while retaining my own Admin status.
                       </div>
                     </div>

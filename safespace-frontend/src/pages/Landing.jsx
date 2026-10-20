@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import '../styles/landing.css';
 
 const MOOD_RESPONSES = {
-  overwhelmed: "It is completely okay to feel full. Take one deep breath — you do not need to figure out everything right now. SafeSpace is here for you.",
+  overwhelmed: "It is completely okay to feel full. Take one deep breath; you do not need to figure out everything right now. SafeSpace is here for you.",
   anxious: "Notice the ground beneath your feet. Inhale slowly for 4 seconds, exhale for 6. Your feelings are real, but they will pass safely.",
   exhausted: "Rest is not earned, it is needed. Give yourself permission to pause and recharge without guilt today.",
   hopeful: "Hold onto that warmth. Your resilience is powerful, and sharing your journey can brighten another student's day."
@@ -19,46 +19,28 @@ const PACER_STATES = [
 
 const FEATURES = [
   {
-    icon: 'fas fa-comment-dots',
-    iconClass: 'calm-ocean',
-    title: 'Anonymous Rant Board',
-    desc: 'Unburden your thoughts and frustrations in a supportive community space. Posts are bound to dynamic pseudonyms that preserve your identity while fostering genuine peer empathy.',
-    tags: ['Dynamic Pseudonyms', 'Zero Identity Link']
+    title: 'Anonymous Peer Board',
+    desc: 'Read and share student experiences. Pseudonyms protect your identity in every discussion.'
   },
   {
-    icon: 'fas fa-comments',
-    iconClass: 'calm-steel',
-    title: 'Confidential 1-on-1 Chat',
-    desc: 'Connect in real-time with verified campus psychometricians and counselors. Sessions remain completely confidential, giving you direct guidance when you need it most.',
-    tags: ['Real-Time Messaging', 'Counselor Verified']
+    title: 'Confidential Counseling',
+    desc: 'Message licensed campus counselors in private, one-on-one sessions.'
   },
   {
-    icon: 'fas fa-shield-heart',
-    iconClass: 'calm-amber',
-    title: 'Proactive AI Safety Net',
-    desc: 'Intelligent sentiment analysis flags high-distress signals in real time and automatically routes compassionate resources and counselor alerts without compromising user identity.',
-    tags: ['24/7 Early Detection', 'Automated Safety Net']
+    title: 'Crisis Support',
+    desc: 'Direct access to verified 24/7 national emergency hotlines and campus crisis contacts.'
   },
   {
-    icon: 'fas fa-spa',
-    iconClass: 'calm-sky',
-    title: 'Calm-Down & Grounding Studio',
-    desc: 'Access evidence-based sensory grounding techniques, guided 4-7-8 breathing pacers, and mindful de-escalation tools to restore inner equilibrium during stressful moments.',
-    tags: ['Breathing Pacer', '5-4-3-2-1 Grounding']
+    title: 'Grounding Exercises',
+    desc: 'Interactive 4-7-8 breathing pacers and sensory exercises for immediate stress relief.'
   },
   {
-    icon: 'fas fa-chart-line',
-    iconClass: 'calm-slate',
-    title: 'Institutional Wellness Insights',
-    desc: 'Campus mental health teams receive aggregate emotional climate trends, peak stress cycles, and anonymized metrics to tailor preventative programs and workshops.',
-    tags: ['Anonymous Analytics', 'Institutional Trends']
+    title: 'Campus Resources',
+    desc: 'Verified contact information and operating hours for university health clinics and support offices.'
   },
   {
-    icon: 'fas fa-book-bookmark',
-    iconClass: 'calm-mist',
-    title: 'Curated Resource Directory',
-    desc: 'Immediate access to national emergency hotlines, campus clinic services, self-help literature, and certified mental health professionals curated specifically for your university.',
-    tags: ['24/7 Hotlines', 'Self-Help Vault']
+    title: 'Data Privacy Protection',
+    desc: 'No personal identification tracking, with complete privacy over your activity.'
   }
 ];
 
@@ -70,6 +52,8 @@ export default function Landing() {
   const [navScrolled, setNavScrolled] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('hero');
+  const isProgrammaticScrollRef = useRef(false);
+  const scrollTimeoutRef = useRef(null);
 
   // Interactive Mood Check-in
   const [selectedMood, setSelectedMood] = useState(null);
@@ -87,7 +71,6 @@ export default function Landing() {
   const [dragTranslate, setDragTranslate] = useState(0);
   const carouselTrackRef = useRef(null);
   const carouselViewportRef = useRef(null);
-  const autoplayTimerRef = useRef(null);
 
   // Redirect if authenticated
   useEffect(() => {
@@ -102,27 +85,51 @@ export default function Landing() {
     }
   }, [isAuthenticated, role, navigate]);
 
-  // Navbar scroll elevation and scroll spy
+  // Navbar scroll elevation and accurate scroll spy
   useEffect(() => {
     const handleScroll = () => {
       setNavScrolled(window.scrollY > 15);
 
+      // Avoid overriding activeSection while smooth scrolling to a target
+      if (isProgrammaticScrollRef.current) return;
+
+      const windowHeight = window.innerHeight;
+      const docHeight = document.documentElement.scrollHeight;
+      const currentScroll = window.scrollY;
+
+      // 1. If at or near bottom of document, activate last section (privacy)
+      if (currentScroll + windowHeight >= docHeight - 70) {
+        setActiveSection('privacy');
+        return;
+      }
+
+      // 2. If near top of document, hero is active
+      if (currentScroll < 220) {
+        setActiveSection('hero');
+        return;
+      }
+
+      // 3. Section in active optical focus (42% down the screen, below the fixed navbar)
       const sectionIds = ['hero', 'how-it-works', 'grounding', 'features', 'privacy'];
-      const scrollPos = window.scrollY + 140;
+      const focusLine = windowHeight * 0.42;
+      let activeId = 'hero';
 
       for (const id of sectionIds) {
         const el = document.getElementById(id);
         if (el) {
-          const top = el.offsetTop;
-          const height = el.offsetHeight;
-          if (scrollPos >= top && scrollPos < top + height) {
-            setActiveSection(id);
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= focusLine && rect.bottom > focusLine) {
+            activeId = id;
+            break;
           }
         }
       }
+
+      setActiveSection(activeId);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -160,24 +167,8 @@ export default function Landing() {
     });
   }, [getMaxIndex]);
 
-  // Autoplay
-  useEffect(() => {
-    autoplayTimerRef.current = setInterval(nextSlide, 4500);
-    return () => clearInterval(autoplayTimerRef.current);
-  }, [nextSlide]);
-
-  const pauseAutoplay = () => {
-    if (autoplayTimerRef.current) clearInterval(autoplayTimerRef.current);
-  };
-
-  const resumeAutoplay = () => {
-    pauseAutoplay();
-    autoplayTimerRef.current = setInterval(nextSlide, 4500);
-  };
-
-  // Drag handlers
+  // Touch swipe handlers for mobile
   const handleTouchStart = (e) => {
-    pauseAutoplay();
     setIsDragging(true);
     setDragStartX(e.touches ? e.touches[0].clientX : e.pageX);
   };
@@ -197,7 +188,6 @@ export default function Landing() {
       prevSlide();
     }
     setDragTranslate(0);
-    resumeAutoplay();
   };
 
   const toggleSensoryStep = (index) => {
@@ -208,14 +198,23 @@ export default function Landing() {
   };
 
   const scrollToSection = (e, id) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     setNavOpen(false);
+    setActiveSection(id);
+    isProgrammaticScrollRef.current = true;
+    clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = setTimeout(() => {
+      isProgrammaticScrollRef.current = false;
+    }, 900);
+
     const el = document.getElementById(id);
     if (el) {
-      const navHeight = 70;
-      const targetTop = el.getBoundingClientRect().top + window.pageYOffset - navHeight;
-      window.scrollTo({ top: targetTop, behavior: 'smooth' });
-      setActiveSection(id);
+      const navOffset = 68;
+      const targetTop = el.getBoundingClientRect().top + window.scrollY - navOffset;
+      window.scrollTo({
+        top: Math.max(0, Math.round(targetTop)),
+        behavior: 'smooth'
+      });
     }
   };
 
@@ -225,7 +224,7 @@ export default function Landing() {
 
   return (
     <div className="landing-page-root">
-      {/* ── 1. Navigation Bar ── */}
+      {/*  1. Navigation Bar  */}
       <nav className={`landing-nav ${navScrolled ? 'scrolled' : ''}`} id="landingNav">
         <div className="landing-nav-inner">
           <Link to="/" className="landing-brand">
@@ -292,51 +291,48 @@ export default function Landing() {
         </div>
       </nav>
 
-      {/* ── 2. Hero Section ── */}
+      {/*  2. Hero Section  */}
       <section className="hero" id="hero">
         <div className="hero-inner-centered">
           <div className="hero-content animate-fade-up">
             <div className="hero-badge">
-              <i className="fas fa-shield-halved"></i>
               Voluntary & Confidential Campus Sanctuary
             </div>
             <h1>
-              A Calm Harbor for Your Thoughts.<br />
-              Heal <span className="highlight">Anonymously.</span>
+              A Quiet Harbor for Your Mind.<br />
+              Speak <span className="highlight">Freely.</span>
             </h1>
             <p>
-              Express what you carry without fear of exposure or academic judgment. SafeSpace provides students and faculty
-              a safe environment to release emotional stress, practice grounding exercises, and
-              connect with verified campus counselors in complete confidence.
+              Share what you carry without academic judgment or social pressure. Here, university students find room to exhale, reset their thoughts, and reach licensed campus guidance on their own terms.
             </p>
             <div className="hero-actions">
               <Link to="/register" className="hero-btn-primary" id="heroRegisterBtn">
-                <i className="fas fa-user-shield"></i> Join SafeSpace
+                Enter Anonymous Space
               </Link>
               <a href="#how-it-works" className="hero-btn-ghost" onClick={(e) => scrollToSection(e, 'how-it-works')}>
-                <i className="fas fa-route"></i> See How It Works
+                Explore How It Works
               </a>
             </div>
 
             <div className="hero-trust-bar">
               <div className="hero-trust-item">
-                <i className="fas fa-check-circle"></i> Voluntary Self-Registration
+                Completely Voluntary
               </div>
               <div className="hero-trust-item">
-                <i className="fas fa-shield"></i> Zero Identity Logging
+                Full Anonymity
               </div>
               <div className="hero-trust-item">
-                <i className="fas fa-user-doctor"></i> Licensed Counselors
+                Verified Professionals
               </div>
               <div className="hero-trust-item">
-                <i className="fas fa-lock"></i> RA 10173 Compliant
+                Protected Data Privacy
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── 3. Dedicated Spotlight: A Glimpse Inside SafeSpace ── */}
+      {/*  3. Dedicated Spotlight: A Glimpse Inside SafeSpace  */}
       <section className="haven-spotlight-section" id="sanctuary-preview">
         <div className="haven-spotlight-inner">
           <div className="haven-spotlight-header animate-fade-up">
@@ -363,7 +359,7 @@ export default function Landing() {
 
             <div className="preview-post">
               <div className="preview-post-header">
-                <div className="preview-avatar"><i className="fas fa-mask"></i></div>
+                <div className="preview-avatar">QH</div>
                 <div>
                   <div className="preview-username">QuietHarbor_27</div>
                   <div className="preview-time">3 minutes ago</div>
@@ -375,29 +371,28 @@ export default function Landing() {
               </div>
               <div className="preview-mood-row">
                 <div className="preview-mood">
-                  <i className="fas fa-shield-cat"></i> Pseudonym Protected
+                  Pseudonym Protected
                 </div>
-                <span style={{ fontSize: '0.68rem', color: '#6C7A92', fontWeight: 600 }}>Energy Score: 4/10</span>
+                <span style={{ fontSize: '0.68rem', color: '#728590', fontWeight: 600 }}>Energy Score: 4/10</span>
               </div>
 
               <div className="preview-response">
-                <i className="fas fa-user-doctor"></i>
                 <strong>Campus Counselor:</strong> Taking one gentle step at a time is strength, not weakness.
-                Remember our confidential chat is open if you need a listening ear today. 💙
+                Remember our confidential chat is open if you need a listening ear today.
               </div>
             </div>
 
             <div className="preview-interactive-checkin">
               <div className="preview-interactive-title">
-                <i className="fas fa-heart-pulse"></i> How is your mind feeling right now?
+                How is your mind feeling right now?
               </div>
               <div className="preview-mood-btns">
                 {['overwhelmed', 'anxious', 'exhausted', 'hopeful'].map((mood) => {
                   const labels = {
-                    overwhelmed: 'Overwhelmed 🌧️',
-                    anxious: 'Anxious ⚡',
-                    exhausted: 'Exhausted 🌙',
-                    hopeful: 'Hopeful 🌤️'
+                    overwhelmed: 'Overwhelmed',
+                    anxious: 'Anxious',
+                    exhausted: 'Exhausted',
+                    hopeful: 'Hopeful'
                   };
                   return (
                     <button
@@ -422,104 +417,91 @@ export default function Landing() {
           <div className="spotlight-footer-cta animate-fade-up animate-delay-2">
             <span>Curious how it feels to speak freely?</span>
             <Link to="/register" className="spotlight-link">
-              Create your anonymous profile <i className="fas fa-arrow-right"></i>
+              Create your anonymous profile →
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ── 4. Core Sanctuary Pillars Ribbon ── */}
+      {/*  4. Core Sanctuary Pillars Ribbon  */}
       <section className="pillars-ribbon">
         <div className="pillars-inner">
           <div className="pillar-card animate-fade-up">
             <div className="pillar-icon"><i className="fas fa-hand-holding-heart"></i></div>
             <div className="pillar-text">
-              <h4>100% Voluntary</h4>
-              <p>You choose to participate. No automated lists or mandatory harvesting.</p>
+              <h4>Always Your Choice</h4>
+              <p>Participation is voluntary with zero academic tracking.</p>
             </div>
           </div>
           <div className="pillar-card animate-fade-up animate-delay-1">
-            <div className="pillar-icon"><i className="fas fa-user-secret"></i></div>
+            <div className="pillar-icon"><i className="fas fa-shield-halved"></i></div>
             <div className="pillar-text">
-              <h4>Cryptographic Shield</h4>
-              <p>Dynamic pseudonyms detach your real identity from your shared thoughts.</p>
+              <h4>Protected Anonymity</h4>
+              <p>Random pseudonyms protect your identity across all discussions.</p>
             </div>
           </div>
           <div className="pillar-card animate-fade-up animate-delay-2">
             <div className="pillar-icon"><i className="fas fa-user-doctor"></i></div>
             <div className="pillar-text">
-              <h4>Certified Campus Care</h4>
-              <p>Connect with licensed university psychometricians and counselors.</p>
+              <h4>Verified Campus Guidance</h4>
+              <p>Confidential sessions with licensed university psychometricians and counselors.</p>
             </div>
           </div>
           <div className="pillar-card animate-fade-up animate-delay-3">
             <div className="pillar-icon"><i className="fas fa-shield-heart"></i></div>
             <div className="pillar-text">
-              <h4>24/7 Safety Net</h4>
-              <p>Intelligent crisis protocol surfaces immediate help when distress peaks.</p>
+              <h4>Immediate Support</h4>
+              <p>24/7 emergency hotlines and guided calming exercises.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── 5. How It Works Section ── */}
+      {/*  5. How It Works Section  */}
       <section className="steps-section" id="how-it-works">
         <div className="section-label">A Clear & Private Path</div>
         <h2 className="section-title">How SafeSpace Protects Your Journey</h2>
         <p className="section-desc">
-          Engineered for complete student dignity, zero barriers, and unconditional privacy from day one.
+          How student privacy and support work in three simple steps.
         </p>
 
         <div className="steps-grid">
           <div className="step-card animate-fade-up">
             <div className="step-badge">Step 01</div>
             <div className="step-icon-wrap"><i className="fas fa-user-pen"></i></div>
-            <h3>Voluntary Self-Registration</h3>
+            <h3>Create an Account</h3>
             <p>
-              You control your account. Register yourself with your institutional ID and your own private password.
-              No automated pre-enrollment or harvesting.
+              Sign up privately without linking personal social profiles. Your participation is completely optional with zero university tracking.
             </p>
-            <div className="step-tags">
-              <span className="step-tag">100% Student Choice</span>
-              <span className="step-tag">RA 10173 Protected</span>
-            </div>
           </div>
 
           <div className="step-card animate-fade-up animate-delay-1">
             <div className="step-badge">Step 02</div>
             <div className="step-icon-wrap"><i className="fas fa-fingerprint"></i></div>
-            <h3>Cryptographic Pseudonym Shield</h3>
+            <h3>Automatic Pseudonyms</h3>
             <p>
-              When you enter the sanctuary, your real name and ID are detached. Community interactions display an auto-generated pseudonym that cannot be mapped back.
+              Your real name is detached immediately. All public posts and peer chats display generated pseudonyms so your thoughts cannot be traced to you.
             </p>
-            <div className="step-tags">
-              <span className="step-tag">Zero Exposure</span>
-              <span className="step-tag">Unlinked Pseudonym</span>
-            </div>
           </div>
 
           <div className="step-card animate-fade-up animate-delay-2">
             <div className="step-badge">Step 03</div>
             <div className="step-icon-wrap"><i className="fas fa-comments"></i></div>
-            <h3>Express, Ground & Connect</h3>
+            <h3>Vent, Ground, or Chat</h3>
             <p>
-              Share honest reflections on the Rant Board, explore the Calm-Down Studio, or initiate a live, confidential chat session with an active campus counselor.
+              Post anonymously on the board, practice guided calming exercises, or message a verified campus counselor in private.
             </p>
-            <div className="step-tags">
-              <span className="step-tag">Peer Empathy</span>
-              <span className="step-tag">Counselor Support</span>
-            </div>
           </div>
         </div>
 
         <div className="steps-cta-wrap animate-fade-up animate-delay-3">
           <Link to="/register" className="hero-btn-primary">
-            <i className="fas fa-user-plus"></i> Begin Your Anonymous Journey
+            Begin Anonymously
           </Link>
         </div>
       </section>
 
-      {/* ── 6. Grounding & Mindful Oasis ── */}
+      {/*  6. Grounding & Mindful Oasis  */}
       <section className="grounding-section" id="grounding">
         <div className="grounding-inner">
           <div className="grounding-header">
@@ -534,7 +516,7 @@ export default function Landing() {
             {/* Tool 1: 4-7-8 Breathing Pacer */}
             <div className="grounding-tool-card animate-fade-up">
               <div className="grounding-tool-header">
-                <div className="grounding-tool-badge"><i className="fas fa-wind"></i> Guided Breathing</div>
+                <div className="grounding-tool-badge">Guided Breathing</div>
                 <h4>4-7-8 Serene Pacer</h4>
               </div>
               <p className="grounding-tool-desc">
@@ -542,9 +524,7 @@ export default function Landing() {
               </p>
 
               <div className="breathing-oasis-visual">
-                <div className="mindful-bubble" id="mindfulBubble">
-                  <i className="fas fa-spa"></i>
-                </div>
+                <div className="mindful-bubble" id="mindfulBubble"></div>
                 <div className="breathing-meta">
                   <div className="mindful-state-text">{PACER_STATES[pacerIdx].text}</div>
                   <div className="mindful-state-sub">{PACER_STATES[pacerIdx].sub}</div>
@@ -552,16 +532,16 @@ export default function Landing() {
               </div>
 
               <div className="breathing-tips">
-                <span><i className="fas fa-check"></i> Inhale 4s</span>
-                <span><i className="fas fa-check"></i> Hold 7s</span>
-                <span><i className="fas fa-check"></i> Exhale 8s</span>
+                <span>Inhale 4s</span>
+                <span>Hold 7s</span>
+                <span>Exhale 8s</span>
               </div>
             </div>
 
             {/* Tool 2: 5-4-3-2-1 Sensory Grounding */}
             <div className="grounding-tool-card animate-fade-up animate-delay-1">
               <div className="grounding-tool-header">
-                <div className="grounding-tool-badge"><i className="fas fa-hand"></i> Sensory Grounding</div>
+                <div className="grounding-tool-badge">Sensory Grounding</div>
                 <h4>5-4-3-2-1 Reset Technique</h4>
               </div>
               <p className="grounding-tool-desc">
@@ -597,21 +577,15 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── 7. Features Ecosystem Carousel ── */}
+      {/*  7. Features Ecosystem Carousel  */}
       <section className="features-section" id="features">
-        <div className="section-label">Comprehensive Wellness Ecosystem</div>
-        <h2 className="section-title">Thoughtfully Crafted For Emotional Safety</h2>
+        <div className="section-label">Campus Support Tools</div>
+        <h2 className="section-title">Core Platform Features</h2>
         <p className="section-desc">
-          Every tool in SafeSpace is engineered around unconditional anonymity, proactive crisis support,
-          and holistic student well-being.
+          Confidential tools designed to support student mental health and well-being.
         </p>
 
-        <div 
-          className="features-carousel-wrapper" 
-          id="featuresCarouselWrapper"
-          onMouseEnter={pauseAutoplay}
-          onMouseLeave={resumeAutoplay}
-        >
+        <div className="features-carousel-wrapper" id="featuresCarouselWrapper">
           <button 
             type="button" 
             className="carousel-nav-btn prev" 
@@ -622,17 +596,14 @@ export default function Landing() {
           </button>
 
           <div 
-            className={`features-carousel-viewport ${isDragging ? 'is-dragging' : ''}`} 
+            className="features-carousel-viewport" 
             ref={carouselViewportRef}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            onMouseDown={handleTouchStart}
-            onMouseMove={handleTouchMove}
-            onMouseUp={handleTouchEnd}
           >
             <div 
-              className={`features-carousel-track ${isDragging ? 'no-transition' : ''}`} 
+              className="features-carousel-track" 
               ref={carouselTrackRef}
               style={{
                 transform: `translate3d(calc(${translatePercent}% + ${dragTranslate}px), 0, 0)`,
@@ -642,16 +613,8 @@ export default function Landing() {
               {FEATURES.map((feat, i) => (
                 <div key={i} className="features-slide" role="group" aria-label={`${i + 1} of ${FEATURES.length}`}>
                   <div className="feature-card">
-                    <div className={`feature-icon ${feat.iconClass}`}>
-                      <i className={feat.icon}></i>
-                    </div>
                     <h3>{feat.title}</h3>
                     <p>{feat.desc}</p>
-                    <div className="feature-tags">
-                      {feat.tags.map((t, idx) => (
-                        <span key={idx} className="feature-tag">{t}</span>
-                      ))}
-                    </div>
                   </div>
                 </div>
               ))}
@@ -675,72 +638,77 @@ export default function Landing() {
               key={i}
               type="button"
               className={`carousel-dot ${i === carouselIndex ? 'active' : ''}`}
-              onClick={() => {
-                setCarouselIndex(i);
-                resumeAutoplay();
-              }}
+              onClick={() => setCarouselIndex(i)}
               aria-label={`Go to slide ${i + 1}`}
             />
           ))}
         </div>
       </section>
 
-      {/* ── 8. Privacy Charter Section ── */}
+      {/*  8. Privacy Charter Section  */}
       <section className="privacy-section" id="privacy">
         <div className="privacy-card animate-fade-up">
-          <div className="privacy-icon">
-            <i className="fas fa-shield-halved"></i>
-          </div>
-          <h2>Your Right to Privacy Is Absolute</h2>
-          <p>
-            SafeSpace was engineered in strict compliance with the Philippine Data Privacy Act of 2012 (RA 10173).
-            Every student has the fundamental right to seek mental wellness support without fear of academic
-            repercussions, peer exposure, or mandatory surveillance.
-          </p>
-          <div className="privacy-badges">
-            <div className="privacy-badge">
-              <i className="fas fa-user-lock"></i> Voluntary Self-Registration
+          <div className="privacy-grid">
+            <div className="privacy-intro">
+              <span className="privacy-eyebrow">Data Protection & Privacy Charter</span>
+              <h2>Your Right to Privacy Is Absolute</h2>
+              <p>
+                SafeSpace operates in strict adherence to the Philippine Data Privacy Act of 2012 (RA 10173).
+                Mental health support is accessible without identity exposure, faculty surveillance, or academic penalties.
+              </p>
+              <div className="privacy-compliance-note">
+                Republic Act No. 10173 guarantees student data privacy. SafeSpace never shares individual wellness records with educational institutions or third parties.
+              </div>
             </div>
-            <div className="privacy-badge">
-              <i className="fas fa-mask"></i> Decoupled Pseudonyms
-            </div>
-            <div className="privacy-badge">
-              <i className="fas fa-key"></i> Token-Based Cryptography
-            </div>
-            <div className="privacy-badge">
-              <i className="fas fa-database"></i> Zero Data Harvesting
+
+            <div className="privacy-commitments">
+              <div className="privacy-commitment-item">
+                <h3>Academic Separation</h3>
+                <p>Counseling sessions and check-in records are never attached to university transcripts, grades, or official student files.</p>
+              </div>
+              <div className="privacy-commitment-item">
+                <h3>Zero Faculty Visibility</h3>
+                <p>Professors, campus administrators, and staff have no access to your peer interactions, messages, or activity.</p>
+              </div>
+              <div className="privacy-commitment-item">
+                <h3>Pseudonymous Community</h3>
+                <p>Peer board discussions and questions use generated pseudonyms, ensuring your real student identity remains hidden.</p>
+              </div>
+              <div className="privacy-commitment-item">
+                <h3>Complete Data Control</h3>
+                <p>You maintain full authority to delete your check-in logs, mood records, and personal entries whenever you choose.</p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── 9. Empathetic Pre-Footer Sanctuary CTA ── */}
+      {/*  9. Empathetic Pre-Footer Sanctuary CTA  */}
       <section className="prefooter-cta">
         <div className="prefooter-inner animate-fade-up">
-          <div className="cta-icon-badge"><i className="fas fa-heart-circle-check"></i></div>
           <h2>You don't have to carry it all alone.</h2>
           <p>
             Join students and campus counselors finding clarity, emotional release, and guidance in a completely confidential space.
           </p>
           <div className="cta-actions">
             <Link to="/register" className="hero-btn-primary">
-              <i className="fas fa-user-shield"></i> Join SafeSpace Free
+              Join SafeSpace Free
             </Link>
             <Link to="/login" className="hero-btn-ghost">
-              <i className="fas fa-arrow-right-to-bracket"></i> Sign In to Your Space
+              Sign In to Your Space
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ── 10. Footer & Crisis Hotlines ── */}
+      {/*  10. Footer & Crisis Hotlines  */}
       <footer className="landing-footer">
         <div className="footer-crisis-bar">
           <i className="fas fa-phone-volume"></i>
           <span><strong>In Immediate Crisis?</strong> National Mental Health Crisis Hotline: <strong>1553</strong> (Toll-Free) or <strong>0966-351-4518</strong></span>
         </div>
         <p style={{ marginTop: '1.25rem' }}>SafeSpace • Dedicated to Student Well-Being, Psychological Safety & Dignity</p>
-        <p style={{ marginTop: '0.4rem', fontSize: '0.75rem', color: '#BACBD8' }}>
+        <p style={{ marginTop: '0.4rem', fontSize: '0.75rem', color: '#8CA4A2' }}>
           Built with the Compass Psychological Services Design System for University Mental Health Programs
         </p>
       </footer>

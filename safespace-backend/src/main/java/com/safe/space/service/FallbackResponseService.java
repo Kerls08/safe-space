@@ -30,11 +30,14 @@ import java.util.concurrent.ConcurrentHashMap;
  *   - ETA messaging ("A counselor will be with you shortly")
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class FallbackResponseService {
 
     private final CrisisKeywordService crisisKeywordService;
+
+    public FallbackResponseService(CrisisKeywordService crisisKeywordService) {
+        this.crisisKeywordService = crisisKeywordService;
+    }
 
     /**
      * Tracks professional online status.
@@ -178,52 +181,25 @@ public class FallbackResponseService {
         boolean crisisDetected = messageContent != null
                 && crisisKeywordService.isCrisis(messageContent);
 
-        // Analyze message content quality
-        MessageAnalysis analysis = analyzeMessage(messageContent);
-
-        // Build response
         StringBuilder response = new StringBuilder();
         String responseType;
 
         if (crisisDetected) {
             // CRISIS OVERRIDE — immediate safety response
             responseType = "crisis_fallback";
-            response.append("🚨 I hear you, and I want you to know that you are not alone. ");
-            response.append("Your safety matters more than anything else right now.\n\n");
-            response.append("📞 Please reach out to these resources immediately:\n");
-            response.append("• National Mental Health Crisis Hotline: 1553\n");
+            response.append("Your safety matters most right now. If you are experiencing an immediate crisis or emotional emergency, please reach out directly:\n\n");
+            response.append("• National Mental Health Crisis Hotline: 1553 (Toll-Free, 24/7)\n");
             response.append("• Crisis Text Line: Text HELLO to 741741\n");
             response.append("• Emergency Services: 911\n\n");
-            response.append("A counselor has been notified and will prioritize your session. ");
-            response.append("Please stay with us — help is on the way.");
-        } else if (analysis.isGibberish) {
-            // GIBBERISH / RANDOM TEXT — gentle clarification
-            responseType = "clarification_fallback";
-            response.append(getClarificationResponse(sessionStatus));
-        } else if (analysis.isTooShort) {
-            // VERY SHORT MESSAGE — encourage elaboration
-            responseType = "short_fallback";
-            response.append(getShortMessageResponse(messageContent, sessionStatus));
-        } else if (analysis.isGreeting) {
-            // GREETING — respond warmly
-            responseType = "greeting_fallback";
-            response.append(getGreetingResponse(sessionStatus));
-        } else if (analysis.isQuestion) {
-            // QUESTION — acknowledge and redirect
-            responseType = "question_fallback";
-            response.append(getQuestionResponse(sessionStatus));
-        } else if (isFirstMessage && "WAITING".equals(sessionStatus)) {
-            // FIRST MEANINGFUL MESSAGE — warm welcome + content acknowledgment
-            responseType = "welcome_fallback";
-            response.append(getContextualWelcome(messageContent, emotion, energy));
+            response.append("A campus counselor has been flagged to prioritize your room as soon as possible.");
         } else if ("WAITING".equals(sessionStatus)) {
-            // SUBSEQUENT MEANINGFUL MESSAGE while waiting
             responseType = "waiting_fallback";
-            response.append(getContextualWaitingResponse(messageContent, emotion, energy));
+            response.append("Your conversation is queued. A campus counselor will be assigned to your room shortly. Everything you share here is completely anonymous and confidential.");
         } else {
-            // ACTIVE but professional offline
+            // ACTIVE but professional is offline/away
             responseType = "offline_fallback";
-            response.append(getOfflineResponse(emotion, energy));
+            response.append("Your counselor is currently away. Your message has been safely saved and will be reviewed as soon as they return.\n\n");
+            response.append("If you need immediate support, please contact the National Crisis Hotline (1553) or campus health services.");
         }
 
         FallbackResult result = new FallbackResult(
@@ -234,9 +210,7 @@ public class FallbackResponseService {
                 energy
         );
 
-        log.info("Fallback generated: type={}, crisis={}, analysis=[gibberish={},short={},greeting={},question={}]",
-                responseType, crisisDetected, analysis.isGibberish, analysis.isTooShort, analysis.isGreeting, analysis.isQuestion);
-
+        log.info("System notice generated: type={}, crisis={}", responseType, crisisDetected);
         return result;
     }
 
@@ -329,9 +303,9 @@ public class FallbackResponseService {
 
     private String getClarificationResponse(String sessionStatus) {
         List<String> responses = List.of(
-                "I'm here to help, but I wasn't quite able to understand your message. Could you try rephrasing what you'd like to share? A counselor will be with you soon. 💚",
+                "I'm here to help, but I wasn't quite able to understand your message. Could you try rephrasing what you'd like to share? A counselor will be with you soon.",
                 "It seems like your message may not have come through clearly. Could you tell me more about what's on your mind? I want to make sure you get the right support.",
-                "I want to make sure I understand you correctly. Could you share a bit more about how you're feeling or what you need help with? A counselor is on the way. 🌿",
+                "I want to make sure I understand you correctly. Could you share a bit more about how you're feeling or what you need help with? A counselor is on the way.",
                 "I noticed your message might not have conveyed what you intended. Feel free to share your thoughts — whether it's about stress, feelings, or anything at all. We're here for you."
         );
         return responses.get(new Random().nextInt(responses.size()));
@@ -339,25 +313,25 @@ public class FallbackResponseService {
 
     private String getShortMessageResponse(String content, String sessionStatus) {
         List<String> responses = List.of(
-                "Thanks for reaching out! Could you share a bit more about what's going on? The more context you provide, the better a counselor can help you. 💚",
+                "Thanks for reaching out. Could you share a bit more about what's going on? The more context you provide, the better a counselor can support you.",
                 "I'm listening. Feel free to share more details about what you're experiencing — there's no judgment here, and everything stays confidential.",
-                "I'd love to help you better. Could you elaborate a little more on what's on your mind? A counselor will join soon and will want to understand your situation."
+                "I'd like to help you better. Could you elaborate a little more on what's on your mind? A counselor will join soon and will want to understand your situation."
         );
         return responses.get(new Random().nextInt(responses.size()));
     }
 
     private String getGreetingResponse(String sessionStatus) {
         if ("WAITING".equals(sessionStatus)) {
-            return "Hi there! 👋 Welcome to Safe Space. A counselor will be with you shortly. In the meantime, feel free to share what's on your mind — everything here is anonymous and confidential. 💚";
+            return "Welcome to SafeSpace. A campus counselor will be with you shortly. In the meantime, feel free to share what's on your mind — everything here is anonymous and confidential.";
         }
-        return "Hi! 👋 Your counselor has stepped away briefly, but they'll be back soon. Feel free to share what's on your mind while you wait.";
+        return "Hello. Your counselor has stepped away briefly, but they will be back soon. Feel free to share what's on your mind while you wait.";
     }
 
     private String getQuestionResponse(String sessionStatus) {
         if ("WAITING".equals(sessionStatus)) {
-            return "That's a great question! A counselor will be with you shortly and will be able to give you a thorough answer. Feel free to share any additional details while you wait. 💚";
+            return "Thank you for asking. A counselor will be with you shortly and will be able to give you a thorough answer. Feel free to share any additional details while you wait.";
         }
-        return "Good question! Your counselor has stepped away briefly but will be back to answer that soon. Your message has been saved for them. 🌿";
+        return "Thank you for your question. Your counselor has stepped away briefly but will be back to answer that soon. Your message has been saved for them.";
     }
 
     private String getContextualWelcome(String messageContent, String emotion, int energy) {
@@ -373,16 +347,16 @@ public class FallbackResponseService {
         }
 
         sb.append("\n\nA counselor will be with you as soon as possible. ");
-        sb.append("Everything you share here is completely anonymous and confidential. 💚");
+        sb.append("Everything you share here is completely anonymous and confidential.");
         return sb.toString();
     }
 
     private String getContextualWaitingResponse(String messageContent, String emotion, int energy) {
         List<String> responses = List.of(
-                "Thank you for sharing more. Your messages are being saved and a counselor will review everything when they join. You're not alone in this. 💚",
+                "Thank you for sharing more. Your messages are being saved and a counselor will review everything when they join. You are not alone in this.",
                 "I appreciate you continuing to open up. A professional is being notified and will be with you soon. Everything you've shared will help them understand your situation better.",
-                "Thank you for trusting us with this. Your counselor will see all your messages when they arrive. Keep sharing if it helps — we're here for you. 🌿",
-                "Your words matter, and they're being heard. A counselor is on the way and will have the full context of everything you've shared. Hang in there. 💚"
+                "Thank you for trusting us with this. Your counselor will see all your messages when they arrive. Keep sharing if it helps — we're here for you.",
+                "Your words matter, and they're being heard. A counselor is on the way and will have the full context of everything you've shared. Please hang in there."
         );
         return responses.get(new Random().nextInt(responses.size()));
     }
@@ -417,17 +391,17 @@ public class FallbackResponseService {
 
         if (energy >= 7) {
             responses = List.of(
-                    "I hear you. Your feelings are valid, and a counselor is being notified right now. Please stay with us. 💚",
+                    "I hear you. Your feelings are valid, and a counselor is being notified right now. Please stay with us.",
                     "Thank you for continuing to share. You're being incredibly brave. A professional will join very soon.",
                     "I'm still here with you. A counselor has been alerted and will prioritize connecting with you.",
                     "Your messages are being received. Someone who can help is on their way. You are not alone in this."
             );
         } else {
             responses = List.of(
-                    "Thank you for sharing. A counselor will be available soon. Everything you share here stays confidential. 💚",
+                    "Thank you for sharing. A counselor will be available soon. Everything you share here stays confidential.",
                     "I'm here with you while we wait. A professional will join your conversation shortly.",
                     "Your message has been received. A counselor is on the way — in the meantime, feel free to share as much as you'd like.",
-                    "Thank you for your patience. A professional will be with you soon. This is a safe space for you. 🌿"
+                    "Thank you for your patience. A professional will be with you soon. This is a safe space for you."
             );
         }
 
@@ -439,15 +413,15 @@ public class FallbackResponseService {
 
         if (energy >= 7) {
             responses = List.of(
-                    "Your counselor has momentarily stepped away. Your message has been saved, and they will see it as soon as they return. You are not forgotten. 💚",
+                    "Your counselor has momentarily stepped away. Your message has been saved, and they will see it as soon as they return. You are not forgotten.",
                     "It looks like your counselor is briefly unavailable, but your message is important and has been recorded. They'll respond as soon as possible.",
-                    "Your counselor will be right back. In the meantime, please know that everything you've shared is safe and will be reviewed. You matter. 🌿"
+                    "Your counselor will be right back. In the meantime, please know that everything you've shared is safe and will be reviewed. You matter."
             );
         } else {
             responses = List.of(
-                    "Your counselor is briefly away. Your message has been saved, and they'll respond when they return. Thank you for your patience. 💚",
+                    "Your counselor is briefly away. Your message has been saved, and they'll respond when they return. Thank you for your patience.",
                     "It seems your counselor has stepped away momentarily. Don't worry — your message is safe and they'll follow up soon.",
-                    "Your counselor will return shortly. Feel free to keep sharing — everything is saved for when they're back. 🌿"
+                    "Your counselor will return shortly. Feel free to keep sharing — everything is saved for when they're back."
             );
         }
 

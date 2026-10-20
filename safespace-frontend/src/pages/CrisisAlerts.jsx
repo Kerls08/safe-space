@@ -5,9 +5,9 @@ import { useAuth } from '../context/AuthContext';
 import '../styles/alerts.css';
 
 const SEV_ICONS = {
-  CRITICAL: 'fa-skull-crossbones',
+  CRITICAL: 'fa-circle-exclamation',
   HIGH: 'fa-triangle-exclamation',
-  MODERATE: 'fa-exclamation',
+  MODERATE: 'fa-circle-info',
   LOW: 'fa-info-circle',
   INFO: 'fa-info'
 };
@@ -62,19 +62,6 @@ function timeAgo(ds) {
   return Math.floor(s / 86400) + 'd ago';
 }
 
-function getEmoji(e) {
-  const m = {
-    Sad: '😢',
-    Angry: '😤',
-    Anxious: '😰',
-    Lonely: '🥺',
-    Frustrated: '😩',
-    Neutral: '😐',
-    Relieved: '😌',
-    Happy: '😊'
-  };
-  return m[e] || '💭';
-}
 
 export default function CrisisAlerts() {
   const navigate = useNavigate();
@@ -111,22 +98,29 @@ export default function CrisisAlerts() {
   // Helper: Effective Outreach Status with live session map fallback
   const getEffectiveOutreachStatus = useCallback(
     (a) => {
+      const matchSession = (s) => {
+        if (!s) return null;
+        if (s.deletedByStudent) return 'CONCLUDED';
+        if (s.status === 'ACTIVE') return 'ACTIVE';
+        if (s.status === 'DECLINED') return 'DECLINED';
+        if (s.status === 'CLOSED') return 'CONCLUDED';
+        if (s.status === 'INVITED') return 'INVITED';
+        return null;
+      };
+
       if (a.chatSessionId && sessionsMap[a.chatSessionId]) {
-        const s = sessionsMap[a.chatSessionId];
-        if (s.status === 'ACTIVE') return 'ACTIVE';
-        if (s.status === 'DECLINED') return 'DECLINED';
-        if (s.status === 'CLOSED') return 'CONCLUDED';
+        const res = matchSession(sessionsMap[a.chatSessionId]);
+        if (res) return res;
       } else if (a.pseudonym && sessionsMap[a.pseudonym]) {
-        const s = sessionsMap[a.pseudonym];
-        if (s.status === 'ACTIVE') return 'ACTIVE';
-        if (s.status === 'DECLINED') return 'DECLINED';
-        if (s.status === 'CLOSED') return 'CONCLUDED';
+        const res = matchSession(sessionsMap[a.pseudonym]);
+        if (res) return res;
       }
 
       if (a.outreachStatus && a.outreachStatus !== 'NONE') return a.outreachStatus;
       const notes = (a.resolutionNotes || '').toLowerCase();
       if (notes.includes('declined') || notes.includes('vent only')) return 'DECLINED';
       if (notes.includes('invite')) return 'INVITED';
+      if (notes.includes('concluded') || notes.includes('closed')) return 'CONCLUDED';
       return 'NONE';
     },
     [sessionsMap]
@@ -151,7 +145,8 @@ export default function CrisisAlerts() {
       const entry = map[a.pseudonym];
       entry.count += 1;
       const eff = getEffectiveOutreachStatus(a);
-      if (eff === 'ACTIVE') {
+      const isAck = !!a.acknowledgedBy || a.status === 'ACKNOWLEDGED';
+      if (eff === 'ACTIVE' && isAck) {
         entry.outreachStatus = 'ACTIVE';
         entry.chatSessionId = a.chatSessionId || entry.chatSessionId;
       } else if (eff === 'DECLINED' && entry.outreachStatus !== 'ACTIVE') {
@@ -174,9 +169,19 @@ export default function CrisisAlerts() {
   const getCaseOutreachStatus = useCallback(
     (a) => {
       let st = getEffectiveOutreachStatus(a);
+
+      // Clinical Triage Guard: An alert sitting unassigned in Needs Action cannot be in active counseling
+      const isUnassigned = (a.status === 'ACTIVE' || !a.acknowledgedBy) && !a.resolvedBy;
+      if (isUnassigned && st === 'ACTIVE') {
+        return 'NONE';
+      }
+
       if ((st === 'NONE' || st === 'INVITED') && a.pseudonym && studentStateMap[a.pseudonym]) {
         const sState = studentStateMap[a.pseudonym];
-        if (sState.outreachStatus === 'DECLINED' || sState.outreachStatus === 'ACTIVE') {
+        if (sState.outreachStatus === 'DECLINED') {
+          return sState.outreachStatus;
+        }
+        if (sState.outreachStatus === 'ACTIVE' && !isUnassigned) {
           return sState.outreachStatus;
         }
       }
@@ -342,6 +347,7 @@ export default function CrisisAlerts() {
           ...(sessData.declined || [])
         ];
         all.forEach((s) => {
+          if (s.deletedByStudent) return;
           if (s.sessionId) map[s.sessionId] = s;
           if (s.studentPseudonym) {
             const existing = map[s.studentPseudonym];
@@ -425,6 +431,7 @@ export default function CrisisAlerts() {
             ...(sessRes.declined || [])
           ];
           all.forEach((s) => {
+            if (s.deletedByStudent) return;
             if (s.sessionId) map[s.sessionId] = s;
             if (s.studentPseudonym) {
               const existing = map[s.studentPseudonym];
@@ -535,7 +542,7 @@ export default function CrisisAlerts() {
   const handleAcknowledge = async (alertId) => {
     try {
       await alertsApi.acknowledge(alertId);
-      showToast('Alert acknowledged ✓');
+      showToast('Alert acknowledged');
       loadAllData(true);
     } catch (e) {
       console.warn('Ack error:', e);
@@ -546,10 +553,10 @@ export default function CrisisAlerts() {
     try {
       if (group.pseudonym) {
         await alertsApi.acknowledgeCase(group.pseudonym);
-        showToast(`Case acknowledged for ${group.pseudonym} ✓`);
+        showToast(`Case acknowledged for ${group.pseudonym}`);
       } else if (group.primaryAlert?.alertId) {
         await alertsApi.acknowledge(group.primaryAlert.alertId);
-        showToast('Alert acknowledged ✓');
+        showToast('Alert acknowledged');
       }
       loadAllData(true);
     } catch (e) {
@@ -562,10 +569,10 @@ export default function CrisisAlerts() {
       if (pseudonym) {
         const notes = 'Student exercised autonomy to vent only (outreach declined). Verified safe to monitor, no acute escalation required.';
         await alertsApi.resolveCase(pseudonym, notes);
-        showToast(`Case for ${pseudonym} marked as resolved (Monitored) ✓`);
+        showToast(`Case for ${pseudonym} marked as resolved (Monitored)`);
       } else {
         await alertsApi.quickResolveDeclined(alertId);
-        showToast('Marked as resolved (Monitored) ✓');
+        showToast('Marked as resolved (Monitored)');
       }
       loadAllData(true);
     } catch (e) {
@@ -590,14 +597,14 @@ export default function CrisisAlerts() {
       if (pendingAction.action === 'resolve') {
         if (pendingAction.pseudonym) {
           await alertsApi.resolveCase(pendingAction.pseudonym, resolutionNotes);
-          showToast(`Case resolved for ${pendingAction.pseudonym} ✓`);
+          showToast(`Case resolved for ${pendingAction.pseudonym}`);
         } else {
           await alertsApi.resolve(pendingAction.alertId, resolutionNotes);
-          showToast('Alert resolved ✓');
+          showToast('Alert resolved');
         }
       } else {
         await alertsApi.escalate(pendingAction.alertId, resolutionNotes);
-        showToast('Alert escalated ⬆');
+        showToast('Alert escalated');
       }
       closeResolveModal();
       loadAllData(true);
@@ -611,7 +618,7 @@ export default function CrisisAlerts() {
     try {
       setHistoryActionLoadingId(`archive-${alertId}`);
       await alertsApi.archiveAlert(alertId);
-      showToast(pseudonym ? `Archived case for ${pseudonym} 📦` : 'Case archived 📦');
+      showToast(pseudonym ? `Archived case for ${pseudonym}` : 'Case archived');
       await Promise.all([loadHistory(true), loadStats(true)]);
     } catch (err) {
       console.error('Failed to archive case:', err);
@@ -626,7 +633,7 @@ export default function CrisisAlerts() {
     try {
       setHistoryActionLoadingId(`restore-${alertId}`);
       await alertsApi.unarchiveAlert(alertId);
-      showToast(pseudonym ? `Restored case for ${pseudonym} to active history ↺` : 'Case restored to active history ↺');
+      showToast(pseudonym ? `Restored case for ${pseudonym} to active history` : 'Case restored to active history');
       await Promise.all([loadHistory(true), loadStats(true)]);
     } catch (err) {
       console.error('Failed to restore case:', err);
@@ -656,7 +663,7 @@ export default function CrisisAlerts() {
       await alertsApi.deleteAlert(deleteModal.alertId);
       const studentName = deleteModal.pseudonym;
       closeDeleteModal();
-      showToast(`Permanently deleted case for ${studentName} 🗑`);
+      showToast(`Permanently deleted case for ${studentName}`);
       await Promise.all([loadHistory(true), loadStats(true)]);
     } catch (err) {
       console.error('Failed to delete case:', err);
@@ -706,21 +713,21 @@ export default function CrisisAlerts() {
       }
 
       if (data.status === 'invite_already_pending') {
-        showToast('Outreach invitation is already pending with this student ✓');
+        showToast('Outreach invitation is already pending with this student');
         setActiveTab('inProgress');
         loadAllData(true);
         return;
       }
 
       if (data.status === 'invite_sent') {
-        showToast('Outreach invitation sent to student ✓ (Waiting for student to accept)');
+        showToast('Outreach invitation sent to student (Waiting for student to accept)');
         setActiveTab('inProgress');
         loadAllData(true);
         return;
       }
 
       if (data.status === 'claimed_waiting') {
-        showToast("Connected to student's waiting chat session ✓ Redirecting...");
+        showToast("Connected to student's waiting chat session. Redirecting...");
         setTimeout(() => {
           navigate(`/anon-chat?session=${data.sessionId}`);
         }, 700);
@@ -728,7 +735,7 @@ export default function CrisisAlerts() {
       }
 
       if (data.status === 'resumed_active') {
-        showToast('Resuming active counseling session ✓ Redirecting...');
+        showToast('Resuming active counseling session. Redirecting...');
         setTimeout(() => {
           navigate(`/anon-chat?session=${data.sessionId}`);
         }, 700);
@@ -760,14 +767,14 @@ export default function CrisisAlerts() {
     if (a.status === 'RESOLVED') {
       return (
         <span className="alert-tag status-resolved">
-          <i className="fas fa-check"></i> RESOLVED
+          RESOLVED
         </span>
       );
     }
     if (a.status === 'ESCALATED') {
       return (
         <span className="alert-tag status-escalated">
-          <i className="fas fa-arrow-up"></i> ESCALATED
+          ESCALATED
         </span>
       );
     }
@@ -775,30 +782,33 @@ export default function CrisisAlerts() {
     if (outreachStatus === 'DECLINED') {
       return (
         <span className="alert-tag status-declined">
-          <i className="fas fa-hand-holding-heart"></i> ⚠️ Outreach Declined (Venting Only)
+          Outreach Declined (Venting Only)
         </span>
       );
     }
     if (outreachStatus === 'INVITED') {
       return (
         <span className="alert-tag status-invited">
-          <i className="fas fa-paper-plane"></i> ⏳ Outreach Sent (Awaiting Student)
+          Outreach Sent (Awaiting Student)
         </span>
       );
     }
-    if (outreachStatus === 'ACTIVE') {
+    if (outreachStatus === 'ACTIVE' && activeTab === 'inProgress') {
       return (
         <span className="alert-tag status-chat-active">
-          <i className="fas fa-comments"></i> 💬 In Active Counseling
+          In Active Counseling
         </span>
       );
     }
-    if (outreachStatus === 'CONCLUDED') {
+    if (outreachStatus === 'CONCLUDED' && activeTab !== 'needsAction') {
       return (
         <span className="alert-tag status-concluded">
-          <i className="fas fa-check-circle"></i> ✓ Session Concluded
+          Session Concluded
         </span>
       );
+    }
+    if (a.status === 'ACTIVE') {
+      return null;
     }
     return (
       <span className={`alert-tag status-${a.status?.toLowerCase()}`}>{a.status}</span>
@@ -869,7 +879,7 @@ export default function CrisisAlerts() {
     let bannerClass = 'unassigned';
     let assignmentText = (
       <span>
-        <i className="fas fa-triangle-exclamation"></i> <strong>Unassigned</strong> — Awaiting clinician response
+        <strong>Unassigned</strong>: Awaiting clinician response
       </span>
     );
     let timestampText = '';
@@ -879,7 +889,7 @@ export default function CrisisAlerts() {
       const staffName = formatStaffName(resolvedUser, resolvedName);
       assignmentText = (
         <span>
-          <i className="fas fa-circle-check"></i> Resolved by: <strong>{staffName}</strong>
+          Resolved by: <strong>{staffName}</strong>
         </span>
       );
       if (resolvedAt) {
@@ -890,7 +900,7 @@ export default function CrisisAlerts() {
       const staffName = formatStaffName(ackUser, ackName);
       assignmentText = (
         <span>
-          <i className="fas fa-user-check"></i> Assigned &amp; Monitored by: <strong>{staffName}</strong>
+          Monitored by: <strong>{staffName}</strong>
         </span>
       );
       if (ackAt) {
@@ -920,12 +930,12 @@ export default function CrisisAlerts() {
                   className="alert-thread-badge"
                   title={`${totalCount} recent posts from this student grouped into one incident case`}
                 >
-                  <i className="fas fa-layer-group"></i> {totalCount} posts detected
+                  ({totalCount} expressions logged)
                 </span>
               )}
               {isCritical && (
                 <span className="alert-critical-badge">
-                  <i className="fas fa-skull-crossbones"></i> CRITICAL — IMMEDIATE ACTION
+                  <i className="fas fa-circle-exclamation"></i> CRITICAL: IMMEDIATE ACTION
                 </span>
               )}
               {canAck && !resolvedUser && ackUser && (
@@ -934,14 +944,14 @@ export default function CrisisAlerts() {
                     className="alert-tag alert-tag-new-activity"
                     title={`Student submitted additional rant (${timeAgo(newestUnreviewedAlert?.createdAt)}) while this case is in progress`}
                   >
-                    <i className="fas fa-bell"></i> 🔴 New rant submitted ({timeAgo(newestUnreviewedAlert?.createdAt)})
+                    New rant submitted ({timeAgo(newestUnreviewedAlert?.createdAt)})
                   </span>
                 ) : (
                   <span
                     className="alert-tag alert-tag-unreviewed"
                     title={`Unreviewed rant submitted ${timeAgo(newestUnreviewedAlert?.createdAt)}`}
                   >
-                    <i className="fas fa-clock"></i> ⚠️ Unreviewed rant ({timeAgo(newestUnreviewedAlert?.createdAt)})
+                    Unreviewed rant ({timeAgo(newestUnreviewedAlert?.createdAt)})
                   </span>
                 )
               )}
@@ -987,7 +997,7 @@ export default function CrisisAlerts() {
                     <div key={child.alertId || child.id} className="thread-history-card">
                       <div className="thread-history-header">
                         <span className="thread-history-time">
-                          <i className="far fa-clock"></i> {timeAgo(child.createdAt)}
+                          {timeAgo(child.createdAt)}
                         </span>
                         <div className="thread-history-tags">
                           {(child.status === 'ACTIVE' || (ackAt && parseDateString(child.createdAt)?.getTime() > parseDateString(ackAt)?.getTime() + 5000)) && (
@@ -996,11 +1006,11 @@ export default function CrisisAlerts() {
                             </span>
                           )}
                           {child.energyScore && (
-                            <span className="thread-tag energy">⚡ {child.energyScore}/10</span>
+                            <span className={`thread-tag energy ${child.energyScore >= 8 ? 'intensity-high' : ''}`}>Intensity {child.energyScore}/10</span>
                           )}
                           {child.emotionTag && (
                             <span className="thread-tag emotion">
-                              {getEmoji(child.emotionTag)} {child.emotionTag}
+                              {child.emotionTag}
                             </span>
                           )}
                         </div>
@@ -1019,11 +1029,11 @@ export default function CrisisAlerts() {
             <span className={`alert-tag sev-${a.severity?.toLowerCase()}`}>{a.severity}</span>
             {a.emotionTag && (
               <span className="alert-tag emotion">
-                {getEmoji(a.emotionTag)} {a.emotionTag}
+                {a.emotionTag}
               </span>
             )}
             {a.energyScore && (
-              <span className="alert-tag type">⚡ {a.energyScore}/10 Energy</span>
+              <span className={`alert-tag ${a.energyScore >= 8 ? 'intensity-high' : 'type'}`}>Intensity {a.energyScore}/10</span>
             )}
             {renderOutreachStatusTag(a)}
             {a.archived && (
@@ -1033,63 +1043,55 @@ export default function CrisisAlerts() {
             )}
           </div>
 
-          {/* Dedicated Outreach Declined Callout */}
-          {outreachStatus === 'DECLINED' && (
-            <div className="alert-declined-callout">
-              <div className="declined-callout-icon">
-                <i className="fas fa-hand-holding-heart"></i>
-              </div>
-              <div className="declined-callout-text">
-                <strong>Student declined counseling reach-out (prefers to vent only).</strong>
-                <span>
-                  Clinical oversight: Student opted out of chat. Review this post to confirm it is safe to monitor, or escalate if acute danger is present.
-                </span>
-              </div>
-            </div>
-          )}
+          {/* Active Callouts: Only display when case is active (not resolved/archived) */}
+          {a.status !== 'RESOLVED' && a.status !== 'ARCHIVED' && (
+            <>
+              {outreachStatus === 'DECLINED' && (
+                <div className="alert-declined-callout">
+                  <div className="declined-callout-text">
+                    <strong>Student declined counseling reach-out (prefers to vent only).</strong>
+                    <span>
+                      Clinical oversight: Student opted out of chat. Monitored for safety; escalate if acute danger is present.
+                    </span>
+                  </div>
+                </div>
+              )}
 
-          {/* Dedicated Active Counseling Callout */}
-          {outreachStatus === 'ACTIVE' && (
-            <div className="alert-active-chat-callout">
-              <div className="active-callout-icon">
-                <i className="fas fa-comments"></i>
-              </div>
-              <div className="active-callout-text">
-                <strong>Student accepted outreach — Active counseling session in progress.</strong>
-                <span>A clinician is currently connected in anonymous chat with this student.</span>
-              </div>
-            </div>
-          )}
+              {outreachStatus === 'ACTIVE' && activeTab === 'inProgress' && (
+                <div className="alert-active-chat-callout">
+                  <div className="active-callout-text">
+                    <strong>Student accepted outreach: Active counseling session in progress.</strong>
+                    <span>A clinician is currently connected in anonymous chat with this student.</span>
+                  </div>
+                </div>
+              )}
 
-          {/* Dedicated Outreach Pending Callout */}
-          {outreachStatus === 'INVITED' && (
-            <div className="alert-invited-callout">
-              <div className="invited-callout-icon">
-                <i className="fas fa-paper-plane"></i>
-              </div>
-              <div className="invited-callout-text">
-                <strong>Outreach invitation sent — Awaiting student response.</strong>
-                <span>An invitation check-in has been sent to the student. Waiting for student to accept or decline.</span>
-              </div>
-            </div>
+              {outreachStatus === 'INVITED' && (
+                <div className="alert-invited-callout">
+                  <div className="invited-callout-text">
+                    <strong>Outreach invitation sent: Awaiting student response.</strong>
+                    <span>An invitation check-in has been sent to the student. Waiting for student to accept or decline.</span>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* Dedicated Bottom Report Details: Student + Assigned Clinician */}
           <div className={`alert-assigned-banner ${bannerClass}`}>
             <div className="assigned-lead">
               <span className="alert-tag student-tag">
-                <i className="fas fa-user-shield"></i> Student: <strong>{a.pseudonym || 'Anonymous'}</strong>
+                Student: <strong>{a.pseudonym || 'Anonymous'}</strong>
               </span>
               {assignmentText}
             </div>
             {timestampText && (
               <div className="assigned-time">
-                <i className="far fa-clock"></i>{' '}
                 {a.resolvedBy ? `Resolved ${timestampText}` : `Claimed ${timestampText}`}
               </div>
             )}
             {a.archived && a.archivedBy && (
-              <div className="assigned-time" style={{ marginLeft: 'auto', color: '#64748b' }}>
+              <div className="assigned-time" style={{ marginLeft: 'auto', color: '#728590' }}>
                 <i className="fas fa-box-archive"></i> Archived {a.archivedAt ? timeAgo(a.archivedAt) : ''} by {formatStaffName(a.archivedBy)}
               </div>
             )}
@@ -1098,7 +1100,6 @@ export default function CrisisAlerts() {
           {/* Resolution Notes (if any) */}
           {a.resolutionNotes && (
             <div className="alert-notes-box">
-              <i className="fas fa-clipboard-check"></i>
               <div className="notes-content">
                 <span className="notes-label">Resolution Notes:</span>
                 {a.resolutionNotes}
@@ -1147,7 +1148,6 @@ export default function CrisisAlerts() {
                 <button
                   type="button"
                   className="btn-alert chat"
-                  style={{ background: '#fffbeb', color: '#b45309', borderColor: '#fde68a' }}
                   disabled={initiatingAlertId === targetAlertId}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1156,13 +1156,9 @@ export default function CrisisAlerts() {
                   title="Review before sending re-invitation to a student who preferred to vent"
                 >
                   {initiatingAlertId === targetAlertId ? (
-                    <>
-                      <i className="fas fa-spinner fa-spin"></i> Re-inviting...
-                    </>
+                    'Re-inviting...'
                   ) : (
-                    <>
-                      <i className="fas fa-envelope-open-text"></i> Re-invite...
-                    </>
+                    'Re-invite...'
                   )}
                 </button>
               </>
@@ -1183,7 +1179,7 @@ export default function CrisisAlerts() {
                   <button
                     type="button"
                     className="btn-alert"
-                    style={{ background: '#f8fafc', color: '#64748b', borderColor: '#cbd5e1', cursor: 'not-allowed' }}
+                    style={{ background: '#F4F7F7', color: '#728590', borderColor: '#E1E8EB', cursor: 'not-allowed' }}
                     disabled
                     title="Outreach invitation is currently pending student response"
                   >
@@ -1328,7 +1324,7 @@ export default function CrisisAlerts() {
     );
   };
 
-  // ── Unified Case Partitioning & Cross-Tab Deduplication ──
+  // Unified Case Partitioning & Cross-Tab Deduplication
   // Track pseudonyms with active casework in inProgressAlerts
   const inProgressPseudonymSet = useMemo(() => {
     const set = new Set();
@@ -1536,7 +1532,7 @@ export default function CrisisAlerts() {
           id="tabInProgress"
           onClick={() => handleTabSwitch('inProgress')}
         >
-          <i className="fas fa-spinner"></i> In Progress
+          <i className="fas fa-clock-rotate-left"></i> In Progress
           {groupedInProgress.length > 0 && (
             <span className="tab-count" id="inProgressCount">
               {groupedInProgress.length}
@@ -1548,7 +1544,7 @@ export default function CrisisAlerts() {
           id="tabHistory"
           onClick={() => handleTabSwitch('history')}
         >
-          <i className="fas fa-archive"></i> Resolved History
+          <i className="fas fa-box-archive"></i> Resolved History
           {unseenResolvedCount > 0 && (
             <span className="tab-count tab-count-history" id="historyCount">
               {unseenResolvedCount}
@@ -1570,12 +1566,12 @@ export default function CrisisAlerts() {
                 sev === 'ALL'
                   ? 'All'
                   : sev === 'CRITICAL'
-                  ? '🔴 Critical'
+                  ? 'Critical'
                   : sev === 'HIGH'
-                  ? '🟠 High'
+                  ? 'High'
                   : sev === 'MODERATE'
-                  ? '🟡 Moderate'
-                  : '🟢 Low';
+                  ? 'Moderate'
+                  : 'Low';
               return (
                 <button
                   key={sev}
@@ -1594,7 +1590,7 @@ export default function CrisisAlerts() {
                 <p>
                   {currentSevFilter !== 'ALL'
                     ? `No ${currentSevFilter.toLowerCase()} alerts`
-                    : 'All clear — no incoming alerts needing action'}
+                    : 'All clear; no incoming alerts needing action'}
                 </p>
               </div>
             ) : (
@@ -1619,19 +1615,19 @@ export default function CrisisAlerts() {
               className={`sev-pill pill-declined ${currentProgressFilter === 'DECLINED' ? 'active' : ''}`}
               onClick={() => setCurrentProgressFilter('DECLINED')}
             >
-              ⚠️ Outreach Declined <span className="pill-count" id="countProgDeclined">{countDeclinedCases}</span>
+              Outreach Declined <span className="pill-count" id="countProgDeclined">{countDeclinedCases}</span>
             </button>
             <button
               className={`sev-pill pill-active-chat ${currentProgressFilter === 'ACTIVE' ? 'active' : ''}`}
               onClick={() => setCurrentProgressFilter('ACTIVE')}
             >
-              💬 Active In-Session <span className="pill-count" id="countProgActive">{countActiveCases}</span>
+              Active In-Session <span className="pill-count" id="countProgActive">{countActiveCases}</span>
             </button>
             <button
               className={`sev-pill pill-invited ${currentProgressFilter === 'INVITED' ? 'active' : ''}`}
               onClick={() => setCurrentProgressFilter('INVITED')}
             >
-              ⏳ Invite Pending <span className="pill-count" id="countProgInvited">{countInvitedCases}</span>
+              Invite Pending <span className="pill-count" id="countProgInvited">{countInvitedCases}</span>
             </button>
           </div>
           <div id="inProgressContainer">
@@ -1662,9 +1658,9 @@ export default function CrisisAlerts() {
           <div className="severity-filters" id="historyFilters">
             {[
               { id: 'ALL', label: `All Active (${allHistoryCases.length})` },
-              { id: 'RESOLVED', label: `✅ Resolved (${allHistoryCases.filter((g) => g.allAlerts.some((al) => al.status === 'RESOLVED')).length})` },
-              { id: 'ESCALATED', label: `⬆ Escalated (${allHistoryCases.filter((g) => g.allAlerts.some((al) => al.status === 'ESCALATED')).length})` },
-              { id: 'ARCHIVED', label: `📦 Archived (${allArchivedCases.length})` }
+              { id: 'RESOLVED', label: `Resolved (${allHistoryCases.filter((g) => g.allAlerts.some((al) => al.status === 'RESOLVED')).length})` },
+              { id: 'ESCALATED', label: `Escalated (${allHistoryCases.filter((g) => g.allAlerts.some((al) => al.status === 'ESCALATED')).length})` },
+              { id: 'ARCHIVED', label: `Archived (${allArchivedCases.length})` }
             ].map((f) => (
               <button
                 key={f.id}
@@ -1706,7 +1702,7 @@ export default function CrisisAlerts() {
               {pendingAction.action === 'resolve' ? 'Resolve Case / Alert' : 'Escalate Alert'}
             </h3>
             <p
-              style={{ fontSize: '0.78rem', color: '#6b7280', marginBottom: '0.75rem' }}
+              style={{ fontSize: '0.78rem', color: '#728590', marginBottom: '0.75rem' }}
               id="modalDesc"
             >
               {pendingAction.action === 'resolve'
@@ -1737,44 +1733,63 @@ export default function CrisisAlerts() {
       {reOutreachModal.open && (
         <div className="modal-backdrop active" id="reOutreachModal">
           <div className="modal-box" style={{ maxWidth: '460px' }}>
-            <div className="modal-warning-icon">
-              <i className="fas fa-hand-holding-heart"></i>
-            </div>
             <h3
               style={{
-                textAlign: 'center',
-                fontSize: '1.15rem',
-                color: '#1e293b',
-                marginBottom: '0.4rem'
+                fontSize: '1.12rem',
+                fontWeight: '700',
+                color: '#182A34',
+                marginBottom: '0.5rem',
+                letterSpacing: '-0.01em'
               }}
             >
               Outreach Recently Declined
             </h3>
             <p
               style={{
-                fontSize: '0.85rem',
-                color: '#475569',
+                fontSize: '0.84rem',
+                color: '#51646E',
                 lineHeight: 1.5,
-                textAlign: 'center',
+                marginBottom: '0.75rem'
+              }}
+            >
+              Student <strong>{reOutreachModal.pseudonym}</strong> recently declined a counseling reach-out with note:
+            </p>
+            <div
+              style={{
+                background: '#F8FAFC',
+                border: '1px solid #E1E8EB',
+                borderLeft: '3px solid #7E9F9D',
+                borderRadius: '0.45rem',
+                padding: '0.55rem 0.75rem',
+                marginBottom: '0.85rem',
+                fontSize: '0.82rem',
+                color: '#182A34',
+                fontStyle: 'italic'
+              }}
+            >
+              "{reOutreachModal.message || 'Prefers to vent only'}"
+            </div>
+            <p
+              style={{
+                fontSize: '0.82rem',
+                color: '#51646E',
+                lineHeight: 1.5,
                 marginBottom: '1.25rem'
               }}
             >
-              Student <strong>{reOutreachModal.pseudonym}</strong> recently declined a counseling reach-out with note: <em>"Prefers to vent only"</em>.
-              <br /><br />
-              Sending repeated invitations may feel intrusive or overwhelming to the student while they are venting.
-              <br /><br />
-              Are you sure you want to send another invitation, or keep monitoring?
+              Sending repeated invitations may feel intrusive or overwhelming to the student while they are venting. Are you sure you want to send another invitation, or keep monitoring?
             </p>
-            <div className="modal-btns" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+            <div className="modal-btns">
               <button
+                type="button"
                 className="cancel"
                 onClick={() => setReOutreachModal({ open: false, alertId: null, pseudonym: '', message: '' })}
               >
                 Keep Monitoring
               </button>
               <button
+                type="button"
                 className="confirm"
-                style={{ background: '#d97706', borderColor: '#d97706' }}
                 onClick={handleConfirmReOutreach}
               >
                 Send Re-Invitation
@@ -1809,7 +1824,7 @@ export default function CrisisAlerts() {
               style={{
                 textAlign: 'center',
                 fontSize: '1.1rem',
-                color: '#1e293b',
+                color: '#182A34',
                 marginBottom: '0.5rem'
               }}
             >
@@ -1818,7 +1833,7 @@ export default function CrisisAlerts() {
             <div
               style={{
                 fontSize: '0.85rem',
-                color: '#475569',
+                color: '#51646E',
                 lineHeight: 1.5,
                 textAlign: 'center',
                 marginBottom: '1.25rem'
@@ -1829,7 +1844,7 @@ export default function CrisisAlerts() {
             <div className="modal-btns" style={{ justifyContent: 'center' }}>
               <button
                 className="confirm"
-                style={{ background: '#4f46e5', width: '100%' }}
+                style={{ background: '#243E4C', width: '100%' }}
                 onClick={() => setConflictModal({ open: false, title: '', message: '' })}
               >
                 I Understand
@@ -1846,7 +1861,7 @@ export default function CrisisAlerts() {
             <div className="delete-modal-icon">
               <i className="fas fa-triangle-exclamation"></i>
             </div>
-            <h3 style={{ margin: '0 0 0.5rem', color: '#1e293b', fontSize: '1.15rem' }}>
+            <h3 style={{ margin: '0 0 0.5rem', color: '#182A34', fontSize: '1.15rem' }}>
               Permanently Delete Case?
             </h3>
             <p className="delete-modal-desc">

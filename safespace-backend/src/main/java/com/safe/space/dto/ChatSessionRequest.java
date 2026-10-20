@@ -31,4 +31,10 @@ public class ChatSessionRequest {
      * (e.g., from a crisis alert) so the student can discover the session.
      */
     private String studentUserId;
+
+    /**
+     * If true, supersedes/closes any previous open sessions for this student
+     * and forces the creation of a brand-new chat session.
+     */
+    private boolean forceNew;
 }

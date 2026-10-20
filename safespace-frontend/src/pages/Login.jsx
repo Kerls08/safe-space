@@ -196,7 +196,7 @@ export default function Login() {
     }
   };
 
-  // ── Password Strength Calculator ──
+  // Password Strength Calculator
   const calcPwStrength = (pw) => {
     const hasLen = pw.length >= 8;
     const hasUpper = /[A-Z]/.test(pw);
@@ -213,7 +213,7 @@ export default function Login() {
   const pwChangeStrength = calcPwStrength(newPw);
   const forgotPwStrength = calcPwStrength(forgotNewPw);
 
-  // ── Forced Password Change Handler ──
+  // Forced Password Change Handler
   const handlePasswordChangeSubmit = async (e) => {
     e.preventDefault();
     setPwChangeError('');
@@ -253,7 +253,7 @@ export default function Login() {
     }
   };
 
-  // ── Forgot Password Handlers ──
+  // Forgot Password Handlers
   const handleForgotLookup = async (e) => {
     if (e) e.preventDefault();
     setForgotError('');
@@ -519,7 +519,7 @@ export default function Login() {
         </div>
       </div>
 
-      {/* ── Force Password Change Overlay ── */}
+      {/* Force Password Change Overlay */}
       <div
         className="pw-change-overlay"
         id="pwChangeOverlay"
@@ -651,7 +651,7 @@ export default function Login() {
         </div>
       </div>
 
-      {/* ── Forgot Password Recovery Modal ── */}
+      {/* Forgot Password Recovery Modal */}
       <div
         className="pw-change-overlay"
         id="forgotPwOverlay"
@@ -689,7 +689,7 @@ export default function Login() {
               </div>
             )}
 
-            {/* ── STEP 1: Account Lookup ── */}
+            {/* STEP 1: Account Lookup */}
             {forgotStep === 1 && (
               <div id="forgotStep1">
                 <div className="form-group">
@@ -720,7 +720,7 @@ export default function Login() {
                       <i className="fas fa-circle-exclamation"></i> <span>{forgotFieldErrors.identifier}</span>
                     </div>
                   )}
-                  <p style={{ fontSize: '0.75rem', color: '#6C7A92', marginTop: '6px', lineHeight: 1.4 }}>
+                  <p style={{ fontSize: '0.75rem', color: '#728590', marginTop: '6px', lineHeight: 1.4 }}>
                     Enter your Institutional ID to search for your registered recovery options.
                   </p>
                 </div>
@@ -745,10 +745,10 @@ export default function Login() {
               </div>
             )}
 
-            {/* ── STEP 2: Confirm Registered Email ── */}
+            {/* STEP 2: Confirm Registered Email */}
             {forgotStep === 2 && (
               <div id="forgotStep2">
-                <p style={{ fontSize: '0.85rem', color: '#334155', marginBottom: '1rem', fontWeight: 500 }}>
+                <p style={{ fontSize: '0.85rem', color: '#51646E', marginBottom: '1rem', fontWeight: 500 }}>
                   We found your account. A 6-digit recovery code will be dispatched to your registered email:
                 </p>
 
@@ -757,7 +757,7 @@ export default function Login() {
                     <i className="fas fa-envelope"></i>
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#161F36' }}>Registered Recovery Email</div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#182A34' }}>Registered Recovery Email</div>
                     <div style={{ fontSize: '0.85rem', color: '#1e5e3a', fontWeight: 700, marginTop: '2px' }} id="maskedEmailText">
                       {recoveryState.maskedEmail}
                     </div>
@@ -798,11 +798,11 @@ export default function Login() {
               </div>
             )}
 
-            {/* ── STEP 3: Enter 6-Digit OTP ── */}
+            {/* STEP 3: Enter 6-Digit OTP */}
             {forgotStep === 3 && (
               <div id="forgotStep3">
-                <p style={{ fontSize: '0.85rem', color: '#334155', marginBottom: '1.25rem', lineHeight: 1.4 }}>
-                  We sent a 6-digit verification code to <strong id="otpTargetText" style={{ color: '#161F36' }}>{recoveryState.maskedEmail}</strong>. Please check your inbox (and spam folder) and enter the code below:
+                <p style={{ fontSize: '0.85rem', color: '#51646E', marginBottom: '1.25rem', lineHeight: 1.4 }}>
+                  We sent a 6-digit verification code to <strong id="otpTargetText" style={{ color: '#182A34' }}>{recoveryState.maskedEmail}</strong>. Please check your inbox (and spam folder) and enter the code below:
                 </p>
 
                 <div className="form-group" style={{ textAlign: 'center' }}>
@@ -836,7 +836,7 @@ export default function Login() {
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', fontSize: '0.8rem' }}>
-                  <span style={{ color: '#6C7A92' }}>
+                  <span style={{ color: '#728590' }}>
                     <i className="fas fa-clock"></i> Expires: <strong id="otpCountdown" style={{ color: '#DC2626' }}>
                       {String(Math.floor(recoveryState.countdownSeconds / 60)).padStart(2, '0')}:{String(recoveryState.countdownSeconds % 60).padStart(2, '0')}
                     </strong>
@@ -883,10 +883,10 @@ export default function Login() {
               </div>
             )}
 
-            {/* ── STEP 4: Set New Password ── */}
+            {/* STEP 4: Set New Password */}
             {forgotStep === 4 && (
               <div id="forgotStep4">
-                <p style={{ fontSize: '0.85rem', color: '#334155', marginBottom: '1rem', fontWeight: 500 }}>
+                <p style={{ fontSize: '0.85rem', color: '#51646E', marginBottom: '1rem', fontWeight: 500 }}>
                   Create a new strong password for your account:
                 </p>
 
@@ -997,14 +997,14 @@ export default function Login() {
               </div>
             )}
 
-            {/* ── STEP 5: Success ── */}
+            {/* STEP 5: Success */}
             {forgotStep === 5 && (
               <div id="forgotStep5" style={{ textAlign: 'center' }}>
-                <div style={{ width: '4.5rem', height: '4.5rem', borderRadius: '1rem', background: 'linear-gradient(135deg, #161F36 0%, #223152 100%)', color: '#BACBD8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.75rem', margin: '0.5rem auto 1.25rem', boxShadow: '0 8px 22px rgba(22, 31, 54, 0.28)' }}>
+                <div style={{ width: '4.5rem', height: '4.5rem', borderRadius: '1rem', background: 'linear-gradient(135deg, #243E4C 0%, #1A313D 100%)', color: '#7E9F9D', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.75rem', margin: '0.5rem auto 1.25rem', boxShadow: '0 8px 22px rgba(24, 42, 52, 0.2)' }}>
                   <i className="fas fa-check"></i>
                 </div>
-                <h2 style={{ fontSize: '1.35rem', color: '#161F36', marginBottom: '0.5rem' }}>Password Reset Complete!</h2>
-                <p style={{ fontSize: '0.85rem', color: '#475569', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+                <h2 style={{ fontSize: '1.35rem', color: '#182A34', marginBottom: '0.5rem' }}>Password Reset Complete!</h2>
+                <p style={{ fontSize: '0.85rem', color: '#51646E', marginBottom: '1.5rem', lineHeight: 1.5 }}>
                   Your account password has been successfully updated. You can now sign in with your new credentials.
                 </p>
 

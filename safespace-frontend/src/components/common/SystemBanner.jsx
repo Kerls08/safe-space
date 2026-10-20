@@ -38,7 +38,7 @@ export default function SystemBanner() {
           left: 0,
           right: 0,
           zIndex: 999,
-          background: '#FEF3C7',
+          background: '#FFFBEB',
           color: '#92400E',
           padding: '0.65rem 1.25rem',
           borderBottom: '1px solid #FDE68A',
@@ -48,7 +48,7 @@ export default function SystemBanner() {
           gap: '0.6rem',
           fontSize: '0.85rem',
           fontWeight: 600,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+          boxShadow: '0 2px 8px rgba(24, 42, 52, 0.06)'
         }}
       >
         <i className="fas fa-triangle-exclamation" style={{ color: '#D97706', fontSize: '1rem' }}></i>
@@ -61,11 +61,11 @@ export default function SystemBanner() {
 
   if (isBroadcastActive) {
     const type = (status.broadcast.type || 'INFO').toUpperCase();
-    let bg = '#E0F2FE', text = '#0369A1', border = '#BAE6FD', icon = 'fas fa-bullhorn';
+    let bg = '#F4F7F7', text = '#243E4C', border = '#E1E8EB', icon = 'fas fa-bullhorn';
     if (type === 'WARNING') {
-      bg = '#FEF3C7'; text = '#92400E'; border = '#FDE68A'; icon = 'fas fa-triangle-exclamation';
+      bg = '#FFFBEB'; text = '#92400E'; border = '#FDE68A'; icon = 'fas fa-triangle-exclamation';
     } else if (type === 'CRITICAL') {
-      bg = '#FEE2E2'; text = '#991B1B'; border = '#FECACA'; icon = 'fas fa-circle-exclamation';
+      bg = '#FEF2F2'; text = '#991B1B'; border = '#FECACA'; icon = 'fas fa-circle-exclamation';
     }
 
     return (
@@ -87,7 +87,7 @@ export default function SystemBanner() {
           gap: '0.6rem',
           fontSize: '0.84rem',
           fontWeight: 600,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+          boxShadow: '0 2px 8px rgba(24, 42, 52, 0.06)'
         }}
       >
         <i className={icon} style={{ fontSize: '0.95rem' }}></i>

@@ -13,9 +13,9 @@ import {
 const AuthContext = createContext(null);
 
 export const roleBadgeColors = {
-  STUDENT: { bg: '#E8EFF4', color: '#161F36', border: '#BACBD8', label: 'STUDENT' },
-  PROFESSIONAL: { bg: '#F2EDE2', color: '#161F36', border: '#E0D7C6', label: 'PROFESSIONAL' },
-  SUPER_ADMIN: { bg: '#F2EDE2', color: '#161F36', border: '#E0D7C6', label: 'PROFESSIONAL' },
+  STUDENT: { bg: '#F4F7F7', color: '#243E4C', border: '#7E9F9D', label: 'STUDENT' },
+  PROFESSIONAL: { bg: '#F9FBFA', color: '#243E4C', border: '#E1E8EB', label: 'PROFESSIONAL' },
+  SUPER_ADMIN: { bg: '#F9FBFA', color: '#243E4C', border: '#E1E8EB', label: 'PROFESSIONAL' },
   MAINTENANCE: { bg: '#E0F2FE', color: '#0369A1', border: '#BAE6FD', label: 'MAINTENANCE (IT)' },
   ADMIN: { bg: '#EDE9FE', color: '#5B21B6', border: '#DDD6FE', label: 'ADMINISTRATOR' }
 };

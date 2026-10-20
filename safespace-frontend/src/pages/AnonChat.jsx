@@ -18,6 +18,33 @@ function formatTime(timestamp) {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+function getStudentInitials(pseudonym) {
+  if (!pseudonym) return 'AN';
+  // Strip trailing numeric ID, e.g. "SoftSky-2342" -> "SoftSky", "Anon-River-9123" -> "Anon-River"
+  const clean = pseudonym.replace(/[-_]?\d+$/, '');
+  const parts = clean.split(/[-_\s]+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  } else if (parts.length === 1) {
+    const camel = parts[0].replace(/([a-z])([A-Z])/g, '$1 $2').split(' ');
+    if (camel.length >= 2) {
+      return (camel[0][0] + camel[1][0]).toUpperCase();
+    }
+    return parts[0].substring(0, 2).toUpperCase();
+  }
+  return 'AN';
+}
+
+function getProfessionalInitials(name) {
+  if (!name) return 'GC';
+  const clean = name.replace(/^(Dr\.|Atty\.|Prof\.|Mr\.|Ms\.|Mrs\.)\s+/i, '').trim();
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return clean.substring(0, 2).toUpperCase() || 'GC';
+}
+
 export default function AnonChat() {
   const location = useLocation();
   const { role, username, fullName, updateBadge } = useAuth();
@@ -28,31 +55,46 @@ export default function AnonChat() {
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [activeSession, setActiveSession] = useState(null);
   const activeSessionIdRef = useRef(activeSessionId);
+  const previousSessionsRef = useRef(null);
   useEffect(() => {
     activeSessionIdRef.current = activeSessionId;
   }, [activeSessionId]);
 
   const handleSelectSession = useCallback((sid) => {
     setActiveSessionId(sid);
-    if (!isProfessional && sid) {
+    setSessions((prevSessions) => {
+      const match = prevSessions.find((s) => s.sessionId === sid);
+      if (match) {
+        setActiveSession({ ...match, unreadCount: 0 });
+      }
       const seenInvites = new Set(JSON.parse(localStorage.getItem('safespace_seen_invites') || '[]'));
-      seenInvites.add(sid);
-      localStorage.setItem('safespace_seen_invites', JSON.stringify(Array.from(seenInvites)));
+      if (sid && !seenInvites.has(sid)) {
+        seenInvites.add(sid);
+        localStorage.setItem('safespace_seen_invites', JSON.stringify(Array.from(seenInvites)));
+      }
 
-      setSessions((prevSessions) => {
+      const updated = prevSessions.map((s) => {
+        if (s.sessionId === sid) {
+          return { ...s, unreadCount: 0 };
+        }
+        return s;
+      });
+
+      if (!isProfessional && sid) {
         let remaining = 0;
-        prevSessions.forEach((s) => {
+        updated.forEach((s) => {
           if (s.sessionId === sid) return;
+          if (s.status === 'CLOSED' || s.status === 'DECLINED') return;
           if (s.status === 'INVITED') {
             if (!seenInvites.has(s.sessionId)) remaining++;
-          } else if (s.status !== 'CLOSED' && s.status !== 'DECLINED' && (s.unreadCount || 0) > 0) {
+          } else if ((s.unreadCount || 0) > 0) {
             remaining += s.unreadCount;
           }
         });
         updateBadge('anon-chat', remaining);
-        return prevSessions;
-      });
-    }
+      }
+      return updated;
+    });
   }, [isProfessional, updateBadge]);
   const [messages, setMessages] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -103,6 +145,25 @@ export default function AnonChat() {
   const [deleteModalLoading, setDeleteModalLoading] = useState(false);
   const [declineHotlineModalOpen, setDeclineHotlineModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  // Header Actions Overflow Menu
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [isRefreshingMessages, setIsRefreshingMessages] = useState(false);
+  const headerMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (headerMenuRef.current && !headerMenuRef.current.contains(e.target)) {
+        setHeaderMenuOpen(false);
+      }
+    };
+    if (headerMenuOpen) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [headerMenuOpen]);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -190,29 +251,28 @@ export default function AnonChat() {
         const pseudonyms = JSON.parse(localStorage.getItem('safespace_pseudonyms') || '[]');
         const map = new Map();
 
-        for (const p of pseudonyms) {
-          try {
-            const list = await chatApi.getStudentSessions(p);
-            (list || []).forEach((s) => map.set(s.sessionId, s));
-          } catch (e) { /* ignore */ }
-        }
+        const [pseudoResults, userSessions] = await Promise.all([
+          Promise.all(pseudonyms.map((p) => chatApi.getStudentSessions(p).catch(() => []))),
+          username ? chatApi.getUserSessions(username).catch(() => []) : Promise.resolve([])
+        ]);
 
-        if (username) {
-          try {
-            const userSessions = await chatApi.getUserSessions(username);
-            (userSessions || []).forEach((s) => {
-              map.set(s.sessionId, s);
-              // Save pseudonym
-              if (s.studentPseudonym && !pseudonyms.includes(s.studentPseudonym)) {
-                pseudonyms.unshift(s.studentPseudonym);
-                localStorage.setItem('safespace_pseudonyms', JSON.stringify(pseudonyms));
-              }
-            });
-          } catch (e) { /* ignore */ }
-        }
+        pseudoResults.flat().forEach((s) => {
+          if (s && s.sessionId) map.set(s.sessionId, s);
+        });
 
-        const sessionList = Array.from(map.values());
-        setSessions(sessionList);
+        (userSessions || []).forEach((s) => {
+          if (s && s.sessionId) {
+            map.set(s.sessionId, s);
+            if (s.studentPseudonym && !pseudonyms.includes(s.studentPseudonym)) {
+              pseudonyms.unshift(s.studentPseudonym);
+              localStorage.setItem('safespace_pseudonyms', JSON.stringify(pseudonyms));
+            }
+          }
+        });
+
+        const sessionList = Array.from(map.values()).sort(
+          (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+        );
 
         const currentActiveId = activeSessionIdRef.current;
         const seenInvites = new Set(JSON.parse(localStorage.getItem('safespace_seen_invites') || '[]'));
@@ -221,12 +281,36 @@ export default function AnonChat() {
           localStorage.setItem('safespace_seen_invites', JSON.stringify(Array.from(seenInvites)));
         }
 
+        const normalizedList = sessionList.map((s) => {
+          if (s.sessionId === currentActiveId || s.status === 'CLOSED' || s.status === 'DECLINED') {
+            return { ...s, unreadCount: 0 };
+          }
+          if (s.status === 'INVITED' && seenInvites.has(s.sessionId)) {
+            return { ...s, unreadCount: 0 };
+          }
+          return s;
+        });
+
+        setSessions(normalizedList);
+
+        // Notify student if a waiting session was accepted by a counselor while browsing elsewhere
+        if (!isProfessional && previousSessionsRef.current) {
+          normalizedList.forEach((s) => {
+            const prev = previousSessionsRef.current.find((p) => p.sessionId === s.sessionId);
+            if (prev && prev.status === 'WAITING' && s.status === 'ACTIVE' && s.sessionId !== currentActiveId) {
+              showToast(`${s.professionalName || 'A guidance counselor'} has joined your conversation. Ready to chat.`);
+            }
+          });
+        }
+        previousSessionsRef.current = normalizedList;
+
         let studentUnviewed = 0;
-        sessionList.forEach((s) => {
+        normalizedList.forEach((s) => {
           if (s.sessionId === currentActiveId) return;
+          if (s.status === 'CLOSED' || s.status === 'DECLINED') return;
           if (s.status === 'INVITED') {
             if (!seenInvites.has(s.sessionId)) studentUnviewed++;
-          } else if (s.status !== 'CLOSED' && s.status !== 'DECLINED' && (s.unreadCount || 0) > 0) {
+          } else if ((s.unreadCount || 0) > 0) {
             studentUnviewed += s.unreadCount;
           }
         });
@@ -310,10 +394,25 @@ export default function AnonChat() {
         
         if (isMounted) {
           if (isProfessional && activeSession && activeSession.status === 'INVITED' && sessionData.status === 'ACTIVE') {
-            showToast(`Student ${sessionData.studentPseudonym || 'Anonymous'} accepted the outreach invitation! Active counseling session is ready 💚`);
+            showToast(`Student ${sessionData.studentPseudonym || 'Anonymous'} accepted the outreach invitation. Active counseling session is ready.`);
+            loadSessions();
+          }
+          if (!isProfessional && activeSession && activeSession.status === 'WAITING' && sessionData.status === 'ACTIVE') {
+            showToast(`${sessionData.professionalName || 'A guidance counselor'} has joined your conversation. Your session is now live.`);
             loadSessions();
           }
           setActiveSession(sessionData);
+          setSessions((prev) => {
+            let changed = false;
+            const updated = prev.map((s) => {
+              if (s.sessionId === activeSessionId && (s.unreadCount || 0) > 0) {
+                changed = true;
+                return { ...s, unreadCount: 0 };
+              }
+              return s;
+            });
+            return changed ? updated : prev;
+          });
           setMessages((prev) => {
             const list = msgList || [];
             const pending = prev.filter((m) => m.isSending || (m.messageId && String(m.messageId).startsWith('temp-')));
@@ -356,6 +455,75 @@ export default function AnonChat() {
       clearInterval(interval);
     };
   }, [activeSessionId, isProfessional]);
+
+  // Seamless manual refresh of messages and session state
+  const handleRefreshMessages = useCallback(async () => {
+    if (isRefreshingMessages || !activeSessionId) return;
+    setIsRefreshingMessages(true);
+    const startTime = Date.now();
+
+    try {
+      const viewerType = isProfessional ? 'professional' : 'student';
+      const [sessionData, msgList] = await Promise.all([
+        chatApi.getSession(activeSessionId).catch((err) => {
+          console.warn('Session info refresh error:', err);
+          return null;
+        }),
+        chatApi.getMessages(activeSessionId, viewerType)
+      ]);
+
+      if (sessionData) {
+        if (isProfessional && activeSession && activeSession.status === 'INVITED' && sessionData.status === 'ACTIVE') {
+          showToast(`Student ${sessionData.studentPseudonym || 'Anonymous'} accepted the outreach invitation.`);
+        }
+        if (!isProfessional && activeSession && activeSession.status === 'WAITING' && sessionData.status === 'ACTIVE') {
+          showToast(`${sessionData.professionalName || 'A guidance counselor'} has joined your conversation.`);
+        }
+        setActiveSession(sessionData);
+      }
+
+      let newCount = 0;
+      if (Array.isArray(msgList)) {
+        setMessages((prev) => {
+          const pending = prev.filter((m) => m.isSending || (m.messageId && String(m.messageId).startsWith('temp-')));
+          let nextMessages;
+          if (pending.length === 0) {
+            nextMessages = msgList;
+          } else {
+            const serverIds = new Set(msgList.map((m) => m.messageId));
+            const stillPending = pending.filter((p) => !serverIds.has(p.messageId));
+            nextMessages = [...msgList, ...stillPending];
+          }
+
+          if (msgList.length > prev.length) {
+            newCount = msgList.length - prev.length;
+          }
+          return nextMessages;
+        });
+      }
+
+      // Sync sidebar sessions list
+      loadSessions();
+
+      // Ensure smooth perceptible feedback duration (min 450ms)
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 450) {
+        await new Promise((r) => setTimeout(r, 450 - elapsed));
+      }
+
+      setHeaderMenuOpen(false);
+
+      if (newCount > 0 && isNearBottomRef.current) {
+        setTimeout(() => scrollToBottom('smooth'), 50);
+      }
+    } catch (err) {
+      console.error('Error refreshing messages:', err);
+      setHeaderMenuOpen(false);
+      showToast('Could not refresh messages. Please check your connection.');
+    } finally {
+      setIsRefreshingMessages(false);
+    }
+  }, [activeSessionId, isProfessional, activeSession, isRefreshingMessages, loadSessions, scrollToBottom]);
 
   // Check counselor availability continuously
   useEffect(() => {
@@ -459,6 +627,8 @@ export default function AnonChat() {
       return;
     }
     if (topic) setModalTopic(topic);
+    const stored = JSON.parse(localStorage.getItem('safespace_pseudonyms') || '[]');
+    setModalPseudonym(stored[0] || generateRandomPseudonym());
     setNewChatModalOpen(true);
   };
 
@@ -474,14 +644,15 @@ export default function AnonChat() {
     if (pendingChoiceSession) {
       try {
         await chatApi.closeSession(pendingChoiceSession.sessionId, 'student');
-        loadSessions();
       } catch (e) {
         console.warn('Error closing old session:', e);
       }
     }
     setChoiceModalOpen(false);
     setPendingChoiceSession(null);
+    setModalPseudonym(generateRandomPseudonym());
     setNewChatModalOpen(true);
+    loadSessions();
   };
 
   // Create session (Student)
@@ -496,6 +667,7 @@ export default function AnonChat() {
         stored.unshift(chosenPseudo);
         localStorage.setItem('safespace_pseudonyms', JSON.stringify(stored));
       }
+      localStorage.setItem('safespace_pseudonym', chosenPseudo);
 
       const newSession = await chatApi.createSession({
         pseudonym: chosenPseudo,
@@ -504,12 +676,31 @@ export default function AnonChat() {
         userId: username,
         topic,
         emotionTag: modalEmotion,
-        energyScore: parseInt(modalEnergy, 10)
+        energyScore: parseInt(modalEnergy, 10),
+        forceNew: true
       });
 
+      // 1. Immediately close modal & reset input fields
       setNewChatModalOpen(false);
       setModalTopic('');
-      handleSelectSession(newSession.sessionId);
+
+      // 2. Seamless transition: immediately set active session and reset messages
+      setActiveSessionId(newSession.sessionId);
+      setActiveSession(newSession);
+      setMessages([]);
+
+      // 3. Immediately reflect in sessions list so it shows active in sidebar
+      setSessions((prev) => {
+        const remaining = prev.filter((s) => s.sessionId !== newSession.sessionId);
+        return [newSession, ...remaining];
+      });
+
+      // 4. Mark active in local seen invites
+      const seenInvites = new Set(JSON.parse(localStorage.getItem('safespace_seen_invites') || '[]'));
+      seenInvites.add(newSession.sessionId);
+      localStorage.setItem('safespace_seen_invites', JSON.stringify(Array.from(seenInvites)));
+
+      // 5. Asynchronously refresh full sessions from backend
       loadSessions();
     } catch (err) {
       showToast(err.message || 'Failed to create chat session.');
@@ -611,9 +802,12 @@ export default function AnonChat() {
   const filteredSessions = sessions.filter((s) => {
     // Tab filter
     if (filterTab === 'unread') {
+      if (s.status === 'CLOSED' || s.status === 'DECLINED') return false;
       const seenInvites = new Set(JSON.parse(localStorage.getItem('safespace_seen_invites') || '[]'));
-      const isUnviewedInvite = !isProfessional && s.status === 'INVITED' && !seenInvites.has(s.sessionId);
-      if ((s.unreadCount || 0) === 0 && !isUnviewedInvite) return false;
+      if (!isProfessional && s.status === 'INVITED') {
+        return !seenInvites.has(s.sessionId);
+      }
+      return (s.unreadCount || 0) > 0;
     } else if (filterTab === 'checkin') {
       if (s.status !== 'INVITED' && !(s.topic && s.topic.includes('Outreach'))) return false;
     } else if (filterTab === 'waiting' && isProfessional) {
@@ -633,7 +827,7 @@ export default function AnonChat() {
 
   return (
     <div className={`chat-layout ${activeSessionId ? 'mobile-chat-active' : ''}`} id="chatLayout">
-      {/* ── Sidebar ── */}
+      {/* Sidebar */}
       <aside className="chat-sidebar" id="chatSidebar">
         <div className="sidebar-header">
           <div className="sidebar-header-top">
@@ -720,7 +914,7 @@ export default function AnonChat() {
               <button
                 type="button"
                 id="filterTabCheckin"
-                className={`filter-tab-pill ${filterTab === 'checkin' ? 'active' : ''} ${sessions.some((s) => s.status === 'INVITED') && filterTab !== 'checkin' ? 'highlighted' : ''}`}
+                className={`filter-tab-pill ${filterTab === 'checkin' ? 'active' : ''} ${sessions.some((s) => s.status === 'INVITED' && !new Set(JSON.parse(localStorage.getItem('safespace_seen_invites') || '[]')).has(s.sessionId)) && filterTab !== 'checkin' ? 'highlighted' : ''}`}
                 onClick={() => setFilterTab('checkin')}
               >
                 Counselor Check-in
@@ -743,23 +937,78 @@ export default function AnonChat() {
             <div className="sidebar-empty" id="sidebarEmpty" style={{ display: 'flex' }}>
               <i className="fas fa-comment-slash"></i>
               <p>
-                {isProfessional
-                  ? 'No sessions in queue.<br>Waiting for students...'
-                  : 'No conversations yet.<br>Start one to talk anonymously.'}
+                {isProfessional ? (
+                  <>No sessions in queue.<br />Waiting for students...</>
+                ) : (
+                  <>No conversations yet.<br />Start one to talk anonymously.</>
+                )}
               </p>
             </div>
           ) : (
             filteredSessions.map((s) => {
               const seenInvites = new Set(JSON.parse(localStorage.getItem('safespace_seen_invites') || '[]'));
               const isSelected = s.sessionId === activeSessionId;
-              const isUnviewedInvite = !isProfessional && s.status === 'INVITED' && !seenInvites.has(s.sessionId);
-              const hasUnread = ((s.unreadCount || 0) > 0 || isUnviewedInvite) && !isSelected;
-              const displayCount = (s.unreadCount || 0) > 0 ? s.unreadCount : (isUnviewedInvite ? 1 : 0);
-              const initials = (s.studentPseudonym || 'AN').split('-').slice(1, 2).join('').substring(0, 2).toUpperCase() || 'AN';
+              const isClosedOrDeclined = s.status === 'CLOSED' || s.status === 'DECLINED';
+              const isInvite = s.status === 'INVITED';
+              const isSeenInvite = isInvite && (seenInvites.has(s.sessionId) || isSelected);
+
+              let hasUnread = false;
+              let displayCount = 0;
+
+              if (!isSelected && !isClosedOrDeclined) {
+                if (!isProfessional && isInvite) {
+                  if (!isSeenInvite) {
+                    hasUnread = true;
+                    displayCount = 1;
+                  }
+                } else if (!isInvite || isProfessional) {
+                  if ((s.unreadCount || 0) > 0) {
+                    hasUnread = true;
+                    displayCount = s.unreadCount;
+                  }
+                }
+              }
               const time = formatTime(s.lastMessageAt || s.createdAt);
               const statusClass = s.status ? s.status.toLowerCase() : 'waiting';
-              const statusLabel = s.status === 'INVITED' ? 'CHECK-IN' : s.status;
-              const avatarClass = s.crisisFlag ? 'crisis' : (s.status === 'INVITED' ? 'invited' : (s.status === 'WAITING' ? 'waiting' : (s.status === 'ACTIVE' ? 'active' : '')));
+              const statusLabel = s.status === 'CLOSED' ? 'CONCLUDED' : (s.status === 'INVITED' ? 'CHECK-IN' : s.status);
+              let avatarClass = isProfessional
+                ? (s.crisisFlag ? 'crisis' : (s.status === 'INVITED' ? 'invited' : (s.status === 'WAITING' ? 'waiting' : (s.status === 'ACTIVE' ? 'active' : ''))))
+                : '';
+
+              // Dual-Perspective Title, Avatar, & Preview Resolution
+              let displayTitle = '';
+              let displayInitials = null;
+              let displayIcon = null;
+              let displayPreview = s.topic || 'Support session';
+
+              if (isProfessional) {
+                // Counselor view: Shows student pseudonym and letter initials
+                displayTitle = s.studentPseudonym || 'Anonymous Student';
+                displayInitials = getStudentInitials(s.studentPseudonym);
+              } else {
+                // Student view: Shows who the student is talking with
+                if (s.status === 'INVITED') {
+                  displayTitle = s.professionalName || 'Guidance Counselor Check-in';
+                  displayInitials = s.professionalName ? getProfessionalInitials(s.professionalName) : 'GC';
+                  displayIcon = null;
+                  displayPreview = 'Supportive check-in from campus counseling';
+                } else if (s.professionalName) {
+                  displayTitle = s.professionalName;
+                  displayInitials = getProfessionalInitials(s.professionalName);
+                } else if (s.status === 'WAITING') {
+                  displayTitle = 'Counselor Consultation';
+                  displayIcon = 'fa-user-doctor';
+                  displayPreview = s.topic ? `Concern: ${s.topic}` : 'Queued for next available counselor';
+                } else {
+                  displayTitle = s.professionalName || 'Campus Counselor';
+                  displayInitials = 'CC';
+                }
+
+                // Sanitize internal diagnostic scoring from student preview
+                if (displayPreview && (displayPreview.includes('[Crisis Outreach]') || displayPreview.includes('score:') || displayPreview.includes('High energy'))) {
+                  displayPreview = 'Supportive check-in from counseling staff';
+                }
+              }
 
               return (
                 <div
@@ -776,12 +1025,14 @@ export default function AnonChat() {
                   {isProfessional && s.crisisFlag && s.status === 'WAITING' && (
                     <div className="session-crisis-dot" title="Crisis Alert"></div>
                   )}
-                  <div className={`session-avatar ${avatarClass}`}>{initials}</div>
+                  <div className={`session-avatar ${avatarClass}`}>
+                    {displayIcon ? <i className={`fas ${displayIcon}`}></i> : (displayInitials || 'AN')}
+                  </div>
                   <div className="session-info">
                     <div className="session-info-top">
-                      <span className="session-name">{s.studentPseudonym || 'Anonymous Student'}</span>
+                      <span className="session-name" title={displayTitle}>{displayTitle}</span>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                        {hasUnread && (
+                        {hasUnread && displayCount > 0 && (
                           <span className="session-unread-badge">{displayCount > 9 ? '9+' : displayCount}</span>
                         )}
                         <span className="session-time">{time}</span>
@@ -798,24 +1049,30 @@ export default function AnonChat() {
                         </button>
                       </span>
                     </div>
-                    <div className="session-preview">{s.topic || 'Support session'}</div>
+                    <div className="session-preview session-topic" title={displayPreview}>{displayPreview}</div>
                     <div className="session-meta">
-                      <span className={`session-status-badge ${statusClass}`}>
-                        <i className={`fas fa-${s.status === 'ACTIVE' ? 'circle' : s.status === 'WAITING' ? 'clock' : s.status === 'INVITED' ? 'envelope-open-text' : 'lock'}`}></i>{' '}
-                        {statusLabel}
-                      </span>
-                      {isProfessional && (
-                        <span
-                          className={`availability-indicator ${s.studentOnline ? 'online' : 'offline'}`}
-                          style={{ marginLeft: 0 }}
-                          title={`Student is ${s.studentOnline ? 'Online' : 'Offline'}`}
-                        >
-                          <span className="avail-dot"></span>
-                          <span>{s.studentOnline ? 'Online' : 'Offline'}</span>
-                        </span>
-                      )}
-                      {s.emotionTag && (
-                        <span className="session-emotion-badge">{s.emotionTag}</span>
+                      {isProfessional ? (
+                        <>
+                          <span className={`session-status-badge ${statusClass}`}>
+                            <i className={`fas fa-${s.status === 'ACTIVE' ? 'circle' : s.status === 'WAITING' ? 'clock' : s.status === 'INVITED' ? 'envelope-open-text' : 'lock'}`}></i>{' '}
+                            {statusLabel}
+                          </span>
+                          <span
+                            className={`availability-indicator ${s.studentOnline ? 'online' : 'offline'}`}
+                            style={{ marginLeft: 0 }}
+                            title={`Student is ${s.studentOnline ? 'Online' : 'Offline'}`}
+                          >
+                            <span className="avail-dot"></span>
+                            <span>{s.studentOnline ? 'Online' : 'Offline'}</span>
+                          </span>
+                          {s.emotionTag && (
+                            <span className="session-emotion-badge">{s.emotionTag}</span>
+                          )}
+                        </>
+                      ) : (
+                        s.status === 'CLOSED' ? (
+                          <span className="session-status-badge closed">Concluded</span>
+                        ) : null
                       )}
                     </div>
                   </div>
@@ -826,23 +1083,16 @@ export default function AnonChat() {
         </div>
       </aside>
 
-      {/* ── Main Chat Area ── */}
+      {/* Main Chat Area */}
       <main className="chat-main" id="chatMain">
 
         {/* 1. Welcome State: Sanctuary Lounge */}
         {!activeSessionId && (
           isProfessional ? (
             <div className="chat-welcome pro-welcome" id="proWelcome" style={{ display: 'flex' }}>
-              <div className="welcome-badge-pill">
-                <i className="fas fa-user-md"></i> Clinical Counselor Gateway
-              </div>
-              <div className="welcome-icon pro-icon">
-                <i className="fas fa-headset"></i>
-              </div>
               <h2>Counseling &amp; Triage Desk</h2>
               <p>
-                Welcome, <strong style={{ color: '#161F36' }}>{fullName || username || 'Counselor'}</strong>.
-                You are connected in active responder mode. Select a student conversation from the waiting queue to provide real-time confidential support.
+                Active responder mode is enabled. Select a student conversation from the waiting queue to review intake details and provide confidential support.
               </p>
 
               <div className="pro-status-banner">
@@ -859,7 +1109,7 @@ export default function AnonChat() {
                   </div>
                 </div>
                 <div className="welcome-feature">
-                  <i className="fas fa-user-shield"></i>
+                  <i className="fas fa-id-badge"></i>
                   <div className="feature-text">
                     <strong>Anonymous Boundaries</strong>
                     <span>Student identities remain pseudonymized for objective care</span>
@@ -874,18 +1124,12 @@ export default function AnonChat() {
                 </div>
               </div>
 
-              <div className="pro-queue-hint" style={{ marginTop: '1.25rem', fontSize: '0.85rem', color: '#6C7A92' }}>
+              <div className="pro-queue-hint" style={{ marginTop: '1.25rem', fontSize: '0.85rem', color: '#51646E' }}>
                 <i className="fas fa-arrow-left"></i> Select a conversation from the sidebar to review and respond
               </div>
             </div>
           ) : (
             <div className="chat-welcome" id="chatWelcome" style={{ display: 'flex' }}>
-              <div className="welcome-badge-pill">
-                <i className="fas fa-shield-alt"></i> Confidential &amp; Encrypted Dialogue
-              </div>
-              <div className="welcome-icon">
-                <i className="fas fa-hand-holding-heart"></i>
-              </div>
               <h2>Safe, Anonymous Sanctuary</h2>
               <p>
                 Connect with a campus mental health professional in real time. Your student credentials, name, and email are completely detached from this session.
@@ -899,21 +1143,21 @@ export default function AnonChat() {
                     className="quick-topic-chip"
                     onClick={() => triggerOpenNewChat('Feeling overwhelmed with academic deadlines and coursework')}
                   >
-                    <i className="fas fa-graduation-cap"></i> Academic Overwhelm
+                    Academic Overwhelm
                   </button>
                   <button
                     type="button"
                     className="quick-topic-chip"
                     onClick={() => triggerOpenNewChat('Struggling with persistent anxiety and racing thoughts')}
                   >
-                    <i className="fas fa-wind"></i> Anxiety &amp; Stress
+                    Anxiety &amp; Stress
                   </button>
                   <button
                     type="button"
                     className="quick-topic-chip"
                     onClick={() => triggerOpenNewChat('Feeling isolated and needing a supportive listener')}
                   >
-                    <i className="fas fa-heart"></i> Need to Talk
+                    Need to Talk
                   </button>
                 </div>
               </div>
@@ -924,31 +1168,11 @@ export default function AnonChat() {
                 id="welcomeStartBtn"
                 onClick={() => triggerOpenNewChat()}
               >
-                <i className="fas fa-comment-dots"></i> Begin Anonymous Session
+                Begin Anonymous Session
               </button>
 
-              <div className="welcome-features">
-                <div className="welcome-feature">
-                  <i className="fas fa-user-shield"></i>
-                  <div className="feature-text">
-                    <strong>Pseudonym Only</strong>
-                    <span>No names or student IDs shared</span>
-                  </div>
-                </div>
-                <div className="welcome-feature">
-                  <i className="fas fa-lock"></i>
-                  <div className="feature-text">
-                    <strong>Decoupled Records</strong>
-                    <span>Separated from your academic files</span>
-                  </div>
-                </div>
-                <div className="welcome-feature">
-                  <i className="fas fa-certificate"></i>
-                  <div className="feature-text">
-                    <strong>Licensed Counselors</strong>
-                    <span>Compassionate, certified guidance</span>
-                  </div>
-                </div>
+              <div className="welcome-privacy-notice">
+                All conversations are confidential, end-to-end encrypted, and completely decoupled from university records.
               </div>
             </div>
           )
@@ -971,134 +1195,145 @@ export default function AnonChat() {
                 >
                   <i className="fas fa-arrow-left"></i>
                 </button>
-                <div className={`chat-header-avatar ${activeSession?.status === 'INVITED' ? 'invited' : ''}`} id="headerAvatar">
-                  {isProfessional ? (
-                    (activeSession?.studentPseudonym || 'AN').split('-').slice(1, 2).join('').substring(0, 2).toUpperCase() || 'AN'
-                  ) : (
-                    <i className="fas fa-user-shield"></i>
-                  )}
+                {/* Header Avatar */}
+                <div className="chat-avatar-wrapper">
+                  <div className="chat-header-avatar" id="headerAvatar">
+                    {isProfessional ? (
+                      getStudentInitials(activeSession?.studentPseudonym)
+                    ) : activeSession?.professionalName ? (
+                      getProfessionalInitials(activeSession.professionalName)
+                    ) : (
+                      'GC'
+                    )}
+                  </div>
                 </div>
                 <div className="chat-header-info">
                   <h4 id="headerName">
                     {isProfessional
                       ? (activeSession?.studentPseudonym || 'Anonymous Student')
-                      : (activeSession?.professionalName || 'Waiting for counselor...')}
+                      : (activeSession?.professionalName || (activeSession?.status === 'WAITING' ? 'Counselor Consultation' : 'Guidance Counselor'))}
                   </h4>
-                  <span id="headerStatus">
-                    <span className={`session-status-badge ${activeSession?.status ? activeSession.status.toLowerCase() : 'waiting'}`} id="headerBadge">
-                      {activeSession?.status || 'WAITING'}
+                  <div className="chat-header-meta" id="headerStatus">
+                    <span className={`status-indicator-dot ${isProfessional ? (activeSession?.studentOnline ? 'online' : 'offline') : (counselorOnline ? 'online' : 'offline')}`}></span>
+                    <span className="status-indicator-text">
+                      {isProfessional ? (
+                        activeSession?.studentOnline ? 'Active now' : 'Away'
+                      ) : activeSession?.status === 'WAITING' ? (
+                        'Waiting for counselor to join'
+                      ) : counselorOnline ? (
+                        'Available now'
+                      ) : (
+                        'Away'
+                      )}
                     </span>
-                    {!isProfessional && (
-                      <span className={`availability-indicator ${counselorOnline ? 'online' : 'offline'}`} id="availIndicator" style={{ display: 'inline-flex', marginLeft: '0.5rem' }}>
-                        <span className="avail-dot"></span>
-                        <span id="availText">{counselorOnline ? 'Online' : 'Offline'}</span>
+                    {activeSession?.status === 'CLOSED' && (
+                      <span className="session-status-badge closed" id="headerBadge">
+                        CONCLUDED
                       </span>
                     )}
-                    {isProfessional && (
-                      <span className={`availability-indicator ${activeSession?.studentOnline ? 'online' : 'offline'}`} id="studentAvailIndicator" style={{ display: 'inline-flex', marginLeft: '0.5rem' }}>
-                        <span className="avail-dot"></span>
-                        <span id="studentAvailText">{activeSession?.studentOnline ? 'Online' : 'Offline'}</span>
-                      </span>
-                    )}
-                  </span>
+                  </div>
                 </div>
               </div>
 
               <div className="chat-header-actions">
-                <button
-                  type="button"
-                  title="Refresh messages"
-                  onClick={async () => {
-                    const msgs = await chatApi.getMessages(activeSessionId, isProfessional ? 'professional' : 'student');
-                    setMessages(msgs || []);
-                  }}
-                >
-                  <i className="fas fa-rotate-right"></i>
-                </button>
-                <button
-                  type="button"
-                  title="Delete conversation"
-                  className="danger delete-btn"
-                  id="deleteSessionBtn"
-                  onClick={() => handleOpenDeleteModal(activeSessionId)}
-                >
-                  <i className="fas fa-trash-alt"></i>
-                </button>
-                {activeSession?.status !== 'CLOSED' && (
+                {activeSession?.status === 'ACTIVE' && (
                   <button
                     type="button"
-                    title="End conversation"
-                    className="danger end-session-btn"
+                    title="Conclude and close this counseling session"
+                    className="end-session-btn"
                     id="endSessionBtn"
                     onClick={() => setEndSessionModalOpen(true)}
                   >
-                    <i className="fas fa-power-off"></i> <span className="end-btn-text">End Session</span>
+                    <i className="fas fa-arrow-right-from-bracket"></i> <span className="end-btn-text">End Session</span>
                   </button>
                 )}
-                <button
-                  type="button"
-                  title="Exit to Sanctuary Lounge"
-                  className="exit-lounge-btn"
-                  id="exitChatBtn"
-                  onClick={() => {
-                    setActiveSessionId(null);
-                    setActiveSession(null);
-                  }}
-                >
-                  <i className="fas fa-xmark"></i>
-                </button>
+
+                <div className="header-menu-container" ref={headerMenuRef}>
+                  <button
+                    type="button"
+                    title={isRefreshingMessages ? "Refreshing chat..." : "More options"}
+                    className="header-icon-btn menu-toggle-btn"
+                    id="chatMenuBtn"
+                    onClick={() => setHeaderMenuOpen((prev) => !prev)}
+                    aria-expanded={headerMenuOpen}
+                  >
+                    <i className={isRefreshingMessages ? "fas fa-rotate-right fa-spin" : "fas fa-ellipsis-vertical"}></i>
+                  </button>
+
+                  {headerMenuOpen && (
+                    <div className="header-dropdown-menu" id="headerDropdownMenu">
+                      <button
+                        type="button"
+                        className="dropdown-item"
+                        id="refreshMessagesBtn"
+                        disabled={isRefreshingMessages}
+                        onClick={handleRefreshMessages}
+                      >
+                        <i className={`fas fa-rotate-right ${isRefreshingMessages ? 'fa-spin' : ''}`}></i>{' '}
+                        <span>{isRefreshingMessages ? 'Refreshing...' : 'Refresh messages'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="dropdown-item"
+                        onClick={() => {
+                          setHeaderMenuOpen(false);
+                          setActiveSessionId(null);
+                          setActiveSession(null);
+                        }}
+                      >
+                        <i className="fas fa-arrow-left"></i> Return to Lounge
+                      </button>
+                      <button
+                        type="button"
+                        className="dropdown-item danger"
+                        onClick={() => {
+                          setHeaderMenuOpen(false);
+                          handleOpenDeleteModal(activeSessionId);
+                        }}
+                      >
+                        <i className="fas fa-trash-alt"></i> Delete conversation
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Accept Session Banner (Professional only, for WAITING) */}
             {isProfessional && activeSession?.status === 'WAITING' && (
-              <div id="acceptSessionBanner" style={{ display: 'block', padding: '0.85rem 1.5rem', background: '#FAF7F2', borderBottom: '1.5px solid #E0D7C6', textAlign: 'center' }}>
-                <span style={{ fontSize: '0.85rem', color: '#161F36', fontWeight: 600, marginRight: '1rem' }}>
+              <div id="acceptSessionBanner" style={{ display: 'block', padding: '0.85rem 1.5rem', background: '#F4F7F7', borderBottom: '1.5px solid #E1E8EB', textAlign: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: '#182A34', fontWeight: 600, marginRight: '1rem' }}>
                   This session is waiting to be accepted.
                 </span>
                 <button
                   type="button"
                   id="acceptSessionBtn"
                   onClick={() => handleAcceptSession(activeSessionId)}
-                  style={{ background: '#161F36', color: '#FAF7F2', border: 'none', padding: '0.6rem 1.5rem', borderRadius: '0.6rem', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(22,31,54,0.15)' }}
+                  style={{ background: '#243E4C', color: '#F9FBFA', border: 'none', padding: '0.6rem 1.5rem', borderRadius: '0.5rem', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(24,42,52,0.15)' }}
                 >
                   <i className="fas fa-check"></i> Accept Session
                 </button>
               </div>
             )}
 
-            {/* Invited Session Banner (shown for INVITED sessions) */}
-            {activeSession?.status === 'INVITED' && (
-              <div id="invitedSessionBanner" style={{ display: 'block', padding: '0.85rem 1.5rem', background: '#FFFBEB', borderBottom: '1.5px solid #FEF3C7', textAlign: 'center' }}>
-                <span id="invitedBannerText" style={{ fontSize: '0.85rem', color: '#92400E', fontWeight: 600, marginRight: '1rem' }}>
-                  {isProfessional
-                    ? 'Outreach invitation sent to student. Awaiting student consent.'
-                    : 'A guidance counselor has initiated a private check-in with you.'}
-                </span>
-                {!isProfessional && (
-                  <button
-                    type="button"
-                    id="studentJoinInviteBtn"
-                    onClick={() => handleAcceptInvite(activeSessionId)}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                      background: '#10B981',
-                      color: '#fff',
-                      border: 'none',
-                      padding: '0.55rem 1.25rem',
-                      borderRadius: '0.6rem',
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      fontFamily: 'Inter,sans-serif',
-                      boxShadow: '0 2px 8px rgba(16,185,129,0.25)'
-                    }}
-                  >
-                    <i className="fas fa-check"></i> Join Conversation
-                  </button>
-                )}
+            {/* Counselor Away Ambient Banner (Student view when counselor is offline in ACTIVE session) */}
+            {!isProfessional && activeSession?.status === 'ACTIVE' && !counselorOnline && (
+              <div className="counselor-away-banner" id="counselorAwayBanner">
+                <div className="away-banner-info">
+                  <span className="away-status-indicator"></span>
+                  <span className="away-banner-text">
+                    <strong>{activeSession.professionalName || 'Counselor'} is currently away.</strong>{' '}
+                    Your messages are delivered securely and will be reviewed upon return.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="away-hotline-btn"
+                  onClick={() => setDeclineHotlineModalOpen(true)}
+                  title="View 24/7 Crisis Support Resources"
+                >
+                  <i className="fas fa-phone-volume"></i> 24/7 Hotlines
+                </button>
               </div>
             )}
 
@@ -1110,64 +1345,42 @@ export default function AnonChat() {
                   <div className="chat-outreach-container">
                     <div className="chat-outreach-card">
                       <div className="outreach-header">
-                        <div className="outreach-icon-wrap">
-                          <i className="fas fa-heart"></i>
-                        </div>
                         <div className="outreach-title-block">
                           <h3>Guidance Counselor Check-in</h3>
-                          <span className="outreach-counselor-tag">
-                            <i className="fas fa-user-md"></i> From: <strong>{activeSession.professionalName || 'Lead Psychometrician, RPM'}</strong>
-                          </span>
+                          <p className="outreach-sender">From {activeSession.professionalName || 'Lead Psychometrician, RPM'}</p>
                         </div>
                       </div>
 
-                      <div className="outreach-message-quote">
-                        <i className="fas fa-quote-left quote-mark"></i>
+                      <div className="outreach-message-body">
                         <p>
                           Hello. A campus counselor noticed your recent reflections and wanted to make sure you're doing okay. A private, confidential space has been opened if you'd like to talk.
                         </p>
                       </div>
 
-                      <div className="outreach-privacy-box">
-                        <i className="fas fa-user-shield"></i>
-                        <div>
-                          <strong>Completely Anonymous &amp; Safe</strong>
-                          <p>You are completely anonymous and you are not in trouble. There is zero pressure to reply if you just wanted to vent.</p>
-                        </div>
+                      <div className="outreach-privacy-note">
+                        This conversation is private, confidential, and decoupled from university records. You remain completely anonymous, and there is zero pressure to reply if you only wished to vent.
                       </div>
 
                       <div className="outreach-decision-actions">
                         <button type="button" className="btn-outreach-accept" id="btnOutreachAccept" onClick={handleAcceptInvite}>
-                          <i className="fas fa-check"></i> Accept &amp; Join Confidential Chat
+                          Accept &amp; Begin Chat
                         </button>
                         <button type="button" className="btn-outreach-decline" id="btnOutreachDecline" onClick={handleDeclineInvite}>
-                          <i className="fas fa-times"></i> Decline (I just wanted to vent)
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-outreach-delete"
-                          id="btnOutreachDelete"
-                          onClick={() => handleOpenDeleteModal(activeSessionId)}
-                        >
-                          <i className="fas fa-trash-alt"></i> Delete Request
+                          Decline
                         </button>
                       </div>
 
                       <div className="outreach-footer-reassurance">
-                        <i className="fas fa-clock"></i>
-                        <div>
-                          <strong>Take your time:</strong> If you cannot decide yet, there is no rush. This conversation space will stay right here in your chats so you can review this message again and decide whenever you feel ready.
-                        </div>
+                        Take your time — this conversation space will stay right here if you wish to review and reply later.
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="pro-outreach-status-card" style={{ padding: '2rem', textAlign: 'center' }}>
-                    <i className="fas fa-envelope-open-text main-icon" style={{ fontSize: '2.5rem', color: '#D97706', marginBottom: '1rem' }}></i>
+                  <div className="pro-outreach-status-card">
                     <h3>Outreach Invitation Sent</h3>
-                    <p style={{ color: '#64748B', fontSize: '0.88rem' }}>You initiated a check-in with this student. A private, confidential space has been opened and the student has been invited.</p>
-                    <div style={{ display: 'inline-flex', padding: '0.4rem 1rem', background: '#FEF3C7', color: '#92400E', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 700, marginTop: '0.75rem' }}>
-                      <i className="fas fa-hourglass-half" style={{ marginRight: '6px' }}></i> Awaiting Student Consent
+                    <p>You initiated a check-in with this student. A private, confidential space has been opened and the student has been invited.</p>
+                    <div className="pro-outreach-badge">
+                      Awaiting Student Consent
                     </div>
                   </div>
                 )
@@ -1186,36 +1399,41 @@ export default function AnonChat() {
                   )}
                   <div className="intake-tags">
                     {activeSession.emotionTag && (
-                      <span className="intake-tag"><i className="fas fa-heart"></i> Mood: {activeSession.emotionTag}</span>
+                      <span className="intake-tag"><i className="fas fa-face-smile"></i> Mood: {activeSession.emotionTag}</span>
                     )}
                     {activeSession.energyScore && (
-                      <span className="intake-tag"><i className="fas fa-bolt"></i> Energy: {activeSession.energyScore}/10</span>
+                      <span className="intake-tag"><i className="fas fa-gauge-high"></i> Energy: {activeSession.energyScore}/10</span>
                     )}
                     {activeSession.crisisFlag && (
-                      <span className="intake-tag crisis"><i className="fas fa-exclamation-triangle"></i> Crisis Alert Triggered</span>
+                      <span className="intake-tag crisis"><i className="fas fa-circle-exclamation"></i> Crisis Alert Triggered</span>
                     )}
                   </div>
                 </div>
               )}
 
               {/* Message Bubbles */}
-              {messages.map((m, idx) => {
+              {!(activeSession?.status === 'INVITED' && !isProfessional) && messages.map((m, idx) => {
                 const isMine = isProfessional ? m.senderType === 'professional' : m.senderType === 'student';
                 const isSystem = m.senderType === 'system';
                 const initials = m.senderType === 'student'
-                  ? (activeSession?.studentPseudonym?.split('-').slice(1, 2).join('').substring(0, 2).toUpperCase() || 'AN')
-                  : 'DR';
+                  ? getStudentInitials(activeSession?.studentPseudonym)
+                  : (activeSession?.professionalName ? getProfessionalInitials(activeSession.professionalName) : 'GC');
 
                 if (isSystem) {
+                  const isCrisisFallback = m.content && (m.content.includes('1553') || m.content.includes('Crisis') || m.content.includes('distress'));
+                  const isJoinNotice = m.content && (m.content.includes('joined the conversation') || m.content.includes('joined the chat'));
                   return (
-                    <div key={idx} className="message system">
-                      <div className="message-avatar"><i className="fas fa-robot"></i></div>
-                      <div className="message-content">
-                        <div className="message-bubble">{m.content}</div>
-                        <div className="message-meta">
-                          <span>{m.senderName}</span>
-                          <span>•</span>
-                          <span>{formatTime(m.sentAt || m.timestamp)}</span>
+                    <div key={idx} className={`system-notice-wrapper ${isCrisisFallback ? 'crisis-notice' : isJoinNotice ? 'join-notice' : ''}`}>
+                      <div className="system-notice-card">
+                        <div className="system-notice-header">
+                          <i className={isCrisisFallback ? "fas fa-shield-heart" : isJoinNotice ? "fas fa-user-check" : "fas fa-circle-info"}></i>
+                          <span className="system-notice-title">
+                            {isCrisisFallback ? 'Crisis Support Notice' : isJoinNotice ? 'Counselor Connected' : 'System Notice'}
+                          </span>
+                          <span className="system-notice-time">{formatTime(m.sentAt || m.timestamp)}</span>
+                        </div>
+                        <div className="system-notice-body">
+                          {m.content}
                         </div>
                       </div>
                     </div>
@@ -1227,8 +1445,8 @@ export default function AnonChat() {
                   ? (activeSession?.studentPseudonym || 'Student')
                   : (activeSession?.professionalName || activeSession?.counselorName || 'Counselor');
                 const recipientInitials = isProfessional
-                  ? (activeSession?.studentPseudonym ? activeSession.studentPseudonym.split('-').slice(1, 2).join('').substring(0, 2).toUpperCase() : 'AN')
-                  : (activeSession?.professionalName ? activeSession.professionalName.substring(0, 2).toUpperCase() : 'DR');
+                  ? getStudentInitials(activeSession?.studentPseudonym)
+                  : (activeSession?.professionalName ? getProfessionalInitials(activeSession.professionalName) : 'GC');
 
                 let msgStatus = 'sent';
                 let statusLabel = 'Sent';
@@ -1271,32 +1489,23 @@ export default function AnonChat() {
                         {isMine && (
                           <>
                             <span>•</span>
-                            <span className={`msg-status-pill ${msgStatus}`} title={statusTooltip} aria-label={statusTooltip}>
+                            <span className={`msg-status-indicator ${msgStatus}`} title={statusTooltip} aria-label={statusTooltip}>
                               {msgStatus === 'sending' && (
                                 <>
-                                  <i className="far fa-circle msg-status-icon sending"></i>
+                                  <i className="far fa-clock msg-status-icon sending"></i>
                                   <span className="status-label">{statusLabel}</span>
                                 </>
                               )}
                               {msgStatus === 'sent' && (
-                                <>
-                                  <i className="far fa-circle-check msg-status-icon sent"></i>
-                                  <span className="status-label">{statusLabel}</span>
-                                </>
+                                <i className="fas fa-check msg-status-icon sent" title="Sent"></i>
                               )}
                               {msgStatus === 'delivered' && (
-                                <>
-                                  <i className="fas fa-circle-check msg-status-icon delivered"></i>
-                                  <span className="status-label">{statusLabel}</span>
-                                </>
+                                <i className="fas fa-check-double msg-status-icon delivered" title="Delivered"></i>
                               )}
                               {msgStatus === 'seen' && (
                                 <>
-                                  <span className="seen-avatar-badge" title={`Seen by ${recipientName}`}>
-                                    {recipientInitials}
-                                  </span>
-                                  <i className="fas fa-check-double msg-status-icon seen"></i>
-                                  <span className="status-label">{statusLabel}</span>
+                                  <i className="fas fa-check-double msg-status-icon seen" title={`Seen by ${recipientName}`}></i>
+                                  <span className="status-label seen">Seen</span>
                                 </>
                               )}
                             </span>
@@ -1311,7 +1520,7 @@ export default function AnonChat() {
             </div>
 
             {/* Jump to Recent Messages floating pill */}
-            {showScrollBottomBtn && (
+            {!(activeSession?.status === 'INVITED' && !isProfessional) && showScrollBottomBtn && (
               <button
                 type="button"
                 className="chat-jump-latest-btn"
@@ -1319,7 +1528,8 @@ export default function AnonChat() {
                 onClick={() => scrollToBottom('smooth')}
                 title="Scroll down to latest messages"
               >
-                <i className="fas fa-arrow-down"></i> Recent messages
+                <i className="fas fa-chevron-down"></i>
+                <span>Recent messages</span>
               </button>
             )}
 
@@ -1352,8 +1562,8 @@ export default function AnonChat() {
                   </button>
                 </div>
                 <div className="chat-input-note">
-                  <i className="fas fa-shield-halved"></i>
-                  Your identity is anonymous — only your pseudonym is visible.
+                  <i className="fas fa-lock"></i>
+                  Confidential session • Your student credentials remain decoupled and anonymous.
                 </div>
               </div>
             ) : null}
@@ -1368,13 +1578,19 @@ export default function AnonChat() {
         )}
       </main>
 
-      {/* ── New Chat Modal (Student) ── */}
+      {/* New Chat Modal (Student) */}
       {newChatModalOpen && (
         <div className="modal-overlay" id="newSessionModal" style={{ display: 'flex' }}>
           <div className="chat-modal">
             <div className="chat-modal-header">
-              <h3><i className="fas fa-plus-circle"></i> New Conversation</h3>
-              <button type="button" className="chat-modal-close" onClick={() => setNewChatModalOpen(false)}>
+              <h3>New Conversation</h3>
+              <button
+                type="button"
+                className="chat-modal-close"
+                onClick={() => setNewChatModalOpen(false)}
+                title="Close"
+                aria-label="Close"
+              >
                 <i className="fas fa-xmark"></i>
               </button>
             </div>
@@ -1384,7 +1600,7 @@ export default function AnonChat() {
                 <input
                   className="form-input"
                   id="modalPseudonym"
-                  placeholder="e.g. Anon-Cloud or leave blank for auto"
+                  placeholder="e.g. SoftSky-2342 or leave blank for auto"
                   value={modalPseudonym}
                   onChange={(e) => setModalPseudonym(e.target.value)}
                 />
@@ -1395,7 +1611,7 @@ export default function AnonChat() {
                 <textarea
                   className="form-input"
                   id="modalTopic"
-                  placeholder="e.g. I've been feeling overwhelmed with school lately..."
+                  placeholder="Describe what's on your mind or what you'd like to vent about..."
                   rows={3}
                   value={modalTopic}
                   onChange={(e) => setModalTopic(e.target.value)}
@@ -1404,27 +1620,25 @@ export default function AnonChat() {
 
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">How are you feeling?</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
                   <select
                     className="form-input"
                     id="modalEmotion"
-                    style={{ padding: '0.6rem 0.8rem' }}
                     value={modalEmotion}
                     onChange={(e) => setModalEmotion(e.target.value)}
                   >
-                    <option value="Anxious">😟 Anxious</option>
-                    <option value="Sad">😢 Sad</option>
-                    <option value="Angry">😠 Angry</option>
-                    <option value="Lonely">😔 Lonely</option>
-                    <option value="Frustrated">😤 Frustrated</option>
-                    <option value="Neutral">😐 Neutral</option>
-                    <option value="Relieved">😌 Relieved</option>
-                    <option value="Happy">😊 Happy</option>
+                    <option value="Neutral">Neutral</option>
+                    <option value="Anxious">Anxious</option>
+                    <option value="Sad">Sad</option>
+                    <option value="Angry">Angry</option>
+                    <option value="Lonely">Lonely</option>
+                    <option value="Frustrated">Frustrated</option>
+                    <option value="Relieved">Relieved</option>
+                    <option value="Happy">Happy</option>
                   </select>
                   <select
                     className="form-input"
                     id="modalEnergy"
-                    style={{ padding: '0.6rem 0.8rem' }}
                     value={modalEnergy}
                     onChange={(e) => setModalEnergy(e.target.value)}
                   >
@@ -1442,9 +1656,9 @@ export default function AnonChat() {
                 </div>
               </div>
 
-              <div className="privacy-note" style={{ marginTop: '1rem' }}>
-                <i className="fas fa-shield-halved"></i>
-                <span>Your real identity is <strong>never stored</strong>. Only your chosen pseudonym is visible to the counselor. All conversations are confidential.</span>
+              <div className="privacy-note">
+                <i className="fas fa-lock"></i>
+                <span>Your real identity is never stored. Only your chosen pseudonym is visible to the counselor, and conversations remain completely confidential.</span>
               </div>
             </div>
 
@@ -1474,16 +1688,15 @@ export default function AnonChat() {
         </div>
       )}
 
-      {/* ── End Session Modal ── */}
+      {/* End Session Modal */}
       {endSessionModalOpen && (
         <div className="modal-overlay" id="endSessionConfirmModal" style={{ display: 'flex' }}>
-          <div className="chat-modal" style={{ maxWidth: '480px' }}>
+          <div className="chat-modal" style={{ maxWidth: '440px' }}>
             <div
               className="chat-modal-header"
               style={{
                 borderBottom: 'none',
-                padding: '1.5rem 1.5rem 0',
-                display: 'flex',
+                padding: '1.75rem 1.5rem 0.5rem',
                 flexDirection: 'column',
                 alignItems: 'center',
                 position: 'relative'
@@ -1494,37 +1707,20 @@ export default function AnonChat() {
                 className="chat-modal-close"
                 onClick={() => setEndSessionModalOpen(false)}
                 style={{ position: 'absolute', top: '1.25rem', right: '1.25rem' }}
+                aria-label="Close"
               >
                 <i className="fas fa-xmark"></i>
               </button>
-              <div
-                style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '50%',
-                  background: '#FEF3C7',
-                  color: '#D97706',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.5rem',
-                  margin: '0 auto 0.75rem',
-                  boxShadow: '0 4px 14px rgba(217,119,6,0.15)'
-                }}
-              >
-                <i className="fas fa-hand-holding-heart"></i>
-              </div>
-              <h3 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', width: '100%', fontSize: '1.2rem', color: '#161F36', margin: 0, fontWeight: 700 }}>
+              <h3 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', width: '100%', fontSize: '1.25rem', color: '#182A34', margin: 0, fontWeight: 700 }}>
                 End This Conversation?
               </h3>
             </div>
-            <div className="chat-modal-body" style={{ textAlign: 'center', paddingTop: '0.35rem' }}>
-              <p style={{ fontSize: '0.92rem', color: '#334155', lineHeight: 1.6, marginBottom: '0.75rem' }}>
+            <div className="chat-modal-body" style={{ textAlign: 'center', paddingTop: '0.25rem' }}>
+              <p style={{ fontSize: '0.92rem', color: '#51646E', lineHeight: 1.6, marginBottom: '0.85rem' }}>
                 Are you ready to conclude your counseling session? This will complete the room and archive it.
               </p>
-              <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '10px', padding: '0.75rem 1rem', fontSize: '0.82rem', color: '#166534', lineHeight: 1.45, textAlign: 'left', display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
-                <i className="fas fa-shield-halved" style={{ color: '#16A34A', marginTop: '0.15rem', flexShrink: 0 }}></i>
-                <span><strong>Need a break?</strong> You don't have to end the chat. You can click <strong>Leave for Now</strong> to keep your room open and return anytime.</span>
+              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '0.85rem 1rem', fontSize: '0.84rem', color: '#475569', lineHeight: 1.5, textAlign: 'left' }}>
+                <span><strong style={{ color: '#1E293B' }}>Need a break?</strong> You don't have to end the chat. You can click <strong style={{ color: '#1E293B' }}>Leave for Now</strong> to keep your room open and return anytime.</span>
               </div>
             </div>
             <div className="chat-modal-footer" style={{ flexDirection: 'column', gap: '0.6rem', padding: '1.25rem 1.5rem' }}>
@@ -1536,9 +1732,9 @@ export default function AnonChat() {
                   setActiveSessionId(null);
                   setActiveSession(null);
                 }}
-                style={{ width: '100%', justifyContent: 'center', padding: '0.75rem', border: '1.5px solid #CBD5E1', color: '#1E293B', fontWeight: 700 }}
+                style={{ width: '100%', justifyContent: 'center', padding: '0.75rem', border: '1.5px solid #E1E8EB', color: '#243E4C', fontWeight: 600 }}
               >
-                <i className="fas fa-house"></i> Leave for Now (Keep Open)
+                Leave for Now (Keep Open)
               </button>
               <div style={{ display: 'flex', gap: '0.6rem', width: '100%' }}>
                 <button
@@ -1549,24 +1745,23 @@ export default function AnonChat() {
                     flex: 1,
                     justifyContent: 'center',
                     background: '#FFFFFF',
-                    border: '1.5px solid #CBD5E1',
-                    color: '#161F36',
+                    border: '1.5px solid #E1E8EB',
+                    color: '#51646E',
                     borderRadius: '0.75rem',
                     fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center'
+                    padding: '0.75rem'
                   }}
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
-                  className="btn"
+                  className="btn btn-end-session-confirm"
                   id="btnExecuteEndSession"
                   onClick={handleExecuteEndSession}
-                  style={{ flex: 1, justifyContent: 'center', background: '#EF4444', borderColor: '#DC2626', color: '#FFFFFF', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem', borderRadius: '0.75rem' }}
+                  style={{ flex: 1, justifyContent: 'center', padding: '0.75rem', fontWeight: 600 }}
                 >
-                  <i className="fas fa-power-off"></i> End Conversation
+                  End Conversation
                 </button>
               </div>
             </div>
@@ -1574,23 +1769,20 @@ export default function AnonChat() {
         </div>
       )}
 
-      {/* ── Active Session Choice Modal (Student) ── */}
+      {/* Active Session Choice Modal (Student) */}
       {choiceModalOpen && pendingChoiceSession && (
         <div className="modal-overlay" id="activeSessionChoiceModal" style={{ display: 'flex' }}>
           <div className="chat-modal" style={{ maxWidth: '480px' }}>
-            <div className="chat-modal-header" style={{ borderBottom: 'none', paddingBottom: 0 }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', margin: '0 auto 0.5rem' }}>
-                <i className="fas fa-comments"></i>
-              </div>
-              <h3 style={{ textAlign: 'center', width: '100%' }}>
-                <i className="fas fa-circle-exclamation" style={{ color: '#6366f1' }}></i> Ongoing Conversation in Progress
+            <div className="chat-modal-header">
+              <h3 style={{ fontSize: '1.15rem', color: '#182A34', fontWeight: 700 }}>
+                Ongoing Conversation in Progress
               </h3>
               <button type="button" className="chat-modal-close" onClick={() => setChoiceModalOpen(false)}>
                 <i className="fas fa-xmark"></i>
               </button>
             </div>
-            <div className="chat-modal-body" style={{ textAlign: 'center', paddingTop: '0.5rem' }}>
-              <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.6 }} id="choiceModalMessage">
+            <div className="chat-modal-body" style={{ textAlign: 'center', paddingTop: '0.25rem' }}>
+              <p style={{ fontSize: '0.9rem', color: '#51646E', lineHeight: 1.6 }} id="choiceModalMessage">
                 {pendingChoiceSession.status === 'ACTIVE' ? (
                   <>You currently have an active conversation session. To provide you with focused guidance, you can have one active session at a time.</>
                 ) : pendingChoiceSession.status === 'INVITED' ? (
@@ -1605,44 +1797,40 @@ export default function AnonChat() {
                 type="button"
                 className="btn btn-primary"
                 onClick={handleResumeCurrentSession}
-                style={{ width: '100%', justifyContent: 'center', padding: '0.75rem' }}
+                style={{ width: '100%', justifyContent: 'center', padding: '0.75rem', background: '#182A34', borderColor: '#182A34' }}
               >
-                <i className="fas fa-arrow-left"></i> Resume Current Conversation
+                Resume Current Conversation
               </button>
               <button
                 type="button"
                 className="btn btn-ghost"
                 onClick={handleEndOldAndStartNew}
-                style={{ width: '100%', justifyContent: 'center', color: '#ef4444', border: '1px solid #fecaca' }}
+                style={{ width: '100%', justifyContent: 'center', color: '#DC2626', border: '1px solid #FECACA' }}
               >
-                <i className="fas fa-rotate"></i> End Old &amp; Start New Conversation
+                End Old &amp; Start New Conversation
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Student Gentle Outreach Invitation Modal ── */}
+      {/* Student Gentle Outreach Invitation Modal */}
       {inviteModalOpen && (
         <div className="modal-overlay" id="studentInviteModal" style={{ display: 'flex' }}>
-          <div className="chat-modal" style={{ maxWidth: '500px' }}>
-            <div className="chat-modal-header" style={{ borderBottom: 'none', paddingBottom: 0 }}>
-              <div style={{ width: '54px', height: '54px', borderRadius: '50%', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', margin: '0 auto 0.5rem' }}>
-                <i className="fas fa-heart"></i>
-              </div>
-              <h3 style={{ textAlign: 'center', width: '100%', fontSize: '1.2rem' }}>💌 Guidance Counselor Check-in</h3>
+          <div className="chat-modal" style={{ maxWidth: '480px' }}>
+            <div className="chat-modal-header">
+              <h3 style={{ fontSize: '1.15rem', color: '#182A34', fontWeight: 700 }}>Guidance Counselor Check-in</h3>
               <button type="button" className="chat-modal-close" onClick={() => setInviteModalOpen(false)}>
                 <i className="fas fa-xmark"></i>
               </button>
             </div>
-            <div className="chat-modal-body" style={{ paddingTop: '0.5rem' }}>
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.9rem 1rem', marginBottom: '1rem', fontSize: '0.86rem', color: '#334155', lineHeight: 1.55 }}>
-                <p id="inviteModalMessage">
+            <div className="chat-modal-body">
+              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '0.9rem 1rem', marginBottom: '1rem', fontSize: '0.88rem', color: '#243E4C', lineHeight: 1.6 }}>
+                <p id="inviteModalMessage" style={{ margin: 0 }}>
                   Hello! A school guidance counselor noticed you might be going through a tough time and opened a private, confidential space if you'd like someone to talk to.
                 </p>
               </div>
-              <div className="privacy-note" style={{ marginTop: 0, background: '#f0fdf4', borderColor: '#bbf7d0', color: '#166534' }}>
-                <i className="fas fa-user-shield" style={{ color: '#16a34a' }}></i>
+              <div className="privacy-note" style={{ marginTop: 0 }}>
                 <span>You are completely <strong>anonymous</strong> and you are <strong>not in trouble</strong>. There is zero pressure to reply if you just wanted to vent.</span>
               </div>
             </div>
@@ -1650,7 +1838,7 @@ export default function AnonChat() {
               <button
                 type="button"
                 className="btn btn-primary"
-                style={{ width: '100%', justifyContent: 'center', background: '#10b981', borderColor: '#10b981', padding: '0.75rem' }}
+                style={{ width: '100%', justifyContent: 'center', background: '#182A34', borderColor: '#182A34', padding: '0.75rem' }}
                 id="acceptInviteBtn"
                 onClick={async () => {
                   setInviteModalOpen(false);
@@ -1660,12 +1848,12 @@ export default function AnonChat() {
                   }
                 }}
               >
-                <i className="fas fa-check"></i> Accept &amp; Join Confidential Chat
+                Accept &amp; Begin Chat
               </button>
               <button
                 type="button"
                 className="btn btn-ghost"
-                style={{ width: '100%', justifyContent: 'center', color: '#64748b' }}
+                style={{ width: '100%', justifyContent: 'center', color: '#51646E', border: '1px solid #E2E8F0' }}
                 onClick={async () => {
                   setInviteModalOpen(false);
                   const targetInvite = inviteModalSession || sessions.find((s) => s.status === 'INVITED');
@@ -1674,14 +1862,14 @@ export default function AnonChat() {
                   }
                 }}
               >
-                <i className="fas fa-times"></i> Decline (I just wanted to vent)
+                Decline
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Mobile Session Options Bottom Sheet ── */}
+      {/* Mobile Session Options Bottom Sheet */}
       <div
         className={`mobile-options-overlay ${optionsModalOpen ? 'active' : ''}`}
         id="mobileSessionOptionsModal"
@@ -1780,7 +1968,7 @@ export default function AnonChat() {
           </div>
         </div>
       </div>
-      {/* ── Delete Conversation Confirmation Modal ── */}
+      {/* Delete Conversation Confirmation Modal */}
       {deleteModalOpen && (
         <div className="modal-overlay" id="deleteConfirmModal" style={{ display: 'flex' }}>
           <div className="chat-modal" style={{ maxWidth: '440px' }}>
@@ -1803,15 +1991,12 @@ export default function AnonChat() {
               >
                 <i className="fas fa-xmark"></i>
               </button>
-              <div className="delete-confirm-icon-wrap">
-                <i className="fas fa-trash-alt"></i>
-              </div>
-              <h3 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', width: '100%', fontSize: '1.15rem', color: '#161F36', margin: 0, fontWeight: 700 }}>
+              <h3 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', width: '100%', fontSize: '1.15rem', color: '#182A34', margin: 0, fontWeight: 700 }}>
                 {isProfessional ? 'Remove Conversation?' : 'Delete Conversation?'}
               </h3>
             </div>
             <div className="chat-modal-body" style={{ textAlign: 'center', paddingTop: '0.4rem', paddingBottom: '1.25rem' }}>
-              <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.55, margin: 0 }} id="deleteConfirmMsg">
+              <p style={{ fontSize: '0.9rem', color: '#51646E', lineHeight: 1.55, margin: 0 }} id="deleteConfirmMsg">
                 {(() => {
                   const target = sessions.find((s) => s.sessionId === deleteModalSessionId);
                   let targetDesc = 'this conversation';
@@ -1841,8 +2026,8 @@ export default function AnonChat() {
                 style={{
                   flex: 1,
                   background: '#FFFFFF',
-                  border: '1.5px solid #CBD5E1',
-                  color: '#161F36',
+                  border: '1.5px solid #E1E8EB',
+                  color: '#243E4C',
                   borderRadius: '0.75rem',
                   padding: '0.75rem 1rem',
                   fontSize: '0.875rem',
@@ -1890,26 +2075,28 @@ export default function AnonChat() {
         </div>
       )}
 
-      {/* ── Decline Reassurance & Hotline Info Modal ── */}
+      {/* Decline Reassurance & Hotline Info Modal */}
       {declineHotlineModalOpen && (
         <div className="modal-overlay" id="declineHotlineModal" style={{ display: 'flex' }}>
           <div className="chat-modal" style={{ maxWidth: '460px' }}>
             <div className="chat-modal-header">
-              <h3 style={{ fontSize: '1.05rem' }}>
-                <i className="fas fa-hand-holding-heart" style={{ color: '#10B981' }}></i> We Respect Your Space
+              <h3 style={{ fontSize: '1.05rem', color: '#182A34', fontWeight: 700 }}>
+                We Respect Your Space
               </h3>
               <button type="button" className="chat-modal-close" onClick={() => setDeclineHotlineModalOpen(false)}>
                 <i className="fas fa-xmark"></i>
               </button>
             </div>
             <div className="chat-modal-body">
-              <p style={{ fontSize: '0.88rem', color: '#475569', lineHeight: 1.6, marginBottom: '1rem' }}>
+              <p style={{ fontSize: '0.88rem', color: '#51646E', lineHeight: 1.6, marginBottom: '1rem' }}>
                 Your feelings and thoughts are always safe and welcome on SafeSpace. If you ever feel ready to talk to someone, our Anonymous Chat is always here for you.
               </p>
-              <div style={{ background: '#FFFBEB', border: '1px solid #FEF3C7', borderRadius: '8px', padding: '0.85rem 1rem', fontSize: '0.82rem', color: '#92400E' }}>
-                <strong>24/7 Emergency Support Hotlines:</strong><br />
-                📞 <strong>NCMH Crisis Hotline:</strong> 1553 (Toll-free landline) / 0917-899-8727<br />
-                📞 <strong>Hopeline Philippines:</strong> (02) 804-4635 / 0917-558-4673
+              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '0.85rem 1rem', fontSize: '0.82rem', color: '#182A34' }}>
+                <div style={{ fontWeight: 700, marginBottom: '0.4rem', color: '#182A34' }}>24/7 Emergency Support Hotlines:</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', lineHeight: 1.5, color: '#51646E' }}>
+                  <div><strong style={{ color: '#182A34' }}>NCMH Crisis Hotline:</strong> 1553 (Toll-free landline) / 0917-899-8727</div>
+                  <div><strong style={{ color: '#182A34' }}>Hopeline Philippines:</strong> (02) 804-4635 / 0917-558-4673</div>
+                </div>
               </div>
             </div>
             <div className="chat-modal-footer">
@@ -1926,26 +2113,27 @@ export default function AnonChat() {
         </div>
       )}
 
-      {/* ── Notification Toast ── */}
+      {/* Notification Toast */}
       {toastMessage && (
         <div
           id="safeSpaceToast"
           style={{
             position: 'fixed',
-            bottom: '2rem',
+            top: '4.5rem',
             left: '50%',
-            transform: 'translateX(-50%) translateY(0)',
-            background: '#161F36',
-            color: '#FAF7F2',
-            padding: '0.75rem 1.4rem',
-            borderRadius: '999px',
-            fontSize: '0.88rem',
+            transform: 'translateX(-50%)',
+            background: '#1E293B',
+            color: '#F8FAFC',
+            padding: '0.65rem 1.25rem',
+            borderRadius: '0.65rem',
+            fontSize: '0.85rem',
             fontWeight: 600,
-            boxShadow: '0 8px 24px rgba(22,31,54,0.25)',
+            boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.25)',
+            border: '1px solid #334155',
             zIndex: 9999,
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
+            gap: '0.55rem',
             pointerEvents: 'none'
           }}
         >

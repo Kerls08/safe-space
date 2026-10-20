@@ -204,7 +204,7 @@ export default function ResourceManager() {
               {r.title}
               {r.crisisOnly && <span className="crisis-badge">Crisis</span>}
               {!r.active && (
-                <span className="crisis-badge" style={{ background: '#f1f5f9', color: '#9ca3af' }}>
+                <span className="crisis-badge" style={{ background: '#F4F7F7', color: '#728590' }}>
                   Inactive
                 </span>
               )}

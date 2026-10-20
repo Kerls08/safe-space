@@ -7,15 +7,15 @@ import '../styles/dashboard.css';
 export function getClinicalBand(score) {
   const val = parseFloat(score) || 0;
   if (val >= 8.5) {
-    return { label: 'Acute Intensity', tier: 'ACUTE', color: '#DC2626', bg: '#FEE2E2', border: '#FECACA', dot: '🔴', desc: 'Crisis threshold — priority psychological triage triggered' };
+    return { label: 'Acute Intensity', tier: 'ACUTE', color: '#DC2626', bg: '#FEE2E2', border: '#FECACA', desc: 'Crisis threshold: priority psychological triage triggered' };
   }
   if (val >= 7.0) {
-    return { label: 'Elevated Tension', tier: 'ELEVATED', color: '#EA580C', bg: '#FFEDD5', border: '#FED7AA', dot: '🟠', desc: 'Heightened affective arousal — professional observation advised' };
+    return { label: 'Elevated Tension', tier: 'ELEVATED', color: '#EA580C', bg: '#FFEDD5', border: '#FED7AA', desc: 'Heightened affective arousal: professional observation advised' };
   }
   if (val >= 4.0) {
-    return { label: 'Moderate Stress', tier: 'MODERATE', color: '#D97706', bg: '#FEF3C7', border: '#FDE68A', dot: '🟡', desc: 'Situational strain — adaptive wellness resources recommended' };
+    return { label: 'Moderate Stress', tier: 'MODERATE', color: '#D97706', bg: '#FEF3C7', border: '#FDE68A', desc: 'Situational strain: adaptive wellness resources recommended' };
   }
-  return { label: 'Balanced / Low', tier: 'BALANCED', color: '#059669', bg: '#D1FAE5', border: '#A7F3D0', dot: '🟢', desc: 'Baseline emotional state — routine psychological observation' };
+  return { label: 'Balanced / Low', tier: 'BALANCED', color: '#059669', bg: '#D1FAE5', border: '#A7F3D0', desc: 'Baseline emotional state: routine psychological observation' };
 }
 
 const EMOTION_COLORS = {
@@ -80,7 +80,7 @@ function SvgDonutChart({ emotions = [], total = 0 }) {
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="#F3EFE6"
+            stroke="#E1E8EB"
             strokeWidth={strokeWidth}
           />
           {slices.map((s) => (
@@ -143,7 +143,7 @@ function SvgDonutChart({ emotions = [], total = 0 }) {
                   className="donut-band-tag"
                   style={{ background: s.band.bg, color: s.band.color, borderColor: s.band.border }}
                 >
-                  {s.avgEnergy ? (Number.isInteger(s.avgEnergy) ? s.avgEnergy : s.avgEnergy.toFixed(1)) : '—'}/10
+                  {s.avgEnergy ? (Number.isInteger(s.avgEnergy) ? s.avgEnergy : s.avgEnergy.toFixed(1)) : 'N/A'}/10
                 </span>
               </div>
             </div>
@@ -270,9 +270,9 @@ function SvgLineTrendChart({ snapshots = [] }) {
         >
           <defs>
             <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#DC2626" stopOpacity="0.22" />
-              <stop offset="60%" stopColor="#F59E0B" stopOpacity="0.08" />
-              <stop offset="100%" stopColor="#FAF7F2" stopOpacity="0.0" />
+              <stop offset="0%" stopColor="#243E4C" stopOpacity="0.12" />
+              <stop offset="60%" stopColor="#243E4C" stopOpacity="0.03" />
+              <stop offset="100%" stopColor="#F4F7F7" stopOpacity="0.0" />
             </linearGradient>
           </defs>
 
@@ -285,7 +285,7 @@ function SvgLineTrendChart({ snapshots = [] }) {
                   y1={y}
                   x2={width - paddingRight}
                   y2={y}
-                  stroke="#E8E2D5"
+                  stroke="#E1E8EB"
                   strokeWidth="1"
                   strokeDasharray="2 3"
                 />
@@ -294,7 +294,7 @@ function SvgLineTrendChart({ snapshots = [] }) {
                   y={y + 3.5}
                   fontSize="10"
                   textAnchor="end"
-                  fill="#8C8270"
+                  fill="#728590"
                   fontWeight="600"
                 >
                   {val}.0
@@ -330,7 +330,7 @@ function SvgLineTrendChart({ snapshots = [] }) {
           <path
             d={pathD}
             fill="none"
-            stroke="#DC2626"
+            stroke="#243E4C"
             strokeWidth="2.5"
             strokeLinecap="round"
             style={{ pointerEvents: 'none' }}
@@ -378,7 +378,7 @@ function SvgLineTrendChart({ snapshots = [] }) {
                   y={height - 12}
                   fontSize="10"
                   textAnchor="middle"
-                  fill={isHovered ? '#161F36' : '#6B7280'}
+                  fill={isHovered ? '#243E4C' : '#728590'}
                   fontWeight={isHovered ? '700' : '600'}
                 >
                   {p.date ? p.date.substring(5) : ''}
@@ -388,7 +388,7 @@ function SvgLineTrendChart({ snapshots = [] }) {
                   y={height - 2}
                   fontSize="8.5"
                   textAnchor="middle"
-                  fill={isHovered ? '#161F36' : '#8C8270'}
+                  fill={isHovered ? '#243E4C' : '#728590'}
                   fontWeight={isHovered ? '600' : '400'}
                 >
                   {p.postCount} posts
@@ -425,7 +425,7 @@ function SvgLineTrendChart({ snapshots = [] }) {
             >
               <div className="tooltip-date">{hoveredPoint.date}</div>
               <div className="tooltip-score">
-                <strong>{hoveredPoint.avgEnergy ? hoveredPoint.avgEnergy.toFixed(1) : '—'} / 10</strong>
+                <strong>{hoveredPoint.avgEnergy ? hoveredPoint.avgEnergy.toFixed(1) : 'N/A'} / 10</strong>
                 <span className="tooltip-band" style={{ color: hoveredPoint.band.color }}>
                   {hoveredPoint.band.label}
                 </span>
@@ -491,7 +491,7 @@ function SeveritySpectrumBar({ low = 0, mod = 0, high = 0, total = 0 }) {
       <div className="severity-legend-grid">
         <div className="severity-legend-card low">
           <div className="card-top">
-            <span className="tier-dot">🟢</span>
+            <span className="clinical-indicator-dot low"></span>
             <span className="tier-name">Balanced (1–3)</span>
           </div>
           <div className="card-val">{low} <span className="card-pct">({lowPct}%)</span></div>
@@ -500,7 +500,7 @@ function SeveritySpectrumBar({ low = 0, mod = 0, high = 0, total = 0 }) {
 
         <div className="severity-legend-card mod">
           <div className="card-top">
-            <span className="tier-dot">🟡</span>
+            <span className="clinical-indicator-dot mod"></span>
             <span className="tier-name">Moderate (4–7)</span>
           </div>
           <div className="card-val">{mod} <span className="card-pct">({modPct}%)</span></div>
@@ -509,7 +509,7 @@ function SeveritySpectrumBar({ low = 0, mod = 0, high = 0, total = 0 }) {
 
         <div className="severity-legend-card high">
           <div className="card-top">
-            <span className="tier-dot">🔴</span>
+            <span className="clinical-indicator-dot high"></span>
             <span className="tier-name">Acute (8–10)</span>
           </div>
           <div className="card-val">{high} <span className="card-pct">({highPct}%)</span></div>
@@ -541,7 +541,9 @@ function PriorityTriageWidget({ alerts = [], totalAlerts = 0, overview }) {
       <div className="triage-list">
         {displayAlerts.length === 0 ? (
           <div className="triage-empty">
-            <span className="triage-empty-dot">🟢</span>
+            <span className="triage-empty-indicator">
+              <i className="fas fa-check"></i>
+            </span>
             <div>
               <strong>All Clear</strong>
               <p>No unreviewed crisis alerts. Campus affective climate is steady.</p>
@@ -647,7 +649,7 @@ function timeAgo(ts) {
 }
 
 function formatDateTime(iso) {
-  if (!iso) return '—';
+  if (!iso) return 'N/A';
   try {
     const d = new Date(iso);
     return d.toLocaleString('en-US', {
@@ -842,7 +844,7 @@ export default function ProDashboard() {
   const energyBand = getClinicalBand(avgEnergyScore);
   const formattedEnergyScore = typeof avgEnergyScore === 'number'
     ? (Number.isInteger(avgEnergyScore) ? avgEnergyScore : avgEnergyScore.toFixed(1))
-    : (parseFloat(avgEnergyScore) ? parseFloat(avgEnergyScore).toFixed(1) : '—');
+    : (parseFloat(avgEnergyScore) ? parseFloat(avgEnergyScore).toFixed(1) : 'N/A');
 
   const dominantEmotion = overview?.emotionBreakdown?.length > 0
     ? [...overview.emotionBreakdown].sort((a, b) => (b.count || 0) - (a.count || 0))[0]
@@ -861,7 +863,7 @@ export default function ProDashboard() {
             <div className="last-updated">
               <span className="live-dot"></span>
               <span>
-                Live — updated <span id="lastUpdated">{lastUpdated}</span>
+                Live: updated <span id="lastUpdated">{lastUpdated}</span>
               </span>
             </div>
           </div>
@@ -883,7 +885,7 @@ export default function ProDashboard() {
           </div>
         </div>
 
-        {/* ── TIER 1: EXECUTIVE CLINICAL PULSE (Grouped into 2 Clean Domains) ── */}
+        {/*  TIER 1: EXECUTIVE CLINICAL PULSE (Grouped into 2 Clean Domains)  */}
         <div className="dash-pulse-section">
           {/* Domain 1: Campus Affective Climate */}
           <div className="kpi-domain-group">
@@ -894,7 +896,7 @@ export default function ProDashboard() {
             <div className="kpi-domain-cards">
               {/* Card 1: Total Expressions */}
               <div className="stat-card">
-                <div className="stat-card-value">{overview ? overview.totalPosts : '—'}</div>
+                <div className="stat-card-value">{overview ? overview.totalPosts : 'N/A'}</div>
                 <div className="stat-card-label">Total Expressions</div>
                 <div className="stat-card-sub neutral">
                   <span>+{overview ? overview.totalPostsToday : 0} shared today</span>
@@ -911,7 +913,8 @@ export default function ProDashboard() {
                     className="clinical-band-pill"
                     style={{ background: energyBand.bg, color: energyBand.color, borderColor: energyBand.border }}
                   >
-                    {energyBand.dot} {energyBand.label}
+                    <span className="clinical-indicator-dot" style={{ backgroundColor: energyBand.color }}></span>
+                    {energyBand.label}
                   </span>
                 </div>
                 <div className="stat-card-label-row">
@@ -924,7 +927,7 @@ export default function ProDashboard() {
                   </span>
                 </div>
                 <div className={`stat-card-sub ${eClass}`}>
-                  <span>{overview ? overview.averageEnergyToday : '—'} / 10 recorded today</span>
+                  <span>{overview ? overview.averageEnergyToday : 'N/A'} / 10 recorded today</span>
                 </div>
               </div>
             </div>
@@ -941,19 +944,19 @@ export default function ProDashboard() {
               <div className="stat-card alert-kpi-card">
                 <div
                   className="stat-card-value"
-                  style={{ color: (overview?.flaggedPosts || 0) > 0 ? '#DC2626' : '#161F36' }}
+                  style={{ color: (overview?.flaggedPosts || 0) > 0 ? '#DC2626' : '#243E4C' }}
                 >
-                  {overview ? overview.flaggedPosts : '—'}
+                  {overview ? overview.flaggedPosts : 'N/A'}
                 </div>
                 <div className="stat-card-label">Flagged Reflections</div>
                 <div className={`stat-card-sub ${(overview?.flaggedPosts || 0) > 0 ? 'down' : 'neutral'}`}>
-                  <span>{(overview?.flaggedPosts || 0) > 0 ? 'Review required in triage' : 'All clear — no flags'}</span>
+                  <span>{(overview?.flaggedPosts || 0) > 0 ? 'Review required in triage' : 'All clear; no flags'}</span>
                 </div>
               </div>
 
               {/* Card 4: Psychological Support Dialogues */}
               <div className="stat-card">
-                <div className="stat-card-value">{overview ? overview.chatSessionsTotal : '—'}</div>
+                <div className="stat-card-value">{overview ? overview.chatSessionsTotal : 'N/A'}</div>
                 <div className="stat-card-label">Support Dialogues</div>
                 <div className="stat-card-sub neutral">
                   <span>{overview ? overview.chatSessionsWaiting : 0} waiting in queue</span>
@@ -963,7 +966,7 @@ export default function ProDashboard() {
           </div>
         </div>
 
-        {/* ── AUTOMATED CLINICAL PULSE BANNER ── */}
+        {/*  AUTOMATED CLINICAL PULSE BANNER  */}
         <div className="dash-pulse-banner">
           <div className="pulse-banner-indicator" style={{ background: energyBand.color }}></div>
           <div className="pulse-banner-content">
@@ -977,7 +980,7 @@ export default function ProDashboard() {
                       ? Number.isInteger(dominantEmotion.avgEnergy)
                         ? dominantEmotion.avgEnergy
                         : dominantEmotion.avgEnergy.toFixed(1)
-                      : '—'
+                      : 'N/A'
                   }/10.`
                 : 'Aggregating live student reflections across campus.'}
               {energyBand.tier === 'ACUTE' || energyBand.tier === 'ELEVATED'
@@ -987,7 +990,7 @@ export default function ProDashboard() {
           </div>
         </div>
 
-        {/* ── TIER 2: PRIMARY VISUAL ANALYTICS (Balanced 50/50 Grid) ── */}
+        {/*  TIER 2: PRIMARY VISUAL ANALYTICS (Balanced 50/50 Grid)  */}
         <div className="dash-charts-grid">
           {/* Chart 1: 7-Day Continuous Line/Area Chart */}
           <div className="dash-card chart-card">
@@ -1015,7 +1018,7 @@ export default function ProDashboard() {
           </div>
         </div>
 
-        {/* ── TIER 3: SEVERITY SPECTRUM & ACTIONABLE TRIAGE ── */}
+        {/*  TIER 3: SEVERITY SPECTRUM & ACTIONABLE TRIAGE  */}
         <div className="dash-bottom-grid">
           {/* Severity Spectrum Bar Graph */}
           <div className="dash-card">
@@ -1059,7 +1062,7 @@ export default function ProDashboard() {
               <i className="fas fa-file-invoice"></i>
               <div>
                 <h2>Monthly Student Situationer</h2>
-                <p>USTP Balubal Campus — Mental Health & Psychological Services Unit</p>
+                <p>USTP Balubal Campus, Mental Health & Psychological Services Unit</p>
               </div>
             </div>
             <div className="report-modal-controls">
@@ -1123,7 +1126,7 @@ export default function ProDashboard() {
                       </div>
                       <div className="rep-inst-titles">
                         <h3>University of Science and Technology of Southern Philippines</h3>
-                        <h4>USTP Balubal Campus — Cagayan de Oro City</h4>
+                        <h4>USTP Balubal Campus, Cagayan de Oro City</h4>
                         <p>Office of Student Affairs & Services • Mental Health & Psychological Services Unit • SafeSpace System</p>
                       </div>
                     </div>
@@ -1228,7 +1231,7 @@ export default function ProDashboard() {
                     <i className="fas fa-heart-pulse"></i> II. Campus Emotional Baseline & Energy Stratification
                   </div>
 
-                  <div style={{ background: '#FAF7F2', border: '1px solid #E2D9CC', borderRadius: '0.5rem', padding: '0.85rem 1rem', marginBottom: '1rem' }}>
+                  <div style={{ background: '#F4F7F7', border: '1px solid #E1E8EB', borderRadius: '0.5rem', padding: '0.85rem 1rem', marginBottom: '1rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.4rem' }}>
                       <span style={{ color: '#166534' }}>
                         <i className="fas fa-circle" style={{ fontSize: '0.6rem' }}></i> Low Tension (1–3): {reportData.energyLow} ({reportData.energyLowPct}%)
@@ -1262,8 +1265,8 @@ export default function ProDashboard() {
                       <tbody>
                         {reportData.emotionBreakdown && reportData.emotionBreakdown.length > 0 ? (
                           reportData.emotionBreakdown.map((em, idx) => {
-                            const color = EMOTION_COLORS[em.emotion] || '#64748B';
-                            const riskLabel = em.avgEnergy >= 8 ? 'High Tension ⚡' : em.avgEnergy >= 5 ? 'Moderate' : 'Low / Stable';
+                            const color = EMOTION_COLORS[em.emotion] || '#728590';
+                            const riskLabel = em.avgEnergy >= 8 ? 'High Tension' : em.avgEnergy >= 5 ? 'Moderate' : 'Low / Stable';
                             const riskColor = em.avgEnergy >= 8 ? '#DC2626' : em.avgEnergy >= 5 ? '#D97706' : '#166534';
                             return (
                               <tr key={em.emotion || idx}>
@@ -1281,14 +1284,14 @@ export default function ProDashboard() {
                                     <span style={{ fontSize: '0.7rem', fontWeight: 700, width: '42px', textAlign: 'right' }}>{em.percentage}%</span>
                                   </div>
                                 </td>
-                                <td style={{ textAlign: 'center', fontWeight: 800, color: riskColor }}>⚡ {em.avgEnergy}</td>
+                                <td style={{ textAlign: 'center', fontWeight: 700, color: riskColor }}>{em.avgEnergy}</td>
                                 <td style={{ fontSize: '0.7rem', color: riskColor, fontWeight: 600 }}>{riskLabel}</td>
                               </tr>
                             );
                           })
                         ) : (
                           <tr>
-                            <td colSpan="6" style={{ textAlign: 'center', color: '#64748B', padding: '1rem' }}>
+                            <td colSpan="6" style={{ textAlign: 'center', color: '#728590', padding: '1rem' }}>
                               No emotional expressions logged for this reporting period.
                             </td>
                           </tr>
@@ -1305,7 +1308,7 @@ export default function ProDashboard() {
                   </div>
                   <div className="rep-split-grid">
                     <div>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#161F36', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#243E4C', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
                         Academic Department / Program
                       </div>
                       <div className="rep-table-wrap">
@@ -1328,7 +1331,7 @@ export default function ProDashboard() {
                               ))
                             ) : (
                               <tr>
-                                <td colSpan="3" style={{ textAlign: 'center', color: '#64748B', padding: '0.75rem' }}>
+                                <td colSpan="3" style={{ textAlign: 'center', color: '#728590', padding: '0.75rem' }}>
                                   No departmental data available.
                                 </td>
                               </tr>
@@ -1339,7 +1342,7 @@ export default function ProDashboard() {
                     </div>
 
                     <div>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#161F36', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#243E4C', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
                         Year Level Distribution
                       </div>
                       <div className="rep-table-wrap">
@@ -1362,7 +1365,7 @@ export default function ProDashboard() {
                               ))
                             ) : (
                               <tr>
-                                <td colSpan="3" style={{ textAlign: 'center', color: '#64748B', padding: '0.75rem' }}>
+                                <td colSpan="3" style={{ textAlign: 'center', color: '#728590', padding: '0.75rem' }}>
                                   No year-level data available.
                                 </td>
                               </tr>
@@ -1380,7 +1383,7 @@ export default function ProDashboard() {
                     <div>
                       <i className="fas fa-triangle-exclamation" style={{ color: '#DC2626' }}></i> IV. Crisis Sentinel Interceptions & Risk Audit Log
                     </div>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', textTransform: 'none' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#51646E', textTransform: 'none' }}>
                       Reviewed: <span style={{ color: '#166534' }}>{reportData.crisisReviewedCount}</span> | Pending: <span style={{ color: '#DC2626' }}>{reportData.crisisPendingCount}</span>
                     </div>
                   </div>
@@ -1405,7 +1408,7 @@ export default function ProDashboard() {
                             const isRev = c.reviewed;
                             return (
                               <tr key={c.incidentId || idx}>
-                                <td style={{ fontFamily: 'monospace', fontSize: '0.68rem', color: '#475569' }}>
+                                <td style={{ fontFamily: 'monospace', fontSize: '0.68rem', color: '#51646E' }}>
                                   {(c.incidentId || '').substring(0, 18)}…
                                 </td>
                                 <td style={{ fontSize: '0.68rem', fontWeight: 600 }}>
@@ -1419,19 +1422,19 @@ export default function ProDashboard() {
                                     </>
                                   )}
                                 </td>
-                                <td style={{ fontWeight: 700, color: '#1E293B' }}>{c.pseudonym}</td>
+                                <td style={{ fontWeight: 700, color: '#182A34' }}>{c.pseudonym}</td>
                                 <td>
                                   <span className={`rep-badge ${sevClass}`}>{c.severity}</span>
                                 </td>
                                 <td style={{ fontSize: '0.7rem', maxWidth: '220px', wordBreak: 'break-word' }}>
-                                  <div style={{ fontWeight: 600, color: '#0F172A' }}>{c.summary}</div>
+                                  <div style={{ fontWeight: 600, color: '#182A34' }}>{c.summary}</div>
                                   {c.flaggedKeywords && (
                                     <div style={{ fontSize: '0.64rem', color: '#DC2626', marginTop: '2px' }}>
                                       Trigger: {c.flaggedKeywords}
                                     </div>
                                   )}
                                 </td>
-                                <td style={{ textAlign: 'center', fontWeight: 800, color: '#DC2626' }}>⚡{c.energyScore}</td>
+                                <td style={{ textAlign: 'center', fontWeight: 700, color: '#DC2626' }}>{c.energyScore}</td>
                                 <td style={{ textAlign: 'center' }}>
                                   {isRev ? (
                                     <span className="rep-badge reviewed">
@@ -1443,7 +1446,7 @@ export default function ProDashboard() {
                                     </span>
                                   )}
                                 </td>
-                                <td style={{ fontSize: '0.68rem', color: '#475569' }}>{c.reviewedBy || '—'}</td>
+                                <td style={{ fontSize: '0.68rem', color: '#51646E' }}>{c.reviewedBy || 'N/A'}</td>
                               </tr>
                             );
                           })
@@ -1484,7 +1487,7 @@ export default function ProDashboard() {
                         {reportData.recentDialogues && reportData.recentDialogues.length > 0 ? (
                           reportData.recentDialogues.map((dlg, idx) => (
                             <tr key={dlg.sessionId || idx}>
-                              <td style={{ fontFamily: 'monospace', fontSize: '0.68rem', color: '#475569' }}>
+                              <td style={{ fontFamily: 'monospace', fontSize: '0.68rem', color: '#51646E' }}>
                                 {(dlg.sessionId || '').substring(0, 16)}…
                               </td>
                               <td style={{ fontWeight: 700 }}>{dlg.studentPseudonym}</td>
@@ -1496,12 +1499,12 @@ export default function ProDashboard() {
                                 </span>
                               </td>
                               <td style={{ textAlign: 'center', fontWeight: 700 }}>{dlg.messageCount}</td>
-                              <td style={{ fontSize: '0.68rem', color: '#64748B' }}>{formatDateTime(dlg.createdAt)}</td>
+                              <td style={{ fontSize: '0.68rem', color: '#728590' }}>{formatDateTime(dlg.createdAt)}</td>
                             </tr>
                           ))
                         ) : (
                           <tr>
-                            <td colSpan="7" style={{ textAlign: 'center', color: '#64748B', padding: '0.75rem' }}>
+                            <td colSpan="7" style={{ textAlign: 'center', color: '#728590', padding: '0.75rem' }}>
                               No psychological support dialogues recorded in this cycle.
                             </td>
                           </tr>
@@ -1556,7 +1559,7 @@ export default function ProDashboard() {
                           })
                         ) : (
                           <tr>
-                            <td colSpan="5" style={{ textAlign: 'center', color: '#64748B', padding: '0.75rem' }}>
+                            <td colSpan="5" style={{ textAlign: 'center', color: '#728590', padding: '0.75rem' }}>
                               No grounding exercises prescribed in this cycle.
                             </td>
                           </tr>

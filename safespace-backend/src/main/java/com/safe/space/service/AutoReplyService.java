@@ -83,7 +83,7 @@ public class AutoReplyService {
             "Frustrated", "Frustration is normal. Try stepping away for a minute and returning when ready.",
             "Neutral",    "Thanks for sharing — noticing your feelings is a helpful first step.",
             "Relieved",   "It's good to feel relief. Keep doing what helps you maintain balance.",
-            "Happy",      "Nice to hear — celebrate this moment and the things that helped it happen."
+            "Happy",      "Thank you for checking in. Even a small or quiet moment is worth noticing — take things one step at a time."
     );
     // ── Content theme keywords for context-aware replies ──
     private static final Map<String, List<String>> CONTENT_THEMES = Map.of(
@@ -96,7 +96,10 @@ public class AutoReplyService {
             "overwhelm", List.of("stressed", "overwhelmed", "too much", "can't handle", "burned out",
                     "burnout", "exhausted", "tired", "drained", "pressure", "deadline"),
             "self_worth", List.of("worthless", "useless", "stupid", "ugly", "hate myself", "not good enough",
-                    "failure", "loser", "burden", "nobody cares", "don't matter")
+                    "failure", "loser", "burden", "nobody cares", "don't matter"),
+            "uncertainty", List.of("don't know", "dont know", "not sure", "idk", "confused", "lost",
+                    "empty", "numb", "can't explain", "cant explain", "whatever", "meh", "feeling off",
+                    "hard to explain", "nothing really", "dunno", "unsure")
     );
 
     // ── Content-aware theme replies (override generic emotion-only replies) ──
@@ -105,7 +108,8 @@ public class AutoReplyService {
             "relationship", "Relationship challenges are tough. It's okay to feel hurt. Give yourself space to process, and remember that your feelings are valid. Talking to someone you trust can help.",
             "loneliness", "Feeling alone is one of the hardest emotions. You've taken a brave step by sharing here. Consider reaching out through the Anonymous Chat — someone is ready to listen.",
             "overwhelm", "It sounds like you're carrying a lot right now. You don't have to solve everything at once. Try focusing on just the next small step, and give yourself permission to rest.",
-            "self_worth", "You are more than what you feel right now. These thoughts don't define you. Please be gentle with yourself — and consider talking to the campus counselor for support."
+            "self_worth", "You are more than what you feel right now. These thoughts don't define you. Please be gentle with yourself — and consider talking to the campus counselor for support.",
+            "uncertainty", "It's completely okay not to know or have everything figured out right now. Sometimes feelings are tangled or hard to put into words. Take your time — this space is here for you without any pressure or expectations."
     );
 
     /**
@@ -113,25 +117,33 @@ public class AutoReplyService {
      * Analyzes the actual post text to generate a contextually relevant response.
      */
     public String generateReply(String emotion, int energyScore, String content) {
-        // 1. Check if content is gibberish or too vague to analyze
-        ContentQuality quality = analyzeContentQuality(content);
+        if (content == null || content.isBlank()) {
+            return buildShortReply(emotion, energyScore);
+        }
 
+        // 1. Check if content is gibberish keyboard-mashing
+        ContentQuality quality = analyzeContentQuality(content);
         if (quality == ContentQuality.GIBBERISH) {
             return buildGibberishReply(emotion);
         }
 
-        if (quality == ContentQuality.TOO_SHORT) {
-            return buildShortReply(emotion, energyScore);
-        }
-
-        // 2. Detect themes in meaningful content
+        // 2. Detect themes in content first (including uncertainty, academic, etc., even for concise expressions)
         String detectedTheme = detectTheme(content);
-
         if (detectedTheme != null && THEME_REPLIES.containsKey(detectedTheme)) {
             return THEME_REPLIES.get(detectedTheme);
         }
 
-        // 3. Fall back to emotion + energy based reply
+        // 3. If too short (< 10 chars) without a recognizable theme, invite gentle elaboration
+        if (quality == ContentQuality.TOO_SHORT) {
+            return buildShortReply(emotion, energyScore);
+        }
+
+        // 4. Emotional discordance check (positive tag with low energy or discordant words)
+        if (isDiscordantOrFlat(emotion, energyScore, content)) {
+            return "Thank you for checking in and sharing. Even in quiet or uncertain moments, you are welcome here. Take things one breath at a time.";
+        }
+
+        // 5. Fall back to emotion + energy based reply
         return getEmotionEnergyReply(emotion, energyScore);
     }
 
@@ -232,6 +244,25 @@ public class AutoReplyService {
     }
 
     /**
+     * Checks if a post marked Happy or Relieved actually has low energy (<= 3) or expresses flat/negative words.
+     */
+    private boolean isDiscordantOrFlat(String emotion, int energyScore, String content) {
+        boolean isPositiveTag = "Happy".equalsIgnoreCase(emotion) || "Relieved".equalsIgnoreCase(emotion);
+        if (isPositiveTag && energyScore <= 3) {
+            return true;
+        }
+        if (content != null && isPositiveTag) {
+            String lower = content.toLowerCase();
+            if (lower.contains("tired") || lower.contains("sad") || lower.contains("bad")
+                    || lower.contains("hard") || lower.contains("exhausted") || lower.contains("cry")
+                    || lower.contains("hurts") || lower.contains("heavy") || lower.contains("meh")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Reply for gibberish/random text — gently encourage the student to express themselves.
      */
     private String buildGibberishReply(String emotion) {
@@ -289,18 +320,29 @@ public class AutoReplyService {
             tier = "crisis";
             ruleMatched = "CRISIS_" + sanitizeEmotion(emotion);
             message = CRISIS.getOrDefault(emotion, CRISIS.get("Neutral"));
-        } else if (energy >= 8) {
-            tier = "high";
-            ruleMatched = "HIGH_" + sanitizeEmotion(emotion);
-            message = HIGH.getOrDefault(emotion, HIGH.get("Neutral"));
-        } else if (energy >= 5) {
-            tier = "mid";
-            ruleMatched = "MID_" + sanitizeEmotion(emotion);
-            message = MID.getOrDefault(emotion, MID.get("Neutral"));
         } else {
-            tier = "low";
-            ruleMatched = "LOW_" + sanitizeEmotion(emotion);
-            message = LOW.getOrDefault(emotion, LOW.get("Neutral"));
+            String detectedTheme = detectTheme(content);
+            if (detectedTheme != null && THEME_REPLIES.containsKey(detectedTheme)) {
+                tier = energy >= 8 ? "high" : energy >= 5 ? "mid" : "low";
+                ruleMatched = "THEME_" + detectedTheme.toUpperCase();
+                message = THEME_REPLIES.get(detectedTheme);
+            } else if (isDiscordantOrFlat(emotion, energy, content)) {
+                tier = "low";
+                ruleMatched = "DISCORDANT_" + sanitizeEmotion(emotion);
+                message = "Thank you for checking in and sharing. Even in quiet or uncertain moments, you are welcome here. Take things one breath at a time.";
+            } else if (energy >= 8) {
+                tier = "high";
+                ruleMatched = "HIGH_" + sanitizeEmotion(emotion);
+                message = HIGH.getOrDefault(emotion, HIGH.get("Neutral"));
+            } else if (energy >= 5) {
+                tier = "mid";
+                ruleMatched = "MID_" + sanitizeEmotion(emotion);
+                message = MID.getOrDefault(emotion, MID.get("Neutral"));
+            } else {
+                tier = "low";
+                ruleMatched = "LOW_" + sanitizeEmotion(emotion);
+                message = LOW.getOrDefault(emotion, LOW.get("Neutral"));
+            }
         }
 
         // ── Build suggested actions ──
@@ -349,6 +391,7 @@ public class AutoReplyService {
         rules.put("high", new LinkedHashMap<>(HIGH));
         rules.put("mid", new LinkedHashMap<>(MID));
         rules.put("low", new LinkedHashMap<>(LOW));
+        rules.put("themes", new LinkedHashMap<>(THEME_REPLIES));
         return rules;
     }
 

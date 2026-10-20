@@ -1,9 +1,9 @@
-/* ═══════════════════════════════════════════════════════
-   SafeSpace — Registration Scoped Styles
-   Compass Psychological Services design system
-   ═══════════════════════════════════════════════════════ */
+/* =======================================================
+   SafeSpace: Registration Scoped Styles
+   Nordic Slate-Teal & Mineral Porcelain design system
+   ======================================================= */
 
-/* ── Registration Page — Compass Psychological Palette ── */
+/* Registration Page: Nordic Slate-Teal & Mineral Porcelain Palette */
 .register-page {
   min-height: 100vh;
   display: flex;
@@ -13,7 +13,7 @@
   padding: 2.5rem 1rem 3.5rem 1rem;
   position: relative;
   box-sizing: border-box;
-  background: linear-gradient(145deg, #FAF7F2 0%, #F2EDE2 45%, #FFFFFF 75%, #ECE5D6 100%);
+  background: linear-gradient(160deg, #F9FBFA 0%, #FFFFFF 45%, #F4F7F7 100%);
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -24,7 +24,7 @@
   top: -160px; right: -160px;
   width: 520px; height: 520px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(186, 203, 216, 0.35) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(126, 159, 157, 0.22) 0%, transparent 70%);
   pointer-events: none;
   transform: translateZ(0);
   z-index: 0;
@@ -36,7 +36,7 @@
   bottom: -140px; left: -140px;
   width: 480px; height: 480px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(22, 31, 54, 0.06) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(36, 62, 76, 0.05) 0%, transparent 70%);
   pointer-events: none;
   transform: translateZ(0);
   z-index: 0;
@@ -44,9 +44,9 @@
 
 .register-card {
   background: #FFFFFF;
-  border: 1px solid rgba(224, 215, 198, 0.9);
+  border: 1px solid rgba(225, 232, 235, 0.9);
   border-radius: 1.5rem;
-  box-shadow: 0 15px 40px rgba(22, 31, 54, 0.07), 0 2px 6px rgba(22, 31, 54, 0.04);
+  box-shadow: 0 15px 40px rgba(24, 42, 52, 0.06), 0 2px 6px rgba(24, 42, 52, 0.03);
   width: 100%;
   max-width: 520px;
   padding: 2.5rem;
@@ -66,14 +66,14 @@
   width: 56px;
   height: 56px;
   border-radius: 1rem;
-  background: linear-gradient(135deg, #161F36 0%, #223152 100%);
+  background: linear-gradient(135deg, #243E4C 0%, #162732 100%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 1.35rem;
-  color: #BACBD8;
+  color: #7E9F9D;
   margin-bottom: 0.75rem;
-  box-shadow: 0 8px 22px rgba(22, 31, 54, 0.28);
+  box-shadow: 0 8px 22px rgba(36, 62, 76, 0.22);
   overflow: hidden;
 }
 
@@ -102,15 +102,15 @@
 .register-brand h1 {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #161F36;
+  color: #182A34;
   letter-spacing: -0.02em;
 }
 
-.register-brand h1 span { color: #3D4D6E; }
+.register-brand h1 span { color: #51646E; }
 
 .register-brand p {
   font-size: 0.85rem;
-  color: #6C7A92;
+  color: #728590;
   margin-top: 0.35rem;
 }
 
@@ -130,9 +130,9 @@
   padding: 0.75rem 2.25rem 0.75rem 2.75rem;
   font-size: 0.875rem;
   font-family: inherit;
-  color: #161F36;
+  color: #182A34;
   background: #FFFFFF;
-  border: 1.5px solid #E0D7C6;
+  border: 1.5px solid #E1E8EB;
   border-radius: 0.75rem;
   outline: none;
   transition: all 0.3s ease;
@@ -143,8 +143,8 @@
 }
 
 .form-select:focus {
-  border-color: #BACBD8;
-  box-shadow: 0 0 0 3px rgba(186, 203, 216, 0.35);
+  border-color: #243E4C;
+  box-shadow: 0 0 0 3px rgba(36, 62, 76, 0.12);
   background: #fff;
 }
 
@@ -154,7 +154,7 @@
 }
 
 .form-select option {
-  color: #161F36;
+  color: #182A34;
   background: #FFFFFF;
   padding: 0.5rem;
 }
@@ -164,14 +164,14 @@
   right: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #6C7A92;
+  color: #728590;
   font-size: 0.75rem;
   pointer-events: none;
   transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .input-wrapper:focus-within .select-arrow {
-  color: #161F36;
+  color: #243E4C;
 }
 
 .role-selector {
@@ -186,32 +186,32 @@
   justify-content: center;
   gap: 0.45rem;
   padding: 0.65rem 0.75rem;
-  border: 2px solid #E0D7C6;
+  border: 2px solid #E1E8EB;
   border-radius: 0.6rem;
   background: #fff;
   cursor: pointer;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #161F36;
+  color: #182A34;
   transition: all 0.25s ease;
 }
 
 .role-option:hover {
-  border-color: #BACBD8;
-  color: #161F36;
-  background: #F2EDE2;
+  border-color: #7E9F9D;
+  color: #182A34;
+  background: #F4F7F7;
 }
 
 .role-option.active {
-  border-color: #161F36;
-  background: #F2EDE2;
-  color: #161F36;
-  box-shadow: 0 2px 8px rgba(22, 31, 54, 0.12);
+  border-color: #243E4C;
+  background: #F4F7F7;
+  color: #243E4C;
+  box-shadow: 0 2px 8px rgba(36, 62, 76, 0.12);
 }
 
 .role-option i {
   font-size: 0.85rem;
-  color: #161F36;
+  color: #243E4C;
 }
 
 .pw-strength {
@@ -224,7 +224,7 @@
   height: 4px;
   flex: 1;
   border-radius: 2px;
-  background: #E0D7C6;
+  background: #E1E8EB;
   transition: background 0.3s ease;
 }
 
@@ -237,7 +237,7 @@
   font-weight: 600;
   margin-top: 0.25rem;
   text-align: right;
-  color: #6C7A92;
+  color: #728590;
 }
 
 .register-error {
@@ -283,36 +283,36 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: #F2EDE2;
+  background: #F4F7F7;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
-  color: #161F36;
+  color: #243E4C;
   margin-bottom: 1rem;
-  box-shadow: 0 4px 14px rgba(22, 31, 54, 0.15);
-  border: 1px solid #E0D7C6;
+  box-shadow: 0 4px 14px rgba(24, 42, 52, 0.08);
+  border: 1px solid #E1E8EB;
 }
 
 .register-success h2 {
   font-size: 1.3rem;
   font-weight: 800;
-  color: #161F36;
+  color: #182A34;
   margin-bottom: 0.5rem;
 }
 
 .register-success p {
   font-size: 0.88rem;
-  color: #6C7A92;
+  color: #51646E;
   line-height: 1.6;
   margin-bottom: 1.5rem;
 }
 
 .register-success .cred-info {
   padding: 1.1rem;
-  background: #FAF7F2;
+  background: #F9FBFA;
   border-radius: 0.75rem;
-  border: 1.5px solid #E0D7C6;
+  border: 1.5px solid #E1E8EB;
   margin-bottom: 1.5rem;
   text-align: left;
 }
@@ -326,40 +326,40 @@
 }
 
 .register-success .cred-info .cred-row .label {
-  color: #6C7A92;
+  color: #728590;
   font-weight: 500;
 }
 
 .register-success .cred-info .cred-row .value {
   font-weight: 700;
-  color: #161F36;
+  color: #182A34;
 }
 
 .register-footer {
   text-align: center;
   margin-top: 1.25rem;
   font-size: 0.82rem;
-  color: #6C7A92;
+  color: #728590;
 }
 
 .register-footer a {
-  color: #161F36;
+  color: #243E4C;
   text-decoration: none;
   font-weight: 700;
   transition: color 0.2s ease;
 }
 
 .register-footer a:hover {
-  color: #3D4D6E;
+  color: #182A34;
 }
 
-/* ── Back to Home Link (Text-only with hover highlight) ── */
+/* Back to Home Link (Text-only with hover highlight) */
 .back-link {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
   font-size: 0.85rem;
-  color: #161F36;
+  color: #243E4C;
   text-decoration: none;
   margin-bottom: 1.25rem;
   font-weight: 600;
@@ -372,7 +372,7 @@
 }
 
 .back-link:hover {
-  color: #2563eb;
+  color: #7E9F9D;
   transform: translateX(-3px);
 }
 
@@ -385,7 +385,7 @@
   transform: translateX(-2px);
 }
 
-/* ── Terms & Conditions Checkbox & Smooth Warning ── */
+/* Terms and Conditions Checkbox */
 .terms-row {
   margin: 1rem 0 0.6rem 0;
   padding: 0.65rem 0.85rem;
@@ -414,7 +414,7 @@
   height: 1.15rem;
   min-width: 1.15rem;
   margin-top: 0.15rem;
-  accent-color: #161F36;
+  accent-color: #243E4C;
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.2s ease;
@@ -433,13 +433,13 @@
 
 .terms-text {
   font-size: 0.815rem;
-  color: #4A5568;
+  color: #51646E;
   line-height: 1.45;
   transition: color 0.2s ease;
 }
 
 .terms-link {
-  color: #161F36;
+  color: #243E4C;
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
@@ -447,7 +447,7 @@
 }
 
 .terms-link:hover {
-  color: #3D4D6E;
+  color: #182A34;
   opacity: 0.85;
 }
 
@@ -476,11 +476,11 @@
   flex-shrink: 0;
 }
 
-/* ── Terms & Conditions Modal ── */
+/* Terms and Conditions Modal */
 .terms-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(22, 31, 54, 0.55);
+  background: rgba(24, 42, 52, 0.6);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: none;
@@ -499,9 +499,9 @@
 
 .terms-modal-card {
   background: #FFFFFF;
-  border: 1px solid rgba(224, 215, 198, 0.9);
+  border: 1px solid #E1E8EB;
   border-radius: 1.25rem;
-  box-shadow: 0 25px 60px rgba(22, 31, 54, 0.25);
+  box-shadow: 0 25px 60px rgba(24, 42, 52, 0.22);
   width: 100%;
   max-width: 580px;
   max-height: 85vh;
@@ -521,8 +521,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #ECE5D6;
-  background: #FAF7F2;
+  border-bottom: 1px solid #E1E8EB;
+  background: #F9FBFA;
 }
 
 .terms-modal-header-left {
@@ -535,8 +535,8 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #161F36 0%, #223152 100%);
-  color: #BACBD8;
+  background: linear-gradient(135deg, #243E4C 0%, #1A313D 100%);
+  color: #7E9F9D;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -547,14 +547,14 @@
 .terms-modal-title {
   font-size: 1.15rem;
   font-weight: 800;
-  color: #161F36;
+  color: #182A34;
   margin: 0;
   line-height: 1.2;
 }
 
 .terms-modal-subtitle {
   font-size: 0.75rem;
-  color: #6C7A92;
+  color: #728590;
   margin: 0.2rem 0 0 0;
   font-weight: 500;
 }
@@ -563,7 +563,7 @@
   background: transparent;
   border: none;
   font-size: 1.15rem;
-  color: #6C7A92;
+  color: #728590;
   cursor: pointer;
   width: 36px;
   height: 36px;
@@ -575,16 +575,16 @@
 }
 
 .terms-modal-close:hover {
-  background: #E0D7C6;
-  color: #161F36;
+  background: #E1E8EB;
+  color: #182A34;
 }
 
 .terms-modal-tabs {
   display: flex;
   gap: 0.5rem;
   padding: 0.65rem 1.5rem;
-  background: #F4EFE6;
-  border-bottom: 1px solid #ECE5D6;
+  background: #F4F7F7;
+  border-bottom: 1px solid #E1E8EB;
 }
 
 .terms-tab-btn {
@@ -595,7 +595,7 @@
   border-radius: 0.5rem;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #6C7A92;
+  color: #728590;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -605,15 +605,15 @@
 }
 
 .terms-tab-btn:hover {
-  color: #161F36;
+  color: #182A34;
   background: rgba(255, 255, 255, 0.5);
 }
 
 .terms-tab-btn.active {
   background: #FFFFFF;
-  color: #161F36;
-  border-color: #E0D7C6;
-  box-shadow: 0 2px 6px rgba(22, 31, 54, 0.06);
+  color: #243E4C;
+  border-color: #E1E8EB;
+  box-shadow: 0 2px 6px rgba(24, 42, 52, 0.06);
 }
 
 .terms-modal-body {
@@ -622,7 +622,7 @@
   flex: 1;
   font-size: 0.85rem;
   line-height: 1.6;
-  color: #334155;
+  color: #51646E;
 }
 
 .terms-tab-content {
@@ -641,19 +641,19 @@
 .terms-section h3 {
   font-size: 0.92rem;
   font-weight: 700;
-  color: #161F36;
+  color: #182A34;
   margin: 0 0 0.4rem 0;
 }
 
 .terms-section p {
   margin: 0 0 0.5rem 0;
-  color: #475569;
+  color: #51646E;
 }
 
 .terms-section ul {
   margin: 0.35rem 0 0.5rem 1.25rem;
   padding: 0;
-  color: #475569;
+  color: #51646E;
 }
 
 .terms-section li {
@@ -686,16 +686,16 @@
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 1rem 1.5rem;
-  border-top: 1px solid #ECE5D6;
-  background: #FAF7F2;
+  border-top: 1px solid #E1E8EB;
+  background: #F9FBFA;
 }
 
 .terms-btn-secondary {
   padding: 0.65rem 1.25rem;
   background: #FFFFFF;
-  border: 1.5px solid #E0D7C6;
+  border: 1.5px solid #E1E8EB;
   border-radius: 0.6rem;
-  color: #161F36;
+  color: #243E4C;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
@@ -703,14 +703,14 @@
 }
 
 .terms-btn-secondary:hover {
-  background: #F2EDE2;
-  border-color: #BACBD8;
+  background: #F4F7F7;
+  border-color: #7E9F9D;
 }
 
 .terms-btn-primary {
   padding: 0.65rem 1.35rem;
-  background: #161F36;
-  border: 1.5px solid #161F36;
+  background: #243E4C;
+  border: 1.5px solid #243E4C;
   border-radius: 0.6rem;
   color: #FFFFFF;
   font-size: 0.82rem;
@@ -720,12 +720,12 @@
   align-items: center;
   gap: 0.45rem;
   transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(22, 31, 54, 0.15);
+  box-shadow: 0 4px 12px rgba(24, 42, 52, 0.12);
 }
 
 .terms-btn-primary:hover {
-  background: #223152;
-  border-color: #223152;
+  background: #1A313D;
+  border-color: #1A313D;
   transform: translateY(-1px);
 }
 

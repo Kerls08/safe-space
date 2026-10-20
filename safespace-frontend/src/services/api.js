@@ -1,5 +1,5 @@
 /**
- * Safe Space — Centralized API Client & Service Layer
+ * Safe Space: Centralized API Client & Service Layer
  */
 
 const getApiBase = () => {
@@ -102,7 +102,7 @@ export function clearSessionStorage() {
   sessionStorage.removeItem('ss_fullName');
 }
 
-/* ── Auth API Calls ── */
+/*  Auth API Calls  */
 export const authApi = {
   async login(username, password) {
     const res = await fetch(`${AUTH_API}/login`, {
@@ -221,7 +221,7 @@ export const authApi = {
   }
 };
 
-/* ── System Status API ── */
+/*  System Status API  */
 export const systemApi = {
   async getStatus() {
     try {
@@ -234,7 +234,7 @@ export const systemApi = {
   }
 };
 
-/* ── Posts & Rant Board API ── */
+/*  Posts & Rant Board API  */
 export const postsApi = {
   async getPosts({ page = 0, size = 15, emotion = 'ALL', sort = 'newest' } = {}) {
     let url = `${API_BASE}/posts?page=${page}&size=${size}`;
@@ -348,9 +348,9 @@ export const postsApi = {
   }
 };
 
-/* ── Anonymous Chat API ── */
+/*  Anonymous Chat API  */
 export const chatApi = {
-  async createSession({ pseudonym, studentPseudonym, topic, emotionTag, energyScore, studentUserId, userId }) {
+  async createSession({ pseudonym, studentPseudonym, topic, emotionTag, energyScore, studentUserId, userId, forceNew }) {
     const res = await authFetch(`${API_BASE}/chat/sessions`, {
       method: 'POST',
       body: JSON.stringify({
@@ -358,7 +358,8 @@ export const chatApi = {
         topic,
         emotionTag,
         energyScore: energyScore !== undefined ? parseInt(energyScore, 10) : 5,
-        studentUserId: studentUserId || userId
+        studentUserId: studentUserId || userId,
+        forceNew: Boolean(forceNew)
       })
     });
     const data = await res.json().catch(() => ({}));
@@ -394,7 +395,10 @@ export const chatApi = {
     let url = `${API_BASE}/chat/sessions/${sessionId}/messages`;
     if (viewer) url += `?viewer=${encodeURIComponent(viewer)}`;
     const res = await authFetch(url);
-    if (!res.ok) return [];
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `Failed to fetch messages (${res.status})`);
+    }
     return await res.json();
   },
 
@@ -540,7 +544,7 @@ export const chatApi = {
   }
 };
 
-/* ── Profile API ── */
+/*  Profile API  */
 export const profileApi = {
   async getMe() {
     const res = await authFetch(`${API_BASE}/auth/me`);
@@ -559,7 +563,7 @@ export const profileApi = {
   }
 };
 
-/* ── Dashboard API ── */
+/*  Dashboard API  */
 export const dashboardApi = {
   async getOverview() {
     const res = await authFetch(`${API_BASE}/dashboard/overview`);
@@ -586,7 +590,7 @@ export const dashboardApi = {
   }
 };
 
-/* ── Crisis Alerts API ── */
+/*  Crisis Alerts API  */
 export const alertsApi = {
   async getStats(silent = false) {
     const res = await authFetch(`${API_BASE}/alerts/stats`, { silent });
@@ -709,7 +713,7 @@ export const alertsApi = {
   }
 };
 
-/* ── Resource Manager API ── */
+/*  Resource Manager API  */
 export const resourceManagerApi = {
   async getAll() {
     const res = await authFetch(`${API_BASE}/resources/all`);
@@ -768,7 +772,7 @@ export const resourceManagerApi = {
   }
 };
 
-/* ── Colleagues API ── */
+/*  Colleagues API  */
 export const colleaguesApi = {
   async getColleagues() {
     const res = await authFetch(`${API_BASE}/auth/colleagues`);
@@ -816,7 +820,7 @@ export const colleaguesApi = {
   }
 };
 
-/* ── System Maintenance & Health API ── */
+/*  System Maintenance & Health API  */
 export const maintenanceApi = {
   async getStatus() {
     const res = await fetch(`${API_BASE}/admin/maintenance/status`);
@@ -887,7 +891,7 @@ export const maintenanceApi = {
   }
 };
 
-/* ── User Administration API ── */
+/*  User Administration API  */
 export const userAdminApi = {
   async getUserStats() {
     const res = await authFetch(`${API_BASE}/auth/stats`);

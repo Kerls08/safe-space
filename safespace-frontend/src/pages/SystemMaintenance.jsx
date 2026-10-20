@@ -135,7 +135,7 @@ export default function SystemMaintenance({ initialTab }) {
     }, 3500);
   };
 
-  // ── Diagnostics & Telemetry ──
+  // Diagnostics & Telemetry
   const loadSystemHealth = useCallback(async () => {
     try {
       const data = await maintenanceApi.getHealth();
@@ -259,7 +259,7 @@ export default function SystemMaintenance({ initialTab }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // ── Maintenance Mode Toggle & Save ──
+  // Maintenance Mode Toggle & Save
   const handleSaveMaintenance = async () => {
     try {
       const res = await maintenanceApi.setMaintenanceMode({
@@ -274,7 +274,7 @@ export default function SystemMaintenance({ initialTab }) {
     }
   };
 
-  // ── Campus Broadcast Toggle & Save ──
+  // Campus Broadcast Toggle & Save
   const handleSaveBroadcast = async () => {
     if (broadcastActive && !broadcastMessage.trim()) {
       showToast('Please enter an announcement message before publishing.');
@@ -293,7 +293,7 @@ export default function SystemMaintenance({ initialTab }) {
     }
   };
 
-  // ── Email Ping Verification ──
+  // Email Ping Verification
   const handleVerifyEmail = async () => {
     setEmailTesting(true);
     setEmailResult(null);
@@ -308,7 +308,7 @@ export default function SystemMaintenance({ initialTab }) {
     }
   };
 
-  // ── User Management Functions ──
+  // User Management Functions
 
   const handleToggleUserStatus = async (username) => {
     try {
@@ -384,7 +384,7 @@ export default function SystemMaintenance({ initialTab }) {
     }
   };
 
-  // ── Database Hygiene Functions ──
+  // Database Hygiene Functions
 
   const executeDatabaseCleanup = async () => {
     if (!window.confirm('Execute database hygiene? This will prune ONLY verified trash (0-message abandoned chats and expired tokens). Real student rants, chats, and crisis alerts will NOT be deleted.')) {
@@ -404,7 +404,7 @@ export default function SystemMaintenance({ initialTab }) {
     }
   };
 
-  // ── CSV Download ──
+  // CSV Download
   const handleDownloadAuditCsv = async () => {
     try {
       const token = getToken();
@@ -426,7 +426,7 @@ export default function SystemMaintenance({ initialTab }) {
     }
   };
 
-  // ── Filtering Logic ──
+  // Filtering Logic
   const filteredUsers = allUsers.filter((u) => {
     if (currentUserFilter !== 'ALL' && (u.role || '').toUpperCase() !== currentUserFilter) {
       return false;
@@ -502,7 +502,7 @@ export default function SystemMaintenance({ initialTab }) {
                 {isMaint ? 'Maintenance Mode Active' : 'All Core Systems Operational'}
               </span>
             </div>
-            <span style={{ fontSize: '0.82rem', color: '#64748b' }} id="lastCheckTime">
+            <span style={{ fontSize: '0.82rem', color: '#728590' }} id="lastCheckTime">
               {lastCheckTime}
             </span>
           </div>
@@ -557,7 +557,7 @@ export default function SystemMaintenance({ initialTab }) {
                     style={{
                       fontSize: '0.8rem',
                       fontWeight: 800,
-                      color: maintenanceActive ? '#d97706' : '#64748b'
+                      color: maintenanceActive ? '#d97706' : '#728590'
                     }}
                     id="maintSwitchLabel"
                   >
@@ -566,7 +566,7 @@ export default function SystemMaintenance({ initialTab }) {
                 </div>
               </div>
 
-              <p style={{ fontSize: '0.83rem', color: '#64748b', margin: '0 0 1rem 0', lineHeight: 1.45 }}>
+              <p style={{ fontSize: '0.83rem', color: '#728590', margin: '0 0 1rem 0', lineHeight: 1.45 }}>
                 When active, non-admin students are gracefully shown a maintenance notice while platform updates take place. All crisis hotlines remain clearly displayed.
               </p>
 
@@ -592,7 +592,7 @@ export default function SystemMaintenance({ initialTab }) {
                 />
               </div>
 
-              <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '1rem' }} id="maintAuditMeta">
+              <div style={{ fontSize: '0.75rem', color: '#728590', marginBottom: '1rem' }} id="maintAuditMeta">
                 {maintenanceAuditMeta}
               </div>
 
@@ -623,7 +623,7 @@ export default function SystemMaintenance({ initialTab }) {
                     style={{
                       fontSize: '0.8rem',
                       fontWeight: 800,
-                      color: broadcastActive ? '#0284c7' : '#64748b'
+                      color: broadcastActive ? '#0284c7' : '#728590'
                     }}
                     id="broadcastSwitchLabel"
                   >
@@ -632,7 +632,7 @@ export default function SystemMaintenance({ initialTab }) {
                 </div>
               </div>
 
-              <p style={{ fontSize: '0.83rem', color: '#64748b', margin: '0 0 1rem 0', lineHeight: 1.45 }}>
+              <p style={{ fontSize: '0.83rem', color: '#728590', margin: '0 0 1rem 0', lineHeight: 1.45 }}>
                 Display a persistent advisory banner at the top of all Safe Space pages. Ideal for campus guidance advisories, wellness weeks, or scheduled downtime notices.
               </p>
 
@@ -660,7 +660,7 @@ export default function SystemMaintenance({ initialTab }) {
                 />
               </div>
 
-              <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '1rem' }} id="broadcastAuditMeta">
+              <div style={{ fontSize: '0.75rem', color: '#728590', marginBottom: '1rem' }} id="broadcastAuditMeta">
                 {broadcastAuditMeta}
               </div>
 
@@ -687,7 +687,7 @@ export default function SystemMaintenance({ initialTab }) {
                 <i className={`fas fa-${emailTesting ? 'spinner fa-spin' : 'paper-plane'}`}></i> Verify Email Delivery
               </button>
             </div>
-            <p style={{ fontSize: '0.84rem', color: '#64748b', margin: '0 0 0.5rem 0' }}>
+            <p style={{ fontSize: '0.84rem', color: '#728590', margin: '0 0 0.5rem 0' }}>
               Safe Space uses the Brevo Transactional REST API to send credential welcome emails, OTPs, and password reset instructions.
             </p>
             {emailResult && (
@@ -750,7 +750,7 @@ export default function SystemMaintenance({ initialTab }) {
             <div className="maint-card-header">
               <div>
                 <h3 className="maint-card-title"><i className="fas fa-users-gear"></i> User Directory &amp; Accounts</h3>
-                <p style={{ fontSize: '0.83rem', color: '#64748b', margin: '0.25rem 0 0 0' }}>
+                <p style={{ fontSize: '0.83rem', color: '#728590', margin: '0.25rem 0 0 0' }}>
                   Provision accounts, import students/staff, unlock logins, and reset passwords.
                 </p>
               </div>
@@ -831,13 +831,13 @@ export default function SystemMaintenance({ initialTab }) {
                 <tbody id="usersTableBody">
                   {usersLoading ? (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#728590' }}>
                         <i className="fas fa-spinner fa-spin"></i> Loading user directory...
                       </td>
                     </tr>
                   ) : filteredUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#728590' }}>
                         No matching user accounts found.
                       </td>
                     </tr>
@@ -847,15 +847,15 @@ export default function SystemMaintenance({ initialTab }) {
                       return (
                         <tr key={u.username}>
                           <td>
-                            <div style={{ fontWeight: 700, color: '#161F36' }}>{u.fullName || '—'}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#64748b', fontFamily: 'monospace' }}>
-                              @{u.username} &bull; ID: {u.institutionalId || '—'}
+                            <div style={{ fontWeight: 700, color: '#243E4C' }}>{u.fullName || 'N/A'}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#728590', fontFamily: 'monospace' }}>
+                              @{u.username} &bull; ID: {u.institutionalId || 'N/A'}
                             </div>
                           </td>
                           <td>
                             <span className={`role-badge ${u.role?.toLowerCase()} ${u.role}`}>{u.role}</span>
                           </td>
-                          <td style={{ fontSize: '0.8rem', color: '#475569' }}>{u.department || '—'}</td>
+                          <td style={{ fontSize: '0.8rem', color: '#51646E' }}>{u.department || 'N/A'}</td>
                           <td>
                             <span className={`status-badge ${u.active ? 'active' : 'inactive'}`}>
                               {u.active ? 'Active' : 'Inactive'}
@@ -931,9 +931,9 @@ export default function SystemMaintenance({ initialTab }) {
                 <span className="protected-badge"><i className="fas fa-shield"></i> Protected</span>
               </div>
               <div className="protected-val" id="countProtPosts">
-                {hygieneScan?.protectedPosts ?? healthData?.database?.totalPosts ?? '—'}
+                {hygieneScan?.protectedPosts ?? healthData?.database?.totalPosts ?? 'N/A'}
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>100% Retained</div>
+              <div style={{ fontSize: '0.75rem', color: '#728590' }}>100% Retained</div>
             </div>
             <div className="protected-card">
               <div className="protected-card-head">
@@ -941,9 +941,9 @@ export default function SystemMaintenance({ initialTab }) {
                 <span className="protected-badge"><i className="fas fa-shield"></i> Protected</span>
               </div>
               <div className="protected-val" id="countProtChats">
-                {hygieneScan?.protectedChatSessions ?? healthData?.database?.totalChatSessions ?? '—'}
+                {hygieneScan?.protectedChatSessions ?? healthData?.database?.totalChatSessions ?? 'N/A'}
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Chats with messages kept</div>
+              <div style={{ fontSize: '0.75rem', color: '#728590' }}>Chats with messages kept</div>
             </div>
             <div className="protected-card">
               <div className="protected-card-head">
@@ -951,9 +951,9 @@ export default function SystemMaintenance({ initialTab }) {
                 <span className="protected-badge"><i className="fas fa-shield"></i> Protected</span>
               </div>
               <div className="protected-val" id="countProtAlerts">
-                {hygieneScan?.protectedCrisisAlerts ?? healthData?.database?.totalCrisisAlerts ?? '—'}
+                {hygieneScan?.protectedCrisisAlerts ?? healthData?.database?.totalCrisisAlerts ?? 'N/A'}
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Never pruned</div>
+              <div style={{ fontSize: '0.75rem', color: '#728590' }}>Never pruned</div>
             </div>
             <div className="protected-card">
               <div className="protected-card-head">
@@ -961,9 +961,9 @@ export default function SystemMaintenance({ initialTab }) {
                 <span className="protected-badge"><i className="fas fa-shield"></i> Protected</span>
               </div>
               <div className="protected-val" id="countProtUsers">
-                {hygieneScan?.protectedUsers ?? healthData?.database?.totalUsers ?? '—'}
+                {hygieneScan?.protectedUsers ?? healthData?.database?.totalUsers ?? 'N/A'}
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>All accounts preserved</div>
+              <div style={{ fontSize: '0.75rem', color: '#728590' }}>All accounts preserved</div>
             </div>
           </div>
 
@@ -972,9 +972,9 @@ export default function SystemMaintenance({ initialTab }) {
             <div className="maint-card-header">
               <div>
                 <h3 className="maint-card-title">
-                  <i className="fas fa-broom" style={{ color: '#161F36' }}></i> Safeguarded Database Cleaner
+                  <i className="fas fa-broom" style={{ color: '#243E4C' }}></i> Safeguarded Database Cleaner
                 </h3>
-                <p style={{ fontSize: '0.83rem', color: '#64748b', margin: '0.25rem 0 0 0' }}>
+                <p style={{ fontSize: '0.83rem', color: '#728590', margin: '0.25rem 0 0 0' }}>
                   Scans for and cleans only non-user trash: abandoned empty chats (0 messages, &gt;14 days old) and expired session tokens.
                 </p>
               </div>
@@ -993,7 +993,7 @@ export default function SystemMaintenance({ initialTab }) {
             {/* Scan Results Preview Box */}
             {hygieneScan && (
               <div className="scan-results-box" id="scanResultsBox" style={{ display: 'block' }}>
-                <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.92rem', color: '#161F36' }}>
+                <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.92rem', color: '#243E4C' }}>
                   <i className="fas fa-clipboard-check" style={{ color: '#0284c7' }}></i> Database Scan Results (Dry Run Preview)
                 </h4>
                 <div className="scan-item-row">
@@ -1008,7 +1008,7 @@ export default function SystemMaintenance({ initialTab }) {
                   <span>Expired Brute-Force Lockout Cache</span>
                   <strong id="scanLockoutsCount">{hygieneScan.expiredLockouts}</strong>
                 </div>
-                <div className="scan-item-row" style={{ color: '#161F36' }}>
+                <div className="scan-item-row" style={{ color: '#243E4C' }}>
                   <span>Total Safe Trash Items Identified</span>
                   <span style={{ color: '#D97706', fontSize: '1.1rem' }} id="scanTotalCount">
                     {hygieneScan.totalTrashItems}
@@ -1060,9 +1060,9 @@ export default function SystemMaintenance({ initialTab }) {
             <div className="maint-card-header">
               <div>
                 <h3 className="maint-card-title">
-                  <i className="fas fa-clock-rotate-left" style={{ color: '#161F36' }}></i> System &amp; Security Audit Trail
+                  <i className="fas fa-clock-rotate-left" style={{ color: '#243E4C' }}></i> System &amp; Security Audit Trail
                 </h3>
-                <p style={{ fontSize: '0.83rem', color: '#64748b', margin: '0.25rem 0 0 0' }}>
+                <p style={{ fontSize: '0.83rem', color: '#728590', margin: '0.25rem 0 0 0' }}>
                   Persistent database ledger of administrative actions, account lockouts, user management changes, and hygiene cleanups.
                 </p>
               </div>
@@ -1120,7 +1120,7 @@ export default function SystemMaintenance({ initialTab }) {
                   style={{
                     width: '100%',
                     padding: '0.4rem 0.75rem',
-                    border: '1.5px solid #E0D7C6',
+                    border: '1.5px solid #E1E8EB',
                     borderRadius: '0.5rem',
                     fontSize: '0.8rem',
                     outline: 'none'
@@ -1145,13 +1145,13 @@ export default function SystemMaintenance({ initialTab }) {
                 <tbody id="auditTableBody">
                   {auditLoading ? (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#728590' }}>
                         <i className="fas fa-spinner fa-spin" style={{ marginRight: '0.5rem' }}></i> Loading audit logs...
                       </td>
                     </tr>
                   ) : filteredAuditLogs.length === 0 ? (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#728590' }}>
                         No audit logs found matching criteria.
                       </td>
                     </tr>
@@ -1160,21 +1160,21 @@ export default function SystemMaintenance({ initialTab }) {
                       const sev = (l.severity || 'INFO').toUpperCase();
                       return (
                         <tr key={l.id || l.timestamp + l.action}>
-                          <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#475569' }}>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#51646E' }}>
                             {l.timestamp}
                           </td>
                           <td>
                             <span className={`badge-severity ${sev}`}>{sev}</span>
                           </td>
                           <td>
-                            <strong style={{ color: '#161F36' }}>{l.action}</strong>
+                            <strong style={{ color: '#243E4C' }}>{l.action}</strong>
                           </td>
                           <td>
                             <span style={{ fontWeight: 600, color: '#0369a1' }}>{l.actor || 'system'}</span>
                           </td>
                           <td style={{ wordBreak: 'break-word' }}>{l.details}</td>
-                          <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b' }}>
-                            {l.target || '—'}
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#728590' }}>
+                            {l.target || 'N/A'}
                           </td>
                         </tr>
                       );
@@ -1208,7 +1208,7 @@ export default function SystemMaintenance({ initialTab }) {
             </div>
             <form onSubmit={handleCreateUserSubmit}>
               <div className="cred-modal-body">
-                <p style={{ fontSize: '0.84rem', color: '#64748b', marginBottom: '1rem', lineHeight: 1.5 }}>
+                <p style={{ fontSize: '0.84rem', color: '#728590', marginBottom: '1rem', lineHeight: 1.5 }}>
                   Provision a new university account with system credentials and automated email dispatch.
                 </p>
                 <div className="auth-form">
@@ -1292,7 +1292,7 @@ export default function SystemMaintenance({ initialTab }) {
                           Temp Password:{' '}
                           <strong style={{ fontFamily: 'monospace' }}>{regResult.data.generatedPassword}</strong>
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>
+                        <div style={{ fontSize: '0.75rem', color: '#728590', marginTop: '4px' }}>
                           {regResult.data.message}
                         </div>
                       </div>
@@ -1354,7 +1354,7 @@ export default function SystemMaintenance({ initialTab }) {
               </button>
             </div>
             <div className="cred-modal-body">
-              <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1rem', lineHeight: 1.45 }}>
+              <p style={{ fontSize: '0.8rem', color: '#728590', marginBottom: '1rem', lineHeight: 1.45 }}>
                 Upload a spreadsheet (.xlsx, .xls, or .csv) containing student or staff records to provision accounts in bulk.
               </p>
 
@@ -1418,7 +1418,7 @@ export default function SystemMaintenance({ initialTab }) {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      background: '#FAF7F2',
+                      background: '#F4F7F7',
                       padding: '0.6rem 0.85rem',
                       borderRadius: '0.5rem'
                     }}
@@ -1531,17 +1531,17 @@ export default function SystemMaintenance({ initialTab }) {
                     fontFamily: 'monospace',
                     fontSize: '1.1rem',
                     fontWeight: 700,
-                    color: '#161F36',
+                    color: '#243E4C',
                     background: '#fff',
                     padding: '8px',
                     borderRadius: '6px',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid #E1E8EB',
                     textAlign: 'center'
                   }}
                 >
                   {resetModalData.generatedPassword}
                 </div>
-                <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '8px 0 0 0' }}>
+                <p style={{ fontSize: '0.78rem', color: '#728590', margin: '8px 0 0 0' }}>
                   {resetModalData.message}
                 </p>
               </div>
