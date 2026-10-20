@@ -1945,71 +1945,55 @@ body.has-student-bottom-nav .rant-layout {
 .resource-card {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  gap: 0.85rem;
+  padding: 0.85rem 1.15rem;
   border-radius: 0.75rem;
-  border: 1.5px solid #E1E8EB;
-  background: #fff;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
   text-decoration: none;
   color: inherit;
   transition: all 0.2s ease;
   cursor: pointer;
+  box-shadow: 0 1px 3px rgba(24, 42, 52, 0.02);
 }
 
 .resource-card:hover {
-  border-color: #182A34;
-  background: #F4F7F7;
-  box-shadow: 0 2px 10px rgba(24, 42, 52, 0.08);
+  border-color: #CBD5E1;
+  background: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(24, 42, 52, 0.05);
   transform: translateY(-1px);
 }
 
 .resource-card.urgent {
-  border-color: #fecaca;
-  background: #fefefe;
+  border-color: #E2E8F0;
+  background: #FFFFFF;
 }
 
 .resource-card.urgent:hover {
-  border-color: #ef4444;
-  background: #fef2f2;
-  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.1);
+  border-color: #CBD5E1;
+  background: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(24, 42, 52, 0.05);
 }
 
 .resource-card-icon {
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: 0.6rem;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
+  font-size: 0.95rem;
   flex-shrink: 0;
-  background: #EBF2F3;
-  color: #182A34;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  color: #243E4C;
+  transition: all 0.2s ease;
 }
 
-.resource-card-icon.HOTLINE {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-.resource-card-icon.CAMPUS {
-  background: #eff6ff;
-  color: #2563eb;
-}
-
-.resource-card-icon.ARTICLE {
-  background: #fffbeb;
-  color: #d97706;
-}
-
-.resource-card-icon.EXTERNAL_LINK {
-  background: #f5f3ff;
-  color: #7c3aed;
-}
-
-.resource-card-icon.CHAT_SERVICE {
-  background: #fdf2f8;
-  color: #db2777;
+.resource-card:hover .resource-card-icon {
+  background: #243E4C;
+  color: #FFFFFF;
+  border-color: #243E4C;
 }
 
 .resource-card-body {
@@ -2018,58 +2002,62 @@ body.has-student-bottom-nav .rant-layout {
 }
 
 .resource-card-title {
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: #182A34;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   flex-wrap: wrap;
 }
 
 .resource-urgent-badge {
-  font-size: 0.6rem;
+  font-size: 0.62rem;
   font-weight: 700;
-  padding: 0.1rem 0.4rem;
+  padding: 0.15rem 0.5rem;
   border-radius: 0.35rem;
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
+  background: #FEF2F2;
+  color: #991B1B;
+  border: 1px solid #FECACA;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
 }
 
 .resource-card-desc {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   color: #51646E;
-  line-height: 1.4;
-  margin-top: 0.15rem;
+  line-height: 1.45;
+  margin-top: 0.2rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .resource-card-cat {
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  color: #728590;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  margin-top: 0.2rem;
-  display: inline-block;
+  color: #475569;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  padding: 0.15rem 0.55rem;
+  border-radius: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0.35rem;
+  letter-spacing: normal;
 }
 
 .resource-card-arrow {
-  font-size: 0.75rem;
-  color: #d1d5db;
+  font-size: 0.85rem;
+  color: #94A3B8;
   flex-shrink: 0;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .resource-card:hover .resource-card-arrow {
-  color: #182A34;
-}
-
-.resource-card.urgent:hover .resource-card-arrow {
-  color: #ef4444;
+  color: #243E4C;
+  transform: translate(1px, -1px);
 }
 
 /*  Pre-Submission Crisis Banner  */

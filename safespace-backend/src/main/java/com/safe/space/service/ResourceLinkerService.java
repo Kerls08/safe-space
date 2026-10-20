@@ -48,9 +48,9 @@ public class ResourceLinkerService {
                 .collect(Collectors.toList());
     }
 
-    /** Get all resources including inactive (admin view) */
+    /** Get all resources including inactive (admin view), ordered by priority */
     public List<WellnessResource> getAll() {
-        return repo.findAll();
+        return repo.findAllByOrderByPriorityAsc();
     }
 
     /** Get a single resource by ID */

@@ -14,6 +14,9 @@ public interface WellnessResourceRepository extends JpaRepository<WellnessResour
     /** All active resources, sorted by priority */
     List<WellnessResource> findByActiveTrueOrderByPriorityAsc();
 
+    /** All resources (active and inactive), sorted by priority */
+    List<WellnessResource> findAllByOrderByPriorityAsc();
+
     /** Active resources filtered by category */
     List<WellnessResource> findByActiveTrueAndCategoryOrderByPriorityAsc(String category);
 

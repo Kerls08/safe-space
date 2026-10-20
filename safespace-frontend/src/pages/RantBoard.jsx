@@ -85,7 +85,16 @@ function getCategoryLabel(cat) {
 }
 
 function renderResourceCard(r, key) {
-  const iconClass = r.icon || getCategoryIcon(r.category);
+  const isTel = (r.link || '').startsWith('tel:');
+  const isSms = (r.link || '').startsWith('sms:');
+  const defaultIcon = isTel
+    ? 'fas fa-phone'
+    : isSms
+    ? 'fas fa-comment'
+    : r.category === 'CAMPUS'
+    ? 'fas fa-building-columns'
+    : 'fas fa-link';
+  const iconClass = r.icon || defaultIcon;
   const catLabel = getCategoryLabel(r.category);
   const isUrgent = !!r.crisisOnly;
   const linkHref = r.link || '#';
@@ -108,7 +117,7 @@ function renderResourceCard(r, key) {
         }
       }}
     >
-      <div className={`resource-card-icon ${r.category || ''}`}>
+      <div className="resource-card-icon">
         <i className={iconClass}></i>
       </div>
       <div className="resource-card-body">
@@ -1147,7 +1156,20 @@ export default function RantBoard() {
                 </div>
               ) : (
                 <div id="studentResourceGrid" style={{ display: 'grid', gap: '0.75rem', marginTop: '1rem' }}>
-                  {resources.map((res, i) => renderResourceCard(res, res.id || i))}
+                  {[...resources]
+                    .sort((a, b) => {
+                      const aIsCrisis = Boolean(a.crisisOnly || (a.title && a.title.toLowerCase().includes('crisis text line')));
+                      const bIsCrisis = Boolean(b.crisisOnly || (b.title && b.title.toLowerCase().includes('crisis text line')));
+                      if (aIsCrisis && !bIsCrisis) return -1;
+                      if (!aIsCrisis && bIsCrisis) return 1;
+
+                      const pA = a.priority !== undefined && a.priority !== null ? a.priority : 999;
+                      const pB = b.priority !== undefined && b.priority !== null ? b.priority : 999;
+                      if (pA !== pB) return pA - pB;
+
+                      return (a.title || '').localeCompare(b.title || '');
+                    })
+                    .map((res, i) => renderResourceCard(res, res.id || i))}
                 </div>
               )}
             </div>
