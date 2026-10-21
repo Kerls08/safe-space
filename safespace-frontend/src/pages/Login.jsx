@@ -413,9 +413,8 @@ export default function Login() {
           <div className="form-group">
             <label className="form-label" htmlFor="loginUsername">Student / Employee ID</label>
             <div className={`input-wrapper ${fieldErrors.username ? 'has-error' : ''}`}>
-              <i className="fas fa-id-badge input-icon-left"></i>
               <input
-                className="form-input input-icon"
+                className="form-input"
                 type="text"
                 id="loginUsername"
                 placeholder="e.g. 2021-00001"
@@ -439,9 +438,8 @@ export default function Login() {
           <div className="form-group">
             <label className="form-label" htmlFor="loginPassword">Password</label>
             <div className={`input-wrapper ${fieldErrors.password ? 'has-error' : ''}`}>
-              <i className="fas fa-lock input-icon-left"></i>
               <input
-                className="form-input input-icon"
+                className="form-input has-toggle"
                 type={showPassword ? 'text' : 'password'}
                 id="loginPassword"
                 placeholder="Enter your password"
@@ -485,15 +483,12 @@ export default function Login() {
                 <i className="fas fa-lock"></i> Locked ({lockoutSeconds}s)
               </>
             ) : (
-              <>
-                <i className="fas fa-right-to-bracket"></i> Sign In
-              </>
+              'Sign In'
             )}
           </button>
         </form>
 
         <div className="login-footer">
-          <i className="fas fa-shield-halved"></i>
           Your identity is protected. All activity is anonymous.
         </div>
 

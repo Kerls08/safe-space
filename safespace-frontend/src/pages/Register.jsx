@@ -190,7 +190,7 @@ export default function Register() {
             <img src="/SafeSpace logo v2.svg" alt="SafeSpace Logo" className="brand-logo-img" />
           </div>
           <h1>Create Your <span>Student Account</span></h1>
-          <p>Voluntary self-registration for USTP Balubal students. Your privacy is protected.</p>
+          <p>USTP Balubal Student Registration</p>
         </div>
 
         {/* Error Banner */}
@@ -247,65 +247,66 @@ export default function Register() {
         ) : (
           /* Registration Form */
           <form className="auth-form" id="registerForm" onSubmit={handleRegister} noValidate style={{ display: 'block' }}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="regFullName">
-                Full Name <span className="required-star" style={{ color: '#DC2626' }}>*</span>
-              </label>
-              <div className={`input-wrapper ${fieldErrors.fullName ? 'has-error' : ''}`}>
-                <i className="fas fa-user input-icon-left"></i>
-                <input
-                  className="form-input input-icon"
-                  type="text"
-                  id="regFullName"
-                  placeholder="e.g. Juan Dela Cruz"
-                  autoComplete="name"
-                  value={fullName}
-                  onChange={(e) => {
-                    setFullName(e.target.value);
-                    clearFieldError('fullName');
-                  }}
-                />
-              </div>
-              {fieldErrors.fullName && (
-                <div className="field-feedback visible" id="regFullNameFeedback">
-                  <i className="fas fa-circle-exclamation"></i> <span>{fieldErrors.fullName}</span>
+            {/* Row 1: Full Name & Institutional ID */}
+            <div className="register-row">
+              <div className="form-group">
+                <label className="form-label" htmlFor="regFullName">
+                  Full Name
+                </label>
+                <div className={`input-wrapper ${fieldErrors.fullName ? 'has-error' : ''}`}>
+                  <input
+                    className="form-input"
+                    type="text"
+                    id="regFullName"
+                    placeholder="e.g. Juan Dela Cruz"
+                    autoComplete="name"
+                    value={fullName}
+                    onChange={(e) => {
+                      setFullName(e.target.value);
+                      clearFieldError('fullName');
+                    }}
+                  />
                 </div>
-              )}
+                {fieldErrors.fullName && (
+                  <div className="field-feedback visible" id="regFullNameFeedback">
+                    <i className="fas fa-circle-exclamation"></i> <span>{fieldErrors.fullName}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="regInstId">
+                  Institutional ID
+                </label>
+                <div className={`input-wrapper ${fieldErrors.instId ? 'has-error' : ''}`}>
+                  <input
+                    className="form-input"
+                    type="text"
+                    id="regInstId"
+                    placeholder="e.g. 2021-00001"
+                    value={instId}
+                    onChange={(e) => {
+                      setInstId(e.target.value);
+                      clearFieldError('instId');
+                    }}
+                  />
+                </div>
+                {fieldErrors.instId && (
+                  <div className="field-feedback visible" id="regInstIdFeedback">
+                    <i className="fas fa-circle-exclamation"></i> <span>{fieldErrors.instId}</span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label" htmlFor="regInstId">
-                Institutional ID <span className="required-star" style={{ color: '#DC2626' }}>*</span>
-              </label>
-              <div className={`input-wrapper ${fieldErrors.instId ? 'has-error' : ''}`}>
-                <i className="fas fa-id-badge input-icon-left"></i>
-                <input
-                  className="form-input input-icon"
-                  type="text"
-                  id="regInstId"
-                  placeholder="e.g. 2021-00001"
-                  value={instId}
-                  onChange={(e) => {
-                    setInstId(e.target.value);
-                    clearFieldError('instId');
-                  }}
-                />
-              </div>
-              {fieldErrors.instId && (
-                <div className="field-feedback visible" id="regInstIdFeedback">
-                  <i className="fas fa-circle-exclamation"></i> <span>{fieldErrors.instId}</span>
-                </div>
-              )}
-            </div>
-
+            {/* Row 2: Email Address (Full Width) */}
             <div className="form-group">
               <label className="form-label" htmlFor="regEmail">
-                Email Address <span className="required-star" style={{ color: '#DC2626' }}>*</span>
+                Email Address
               </label>
               <div className={`input-wrapper ${fieldErrors.email ? 'has-error' : ''}`}>
-                <i className="fas fa-envelope input-icon-left"></i>
                 <input
-                  className="form-input input-icon"
+                  className="form-input"
                   type="email"
                   id="regEmail"
                   placeholder="e.g. juan@ustp.edu.ph or juan@gmail.com"
@@ -322,20 +323,15 @@ export default function Register() {
                   <i className="fas fa-circle-exclamation"></i> <span>{fieldErrors.email}</span>
                 </div>
               )}
-              <div style={{ fontSize: '0.73rem', color: '#728590', marginTop: '5px', display: 'flex', alignItems: 'center', gap: '6px', lineHeight: 1.35 }}>
-                <i className="fas fa-shield-halved" style={{ color: '#7E9F9D', flexShrink: 0 }}></i>
-                <span>Required for official registration notification &amp; support access. Kept strictly confidential.</span>
-              </div>
             </div>
 
+            {/* Row 3: Department & Year Level */}
             <div className="register-row" id="deptRow">
-              {/* Department */}
               <div className="form-group" id="studentDeptGroup">
                 <label className="form-label" htmlFor="regDepartment">
-                  Department <span className="required-star" style={{ color: '#DC2626' }}>*</span>
+                  Department
                 </label>
                 <div className={`input-wrapper ${fieldErrors.department ? 'has-error' : ''}`}>
-                  <i className="fas fa-building input-icon-left"></i>
                   <select
                     className="form-input form-select"
                     id="regDepartment"
@@ -360,13 +356,11 @@ export default function Register() {
                 )}
               </div>
 
-              {/* Year Level */}
               <div className="form-group" id="yearLevelGroup">
                 <label className="form-label" htmlFor="regYearLevel">
-                  Year Level <span className="required-star" style={{ color: '#DC2626' }}>*</span>
+                  Year Level
                 </label>
                 <div className={`input-wrapper ${fieldErrors.yearLevel ? 'has-error' : ''}`}>
-                  <i className="fas fa-layer-group input-icon-left"></i>
                   <select
                     className="form-input form-select"
                     id="regYearLevel"
@@ -392,102 +386,104 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Password */}
-            <div className="form-group">
-              <label className="form-label" htmlFor="regPassword">
-                Password (min. 8 characters) <span className="required-star" style={{ color: '#DC2626' }}>*</span>
-              </label>
-              <div className={`input-wrapper ${fieldErrors.password ? 'has-error' : ''}`}>
-                <i className="fas fa-lock input-icon-left"></i>
-                <input
-                  className="form-input input-icon"
-                  type={showPassword ? 'text' : 'password'}
-                  id="regPassword"
-                  placeholder="Create a strong password"
-                  minLength={8}
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    clearFieldError('password');
-                  }}
-                />
-                <button
-                  type="button"
-                  className="input-toggle-pw"
-                  onClick={() => setShowPassword((p) => !p)}
-                  tabIndex={-1}
-                >
-                  <i className={showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'}></i>
-                </button>
-              </div>
-              {fieldErrors.password && (
-                <div className="field-feedback visible" id="regPasswordFeedback">
-                  <i className="fas fa-circle-exclamation"></i> <span>{fieldErrors.password}</span>
+            {/* Row 4: Password & Confirm Password */}
+            <div className="register-row">
+              <div className="form-group">
+                <label className="form-label" htmlFor="regPassword">
+                  Password
+                </label>
+                <div className={`input-wrapper ${fieldErrors.password ? 'has-error' : ''}`}>
+                  <input
+                    className="form-input has-toggle"
+                    type={showPassword ? 'text' : 'password'}
+                    id="regPassword"
+                    placeholder="Min. 8 characters"
+                    minLength={8}
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      clearFieldError('password');
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="input-toggle-pw"
+                    onClick={() => setShowPassword((p) => !p)}
+                    tabIndex={-1}
+                  >
+                    <i className={showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'}></i>
+                  </button>
                 </div>
-              )}
-              
-              <div className="pw-strength" id="pwStrength">
-                <div className={`pw-strength-bar ${score >= 1 ? (score <= 1 ? 'weak' : score <= 2 ? 'medium' : 'strong') : ''}`}></div>
-                <div className={`pw-strength-bar ${score >= 2 ? (score <= 2 ? 'medium' : 'strong') : ''}`}></div>
-                <div className={`pw-strength-bar ${score >= 3 ? 'strong' : ''}`}></div>
-                <div className={`pw-strength-bar ${score >= 4 ? 'strong' : ''}`}></div>
-              </div>
-              <div className="pw-strength-label" id="pwStrengthLabel" style={{ color: score <= 1 && password ? '#ef4444' : score <= 2 ? '#f59e0b' : score >= 3 ? '#10b981' : '' }}>
-                {password.length === 0 ? '' : score <= 1 ? 'Weak' : score <= 2 ? 'Medium' : score === 3 ? 'Good' : 'Strong'}
+                {fieldErrors.password && (
+                  <div className="field-feedback visible" id="regPasswordFeedback">
+                    <i className="fas fa-circle-exclamation"></i> <span>{fieldErrors.password}</span>
+                  </div>
+                )}
               </div>
 
-              <div className={`pw-rules ${showRulesError ? 'has-error' : ''}`} id="pwRules">
-                <div className={`pw-rule-item ${hasLen ? 'valid' : showRulesError ? 'invalid' : ''}`} id="regRuleLen">
-                  <i className={hasLen ? 'fas fa-circle-check' : showRulesError ? 'fas fa-circle-xmark' : 'fas fa-circle-dot'}></i> At least 8 characters
+              <div className="form-group">
+                <label className="form-label" htmlFor="regConfirmPassword">
+                  Confirm Password
+                </label>
+                <div className={`input-wrapper ${fieldErrors.confirmPassword ? 'has-error' : ''}`}>
+                  <input
+                    className="form-input has-toggle"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    id="regConfirmPassword"
+                    placeholder="Re-enter password"
+                    minLength={8}
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      clearFieldError('confirmPassword');
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="input-toggle-pw"
+                    onClick={() => setShowConfirmPassword((p) => !p)}
+                    tabIndex={-1}
+                  >
+                    <i className={showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'}></i>
+                  </button>
                 </div>
-                <div className={`pw-rule-item ${hasUpper ? 'valid' : showRulesError ? 'invalid' : ''}`} id="regRuleUpper">
-                  <i className={hasUpper ? 'fas fa-circle-check' : showRulesError ? 'fas fa-circle-xmark' : 'fas fa-circle-dot'}></i> Uppercase letter (A-Z)
-                </div>
-                <div className={`pw-rule-item ${hasNum ? 'valid' : showRulesError ? 'invalid' : ''}`} id="regRuleNum">
-                  <i className={hasNum ? 'fas fa-circle-check' : showRulesError ? 'fas fa-circle-xmark' : 'fas fa-circle-dot'}></i> At least one number (0-9)
-                </div>
-                <div className={`pw-rule-item ${hasSpecial ? 'valid' : showRulesError ? 'invalid' : ''}`} id="regRuleSpecial">
-                  <i className={hasSpecial ? 'fas fa-circle-check' : showRulesError ? 'fas fa-circle-xmark' : 'fas fa-circle-dot'}></i> Special symbol (!@#$%...)
-                </div>
+                {fieldErrors.confirmPassword && (
+                  <div className="field-feedback visible" id="regConfirmPasswordFeedback">
+                    <i className="fas fa-circle-exclamation"></i> <span>{fieldErrors.confirmPassword}</span>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Confirm Password */}
-            <div className="form-group">
-              <label className="form-label" htmlFor="regConfirmPassword">
-                Confirm Password <span className="required-star" style={{ color: '#DC2626' }}>*</span>
-              </label>
-              <div className={`input-wrapper ${fieldErrors.confirmPassword ? 'has-error' : ''}`}>
-                <i className="fas fa-check-double input-icon-left"></i>
-                <input
-                  className="form-input input-icon"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  id="regConfirmPassword"
-                  placeholder="Re-enter your password"
-                  minLength={8}
-                  autoComplete="new-password"
-                  value={confirmPassword}
-                  onChange={(e) => {
-                    setConfirmPassword(e.target.value);
-                    clearFieldError('confirmPassword');
-                  }}
-                />
-                <button
-                  type="button"
-                  className="input-toggle-pw"
-                  onClick={() => setShowConfirmPassword((p) => !p)}
-                  tabIndex={-1}
-                >
-                  <i className={showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'}></i>
-                </button>
-              </div>
-              {fieldErrors.confirmPassword && (
-                <div className="field-feedback visible" id="regConfirmPasswordFeedback">
-                  <i className="fas fa-circle-exclamation"></i> <span>{fieldErrors.confirmPassword}</span>
+            {/* Password Strength & Compact Criteria Bar */}
+            {password && (
+              <div className="pw-compact-wrap">
+                <div className="pw-compact-header">
+                  <div className="pw-strength" id="pwStrength">
+                    <div className={`pw-strength-bar ${score >= 1 ? (score <= 1 ? 'weak' : score <= 2 ? 'medium' : 'strong') : ''}`}></div>
+                    <div className={`pw-strength-bar ${score >= 2 ? (score <= 2 ? 'medium' : 'strong') : ''}`}></div>
+                    <div className={`pw-strength-bar ${score >= 3 ? 'strong' : ''}`}></div>
+                    <div className={`pw-strength-bar ${score >= 4 ? 'strong' : ''}`}></div>
+                  </div>
+                  <span className="pw-strength-tag" style={{ color: score <= 1 ? '#ef4444' : score <= 2 ? '#f59e0b' : score === 3 ? '#10b981' : '#059669' }}>
+                    {score <= 1 ? 'Weak' : score <= 2 ? 'Medium' : score === 3 ? 'Good' : 'Strong'}
+                  </span>
                 </div>
-              )}
-            </div>
+                <div className="pw-compact-criteria">
+                  <span className={`pw-pill ${hasLen ? 'valid' : ''}`}>8+ chars</span>
+                  <span className={`pw-pill ${hasUpper ? 'valid' : ''}`}>Uppercase</span>
+                  <span className={`pw-pill ${hasNum ? 'valid' : ''}`}>Number</span>
+                  <span className={`pw-pill ${hasSpecial ? 'valid' : ''}`}>Symbol</span>
+                </div>
+              </div>
+            )}
+            {showRulesError && !password && (
+              <div className="field-feedback visible" style={{ marginTop: '-0.35rem', marginBottom: '0.65rem' }}>
+                <i className="fas fa-circle-exclamation"></i> <span>Password must satisfy all criteria (8+ chars, uppercase, number, symbol).</span>
+              </div>
+            )}
 
             {/* Terms and Privacy Checkbox */}
             <div className={`terms-row ${fieldErrors.terms ? 'has-error' : ''}`} id="termsRow">
@@ -527,9 +523,7 @@ export default function Register() {
                   <i className="fas fa-spinner fa-spin"></i> Creating Account...
                 </>
               ) : (
-                <>
-                  <i className="fas fa-user-plus"></i> Create Account
-                </>
+                'Create Account'
               )}
             </button>
           </form>
@@ -540,14 +534,6 @@ export default function Register() {
             Already have an account? <Link to="/login">Sign In</Link>
           </div>
         )}
-
-        <div style={{ margin: '1.25rem 0 0', paddingTop: '1rem', borderTop: '1px solid #E1E8EB', textAlign: 'center' }}>
-          <p style={{ fontSize: '0.76rem', color: '#728590', margin: 0, lineHeight: 1.4 }}>
-            <i className="fas fa-user-doctor" style={{ color: '#7E9F9D', marginRight: '0.3rem' }}></i>
-            <strong>Are you a campus counselor or professional?</strong><br />
-            <span style={{ fontSize: '0.72rem', color: '#728590' }}>Professional accounts are provisioned directly by the System Administrator.</span>
-          </p>
-        </div>
       </div>
 
       {/* Terms and Conditions Modal */}

@@ -43,12 +43,45 @@
   --shadow-xl: 0 20px 40px -6px rgba(24, 42, 52, 0.12);
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
+
+  /* ══════════════════════════════════════════════════════
+     Phase 1 Foundation: Viewport & Layout Physics Tokens
+     ══════════════════════════════════════════════════════ */
+  --header-height: 56px;
+  --bottom-nav-height: 0px;
+  --bottom-nav-height-mobile: 0px;
+
+  /* Safe Area Inset Support (with zero fallback) */
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+
+  /* Touch Ergonomics Minimum Dimension (WCAG 2.5.5) */
+  --touch-min-size: 44px;
+}
+
+/* Dynamic Bottom Nav spacing tokens */
+body.has-pro-bottom-nav,
+body.has-student-bottom-nav,
+body.has-maint-bottom-nav {
+  --bottom-nav-height: 4.25rem;
+  --bottom-nav-height-mobile: 3.85rem;
+}
+
+@media (max-width: 640px) {
+  body.has-pro-bottom-nav,
+  body.has-student-bottom-nav,
+  body.has-maint-bottom-nav {
+    --bottom-nav-height: 3.85rem;
+  }
 }
 
 * { box-sizing: border-box; margin:0; padding:0; }
 html {
   scroll-behavior: smooth;
   height: 100%;
+  min-height: 100dvh;
   scrollbar-gutter: stable;
 }
 body {
@@ -57,9 +90,12 @@ body {
   background: var(--compass-cream);
   overflow-x: hidden;
   width: 100%;
+  min-height: 100dvh;
   max-width: 100vw;
   -webkit-tap-highlight-color: transparent;
   -webkit-overflow-scrolling: touch;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 .container { max-width:1100px; margin:0 auto; padding:0 1rem; }
 .section { padding:3.5rem 0; }
@@ -79,13 +115,17 @@ body {
   margin-left: 3px;
 }
 
-/* navbar */
+/* navbar with safe-area support */
 .navbar {
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: 56px;
+  height: calc(var(--header-height) + var(--sat));
+  padding-top: var(--sat);
+  padding-left: var(--sal);
+  padding-right: var(--sar);
   background: rgba(255,255,255,0.96);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   z-index: 1000;
@@ -515,7 +555,10 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 4.25rem;
+  height: calc(4.25rem + var(--sab));
+  padding-bottom: var(--sab);
+  padding-left: max(0.75rem, var(--sal));
+  padding-right: max(0.75rem, var(--sar));
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -525,7 +568,6 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  padding: 0 0.75rem;
 }
 
 .pro-bottom-nav-inner {
@@ -621,8 +663,10 @@ body {
 
 @media (max-width: 640px) {
   .pro-bottom-nav {
-    height: 3.85rem;
-    padding: 0 0.25rem;
+    height: calc(3.85rem + var(--sab));
+    padding-bottom: var(--sab);
+    padding-left: max(0.25rem, var(--sal));
+    padding-right: max(0.25rem, var(--sar));
   }
   .pro-bottom-nav-inner {
     grid-template-columns: repeat(6, 1fr);
@@ -653,7 +697,10 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 4.25rem;
+  height: calc(4.25rem + var(--sab));
+  padding-bottom: var(--sab);
+  padding-left: max(1.5rem, var(--sal));
+  padding-right: max(1.5rem, var(--sar));
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -663,7 +710,6 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  padding: 0 1.5rem;
 }
 
 .student-bottom-nav-inner {
@@ -751,8 +797,10 @@ body {
 
 @media (max-width: 640px) {
   .student-bottom-nav {
-    height: 3.85rem;
-    padding: 0 0.75rem;
+    height: calc(3.85rem + var(--sab));
+    padding-bottom: var(--sab);
+    padding-left: max(0.75rem, var(--sal));
+    padding-right: max(0.75rem, var(--sar));
   }
   .student-bottom-nav-inner {
     max-width: 340px;
@@ -765,6 +813,52 @@ body {
   }
   .student-nav-btn i {
     font-size: 1.1rem;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   Mobile Viewport & Touch Ergonomics Foundation (Phase 1)
+   ══════════════════════════════════════════════════════════ */
+
+/* Minimum touch target utility (WCAG 2.5.5 / 2.5.8) */
+.touch-target {
+  min-width: var(--touch-min-size);
+  min-height: var(--touch-min-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Clear bottom space in the main content container when bottom navigation is visible */
+body.has-pro-bottom-nav .app-main-content,
+body.has-student-bottom-nav .app-main-content,
+body.has-maint-bottom-nav .app-main-content {
+  padding-bottom: calc(var(--bottom-nav-height) + var(--sab));
+}
+
+/* Ensure full-screen fixed layouts like AnonChat manage their own spacing cleanly */
+body.has-pro-bottom-nav .app-main-content > .chat-layout,
+body.has-student-bottom-nav .app-main-content > .chat-layout {
+  margin-bottom: 0;
+}
+
+/* Prevent iOS WebKit auto-zoom on form inputs by ensuring >=16px text on mobile */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Increase button touch area for mobile ergonomics */
+  .btn {
+    min-height: 42px;
   }
 }
 

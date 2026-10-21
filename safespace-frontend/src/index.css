@@ -4,6 +4,7 @@
 #root {
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   padding: 0;
   display: flex;
@@ -12,12 +13,17 @@
 
 .app-container {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   width: 100%;
+  position: relative;
 }
 
 .app-main-content {
   flex: 1;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }

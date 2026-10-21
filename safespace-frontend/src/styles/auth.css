@@ -5,13 +5,13 @@
 
 /* Login Page */
 .login-page {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
   background: linear-gradient(145deg, #F9FBFA 0%, #F4F7F7 45%, #FFFFFF 75%, #E1E8EB 100%);
-  padding: 2.5rem 1rem 3.5rem 1rem;
+  padding: max(2.5rem, calc(1.5rem + var(--sat))) max(1rem, var(--sal)) max(3.5rem, calc(2.5rem + var(--sab))) max(1rem, var(--sar));
   position: relative;
   box-sizing: border-box;
 }
@@ -45,19 +45,34 @@
 }
 
 .login-card {
-  background: #FFFFFF;
-  border: 1px solid #E1E8EB;
-  border-radius: 1.5rem;
-  box-shadow: 0 15px 40px rgba(24, 42, 52, 0.07), 0 2px 6px rgba(24, 42, 52, 0.04);
   width: 100%;
   max-width: 440px;
-  padding: 2.5rem;
   position: relative;
   z-index: 1;
   margin: auto 0;
   transform: translateZ(0);
   backface-visibility: hidden;
-  animation: card-entrance 0.6s ease-out;
+  animation: card-entrance 0.5s ease-out;
+}
+
+/* Unboxed Clean Minimal Login Section */
+.login-page > .login-card {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  max-width: 390px;
+  padding: 1.5rem 0.5rem 2rem 0.5rem;
+}
+
+/* Modal Dialog Popups Keep Clean Boxed Overlay */
+.pw-change-overlay .login-card {
+  background: #FFFFFF;
+  border: 1px solid #E1E8EB;
+  border-radius: 1.25rem;
+  box-shadow: 0 20px 45px rgba(24, 42, 52, 0.15);
+  padding: 2.25rem;
+  max-width: 440px;
 }
 
 /* Back to Home Link (Text-only with hover highlight) */
@@ -209,10 +224,16 @@
   padding-left: 2.75rem;
 }
 
+.auth-form .form-input.has-toggle,
+.form-input.has-toggle,
+.input-wrapper:has(.input-toggle-pw) .form-input {
+  padding-right: 3rem;
+}
+
 .auth-form .form-select,
 .form-select {
   width: 100%;
-  padding: 0.75rem 2.25rem 0.75rem 2.75rem;
+  padding: 0.75rem 2.25rem 0.75rem 1rem;
   font-size: 0.875rem;
   font-family: var(--font-sans);
   color: var(--dark, #182A34);
@@ -277,19 +298,33 @@
 
 .input-wrapper .input-toggle-pw {
   position: absolute;
-  right: 0.75rem;
+  right: 0.35rem;
   top: 50%;
   transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--gray, #728590);
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   cursor: pointer;
   background: none;
   border: none;
-  padding: 0.25rem;
+  padding: 0;
+  border-radius: 50%;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.input-wrapper .input-toggle-pw:hover,
+.input-wrapper .input-toggle-pw:active {
+  color: #243E4C;
+  background: rgba(126, 159, 157, 0.12);
 }
 
 .login-btn {
   width: 100%;
+  min-height: 48px;
   padding: 0.85rem 1rem;
   background: #243E4C;
   color: #fff;
@@ -756,8 +791,10 @@
 }
 
 .action-btn {
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  min-width: 36px;
+  min-height: 36px;
   border: 1px solid #E1E8EB;
   border-radius: 0.5rem;
   background: #FFFFFF;
@@ -766,9 +803,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   transition: all 0.2s ease;
   margin: 0 0.15rem;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .action-btn:hover {
@@ -794,6 +833,7 @@
   justify-content: center;
   z-index: 2000;
   animation: fade-in 0.2s ease;
+  padding: max(0.5rem, var(--sal)) max(0.5rem, var(--sar)) calc(0.5rem + var(--sab)) max(0.5rem, var(--sal));
 }
 
 @keyframes fade-in {
@@ -809,8 +849,9 @@
   box-shadow: 0 25px 50px rgba(24, 42, 52, 0.2);
   animation: modal-slide 0.3s ease;
   overflow: hidden;
-  max-height: 90vh;
+  max-height: calc(90dvh - var(--sat) - var(--sab));
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes modal-slide {
@@ -837,18 +878,20 @@
 }
 
 .cred-modal-close {
-  width: 2rem;
-  height: 2rem;
+  min-width: 44px;
+  min-height: 44px;
   border: none;
   border-radius: 50%;
   background: var(--gray-100, #f1f5f9);
   color: var(--dark-600);
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .cred-modal-close:hover {
@@ -1053,8 +1096,10 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .login-page { padding: 1.25rem 0.75rem 2.5rem 0.75rem; }
+  .login-page { padding: max(1.25rem, var(--sat)) max(0.75rem, var(--sal)) max(2.5rem, var(--sab)) max(0.75rem, var(--sar)); }
   .login-card { padding: 1.5rem; border-radius: 1.15rem; max-width: 100%; margin: 0 auto; }
+  .login-page > .login-card { padding: 1rem 0.5rem 1.5rem 0.5rem; }
+  .pw-change-overlay .login-card { padding: 1.5rem 1.15rem; max-height: calc(92dvh - var(--sat) - var(--sab)); }
   .login-brand { margin-bottom: 1.5rem; }
   .login-brand .brand-icon { width: 3.25rem; height: 3.25rem; font-size: 1.25rem; }
   .login-brand .brand-icon.logo-only,
@@ -1062,7 +1107,7 @@
   .login-brand .brand-icon.logo-only .brand-logo-img,
   .login-brand .brand-icon:has(.brand-logo-img) .brand-logo-img { width: 3.75rem; height: 3.75rem; }
   .login-brand h1 { font-size: 1.25rem; }
-  .login-btn { padding: 0.75rem; font-size: 0.9rem; }
+  .login-btn { min-height: 48px; padding: 0.75rem; font-size: 0.95rem; }
 
   .cred-layout { margin-top: 3.5rem; min-height: calc(100vh - 3.5rem); padding: 0.75rem; }
   .cred-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
@@ -1091,10 +1136,10 @@
   .cred-table th { padding: 0.65rem 0.75rem; font-size: 0.65rem; }
   .cred-table td { padding: 0.6rem 0.75rem; font-size: 0.78rem; }
 
-  .cred-modal { max-width: 100%; width: calc(100% - 1rem); }
+  .cred-modal { max-width: 100%; width: calc(100% - 1rem); max-height: calc(90dvh - var(--sat) - var(--sab)); }
   .cred-modal-header { padding: 1.15rem 1.15rem 0; }
   .cred-modal-body { padding: 1.15rem; }
-  .cred-modal-footer { padding: 0 1.15rem 1.15rem; flex-direction: column; }
+  .cred-modal-footer { padding: 0 1.15rem calc(1.15rem + var(--sab)); flex-direction: column; }
 
   .result-card .cred-line { flex-direction: column; align-items: flex-start; gap: 0.15rem; }
 
@@ -1109,7 +1154,7 @@
   .login-brand .brand-icon.logo-only .brand-logo-img,
   .login-brand .brand-icon:has(.brand-logo-img) .brand-logo-img { width: 3.25rem; height: 3.25rem; }
   .login-brand h1 { font-size: 1.1rem; }
-  .auth-form .form-input { font-size: 0.82rem; padding: 0.65rem 0.85rem 0.65rem 2.5rem; }
+  .auth-form .form-input { font-size: 16px !important; padding: 0.65rem 0.85rem 0.65rem 2.5rem; }
   .cred-stats { grid-template-columns: 1fr 1fr; }
 }
 
@@ -1382,10 +1427,10 @@
 /* Recovery Modal Specific Styles */
 .modal-close-btn {
   position: absolute;
-  top: 1.25rem;
-  right: 1.25rem;
-  width: 2.2rem;
-  height: 2.2rem;
+  top: 1rem;
+  right: 1rem;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: transparent;
   border: none;

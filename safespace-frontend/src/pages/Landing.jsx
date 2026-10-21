@@ -141,31 +141,40 @@ export default function Landing() {
     return () => clearInterval(timer);
   }, []);
 
-  // Carousel helpers
-  const getVisibleCount = useCallback(() => {
+  // Responsive carousel visible count
+  const [visibleCount, setVisibleCount] = useState(() => {
     if (typeof window === 'undefined') return 3;
     if (window.innerWidth <= 680) return 1;
     if (window.innerWidth <= 1024) return 2;
     return 3;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      let count = 3;
+      if (window.innerWidth <= 680) count = 1;
+      else if (window.innerWidth <= 1024) count = 2;
+      setVisibleCount(count);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const getMaxIndex = useCallback(() => {
-    return Math.max(0, FEATURES.length - getVisibleCount());
-  }, [getVisibleCount]);
+  const maxIndex = Math.max(0, FEATURES.length - visibleCount);
+
+  // Clamp carouselIndex when resizing
+  useEffect(() => {
+    setCarouselIndex((prev) => Math.min(prev, maxIndex));
+  }, [maxIndex]);
 
   const nextSlide = useCallback(() => {
-    setCarouselIndex((prev) => {
-      const max = getMaxIndex();
-      return prev >= max ? 0 : prev + 1;
-    });
-  }, [getMaxIndex]);
+    setCarouselIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
+  }, [maxIndex]);
 
   const prevSlide = useCallback(() => {
-    setCarouselIndex((prev) => {
-      const max = getMaxIndex();
-      return prev <= 0 ? max : prev - 1;
-    });
-  }, [getMaxIndex]);
+    setCarouselIndex((prev) => (prev <= 0 ? maxIndex : prev - 1));
+  }, [maxIndex]);
 
   // Touch swipe handlers for mobile
   const handleTouchStart = (e) => {
@@ -209,7 +218,7 @@ export default function Landing() {
 
     const el = document.getElementById(id);
     if (el) {
-      const navOffset = 68;
+      const navOffset = 88;
       const targetTop = el.getBoundingClientRect().top + window.scrollY - navOffset;
       window.scrollTo({
         top: Math.max(0, Math.round(targetTop)),
@@ -218,14 +227,12 @@ export default function Landing() {
     }
   };
 
-  const maxIndex = getMaxIndex();
-  const stepWidthPercentage = 100 / getVisibleCount();
-  const translatePercent = -(carouselIndex * stepWidthPercentage);
+  const translatePercent = -((carouselIndex * 100) / visibleCount);
 
   return (
     <div className="landing-page-root">
       {/*  1. Navigation Bar  */}
-      <nav className={`landing-nav ${navScrolled ? 'scrolled' : ''}`} id="landingNav">
+      <nav className={`landing-nav ${navScrolled ? 'scrolled' : ''} ${navOpen ? 'menu-open' : ''}`} id="landingNav">
         <div className="landing-nav-inner">
           <Link to="/" className="landing-brand">
             <div className="brand-logo-icon logo-only">
@@ -588,7 +595,7 @@ export default function Landing() {
         <div className="features-carousel-wrapper" id="featuresCarouselWrapper">
           <button 
             type="button" 
-            className="carousel-nav-btn prev" 
+            className="carousel-nav-btn prev desktop-nav-btn" 
             onClick={prevSlide}
             aria-label="Previous feature"
           >
@@ -607,7 +614,7 @@ export default function Landing() {
               ref={carouselTrackRef}
               style={{
                 transform: `translate3d(calc(${translatePercent}% + ${dragTranslate}px), 0, 0)`,
-                transition: isDragging ? 'none' : 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                transition: isDragging ? 'none' : 'transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1)'
               }}
             >
               {FEATURES.map((feat, i) => (
@@ -623,7 +630,7 @@ export default function Landing() {
 
           <button 
             type="button" 
-            className="carousel-nav-btn next" 
+            className="carousel-nav-btn next desktop-nav-btn" 
             onClick={nextSlide}
             aria-label="Next feature"
           >
@@ -631,17 +638,37 @@ export default function Landing() {
           </button>
         </div>
 
-        {/* Carousel Dots */}
-        <div className="carousel-pagination" id="featuresCarouselDots">
-          {Array.from({ length: maxIndex + 1 }).map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              className={`carousel-dot ${i === carouselIndex ? 'active' : ''}`}
-              onClick={() => setCarouselIndex(i)}
-              aria-label={`Go to slide ${i + 1}`}
-            />
-          ))}
+        {/* Carousel Controls & Pagination Bar */}
+        <div className="carousel-controls-bar">
+          <button 
+            type="button" 
+            className="carousel-nav-btn prev mobile-nav-btn" 
+            onClick={prevSlide}
+            aria-label="Previous feature"
+          >
+            <i className="fas fa-chevron-left"></i>
+          </button>
+
+          <div className="carousel-pagination" id="featuresCarouselDots">
+            {Array.from({ length: maxIndex + 1 }).map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                className={`carousel-dot ${i === carouselIndex ? 'active' : ''}`}
+                onClick={() => setCarouselIndex(i)}
+                aria-label={`Go to slide ${i + 1}`}
+              />
+            ))}
+          </div>
+
+          <button 
+            type="button" 
+            className="carousel-nav-btn next mobile-nav-btn" 
+            onClick={nextSlide}
+            aria-label="Next feature"
+          >
+            <i className="fas fa-chevron-right"></i>
+          </button>
         </div>
       </section>
 

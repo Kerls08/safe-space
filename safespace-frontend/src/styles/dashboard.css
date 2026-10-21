@@ -3,14 +3,17 @@
    ============================================ */
 
 .dash-layout {
-  margin-top: 4.5rem;
-  min-height: calc(100vh - 4.5rem);
+  margin-top: var(--header-height, 4rem);
+  min-height: calc(100dvh - var(--header-height, 4rem));
   background: #F4F7F7;
-  padding: 1.75rem 1.5rem 5.5rem 1.5rem;
+  padding: 1.5rem max(1.25rem, var(--sal)) 2rem max(1.25rem, var(--sar));
+  box-sizing: border-box;
 }
 @media (max-width: 640px) {
   .dash-layout {
-    padding: 1rem 0.75rem 5.5rem 0.75rem;
+    margin-top: var(--header-height, 3.5rem);
+    min-height: calc(100dvh - var(--header-height, 3.5rem));
+    padding: 1rem max(0.75rem, var(--sal)) 2rem max(0.75rem, var(--sar));
   }
 }
 
@@ -37,12 +40,14 @@
 
 .dash-header h1 i { color: #243E4C; }
 
-.dash-actions { display: flex; gap: 0.5rem; align-items: center; }
+.dash-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
 
 .refresh-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 44px;
   padding: 0.55rem 1.15rem;
   background: #FFFFFF;
   border: 1.5px solid #E1E8EB;
@@ -54,6 +59,8 @@
   font-family: var(--font-sans);
   color: #243E4C;
   box-shadow: 0 1px 3px rgba(36, 62, 76, 0.05);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .refresh-btn:hover {
@@ -1240,7 +1247,11 @@
 
 /* Responsive */
 @media (max-width: 1024px) {
-  .dash-layout { margin-top: 3.5rem; min-height: calc(100vh - 3.5rem); padding: 1rem; }
+  .dash-layout {
+    margin-top: var(--header-height, 3.5rem);
+    min-height: calc(100dvh - var(--header-height, 3.5rem));
+    padding: 1.25rem 1rem 2rem 1rem;
+  }
   .stats-row { grid-template-columns: repeat(3, 1fr); }
   .dash-grid { grid-template-columns: 1fr; }
   .dash-bottom { grid-template-columns: 1fr; }
@@ -1253,48 +1264,134 @@
 }
 
 @media (max-width: 768px) {
-  .dash-layout { padding: 0.75rem; }
-  .dash-header { flex-direction: column; align-items: flex-start; gap: 0.65rem; }
-  .dash-header h1 { font-size: 1.2rem; }
-  .dash-actions { width: 100%; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+  .dash-layout {
+    padding: 1rem max(0.75rem, var(--sal)) 2rem max(0.75rem, var(--sar));
+  }
+  .dash-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .dash-header h1 {
+    font-size: 1.25rem;
+  }
+  .dash-actions {
+    width: 100%;
+    display: flex;
+    align-items: stretch;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+  }
   .dash-live-badge { font-size: 0.68rem; padding: 0.25rem 0.6rem; }
-  .refresh-btn { font-size: 0.75rem; padding: 0.45rem 0.85rem; }
+  .refresh-btn {
+    flex: 1 1 calc(50% - 0.35rem);
+    min-height: 44px;
+    font-size: 0.8rem;
+    padding: 0.55rem 0.95rem;
+    justify-content: center;
+  }
+  .monthly-report-trigger-btn {
+    flex: 1 1 calc(50% - 0.35rem);
+    min-height: 44px;
+    font-size: 0.8rem;
+    padding: 0.55rem 0.95rem;
+    justify-content: center;
+  }
 
-  .stats-row { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
-  .stat-card { padding: 0.85rem; min-width: 0; overflow: hidden; }
-  .stat-card-value { font-size: 1.35rem; word-break: break-word; }
-  .stat-card-label { font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .stat-card-icon { width: 2rem; height: 2rem; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
+  }
+  .stat-card:last-child:nth-child(odd) {
+    grid-column: span 2;
+  }
+  .stat-card {
+    padding: 0.95rem;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .stat-card-value {
+    font-size: 1.45rem;
+    word-break: break-word;
+  }
+  .stat-card-label {
+    font-size: 0.74rem;
+    line-height: 1.35;
+    white-space: normal;
+  }
+  .stat-card-icon {
+    width: 2.2rem;
+    height: 2.2rem;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+  }
 
-  .dash-card { padding: 1rem; border-radius: 0.85rem; }
-  .dash-card-header h3 { font-size: 0.85rem; }
+  .dash-card {
+    padding: 1.15rem 1rem;
+    border-radius: 0.85rem;
+  }
+  .dash-card-header h3 { font-size: 0.92rem; }
 
-  .alert-item { padding: 0.6rem; gap: 0.5rem; }
-  .alert-icon { width: 1.75rem; height: 1.75rem; font-size: 0.65rem; }
-  .alert-title { font-size: 0.75rem; }
-  .alert-summary { font-size: 0.7rem; }
-  .alert-meta { font-size: 0.6rem; }
+  .alert-item { padding: 0.75rem; gap: 0.65rem; }
+  .alert-icon { width: 2rem; height: 2rem; font-size: 0.75rem; }
+  .alert-title { font-size: 0.82rem; }
+  .alert-summary { font-size: 0.74rem; }
+  .alert-meta { font-size: 0.65rem; }
 
-  .emotion-bar-label { width: 60px; font-size: 0.68rem; }
+  .emotion-bar-label { width: 65px; font-size: 0.7rem; }
   .energy-dist { flex-wrap: wrap; }
-  .energy-segment .val { font-size: 1.2rem; }
+  .energy-segment .val { font-size: 1.3rem; }
 
-  .chart-bars { height: 80px; }
+  .chart-bars { height: 90px; }
 
   .severity-legend-grid { grid-template-columns: 1fr; }
   .trend-legend-bar { justify-content: flex-start; flex-wrap: wrap; gap: 0.75rem; }
+
+  .btn-open-alerts {
+    min-height: 44px;
+    padding: 0.55rem 0.95rem;
+    font-size: 0.8rem;
+  }
+  .donut-legend-item {
+    min-height: 44px;
+    padding: 0.45rem 0.65rem;
+  }
+  .triage-mini-item {
+    min-height: 44px;
+    padding: 0.65rem 0.85rem;
+  }
 }
 
 @media (max-width: 480px) {
-  .stats-row { grid-template-columns: 1fr 1fr; gap: 0.4rem; }
-  .stat-card { padding: 0.7rem 0.55rem; }
-  .stat-card-value { font-size: 1.15rem; }
-  .stat-card-label { font-size: 0.65rem; }
-  .refresh-btn { font-size: 0.7rem; padding: 0.38rem 0.65rem; }
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+  .stat-card {
+    padding: 0.85rem 0.75rem;
+  }
+  .stat-card-value {
+    font-size: 1.28rem;
+  }
+  .stat-card-label {
+    font-size: 0.68rem;
+  }
+  .dash-actions .refresh-btn,
+  .dash-actions .monthly-report-trigger-btn {
+    flex: 1 1 100%;
+  }
 
-  .kpi-domain-cards { grid-template-columns: 1fr; gap: 0.6rem; }
-  .donut-chart-container { width: 180px; height: 180px; }
-  .donut-center-val { font-size: 1.5rem; }
+  .kpi-domain-cards { grid-template-columns: 1fr; gap: 0.65rem; }
+  .donut-chart-container {
+    width: 190px;
+    height: 190px;
+    margin: 0 auto;
+  }
+  .donut-center-val {
+    font-size: 1.55rem;
+  }
 }
 
 /* ============================================
@@ -1304,7 +1401,9 @@
 .monthly-report-trigger-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.45rem;
+  min-height: 44px;
   padding: 0.55rem 1.15rem;
   background: #243E4C;
   border: 1.5px solid #243E4C;
@@ -1316,6 +1415,8 @@
   font-family: var(--font-sans);
   color: #FFFFFF;
   box-shadow: 0 2px 6px rgba(36, 62, 76, 0.18);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .monthly-report-trigger-btn:hover {
@@ -1915,7 +2016,11 @@
 /* Report Modal Responsive (Screen Only) */
 @media screen and (max-width: 768px) {
   .report-modal-overlay {
-    padding: 0.5rem;
+    padding: max(0.5rem, var(--sal)) max(0.5rem, var(--sar)) calc(0.5rem + var(--sab)) max(0.5rem, var(--sal));
+  }
+  .report-modal-container {
+    max-height: calc(94dvh - var(--sat) - var(--sab));
+    width: 100%;
   }
   .report-modal-header {
     flex-direction: column;
@@ -1925,10 +2030,38 @@
   }
   .report-modal-controls {
     width: 100%;
+    display: flex;
     justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .month-selector-group {
+    flex: 1 1 auto;
+  }
+  .month-selector-group select {
+    font-size: 16px !important;
+    min-height: 40px;
+    padding: 0.4rem 0.65rem;
+  }
+  .report-action-btn {
+    min-height: 42px;
+    padding: 0.5rem 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .report-modal-body {
+    padding: 1rem 0.5rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .printable-document {
-    padding: 1.25rem;
+    padding: 1.15rem 0.85rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
   }
   .rep-top-row {
     flex-direction: column;
@@ -1950,6 +2083,10 @@
   .rep-signatures {
     grid-template-columns: 1fr;
     gap: 1.5rem;
+  }
+  .rep-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
 

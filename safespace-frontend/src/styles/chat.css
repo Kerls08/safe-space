@@ -8,20 +8,16 @@
 .chat-layout {
   display: grid;
   grid-template-columns: 320px 1fr;
-  height: calc(100vh - 3.5rem);
-  margin-top: 3.5rem;
+  height: calc(100vh - var(--header-height) - var(--sat));
+  height: calc(100dvh - var(--header-height) - var(--sat));
+  margin-top: calc(var(--header-height) + var(--sat));
   background: #F4F7F7;
 }
 
 body.has-pro-bottom-nav .chat-layout,
 body.has-student-bottom-nav .chat-layout {
-  height: calc(100vh - 3.5rem - 4.25rem);
-}
-@media (max-width: 640px) {
-  body.has-pro-bottom-nav .chat-layout,
-  body.has-student-bottom-nav .chat-layout {
-    height: calc(100vh - 3.5rem - 3.85rem);
-  }
+  height: calc(100vh - var(--header-height) - var(--sat) - var(--bottom-nav-height) - var(--sab));
+  height: calc(100dvh - var(--header-height) - var(--sat) - var(--bottom-nav-height) - var(--sab));
 }
 
 /*  Sidebar  */
@@ -1611,13 +1607,13 @@ body.has-student-bottom-nav .chat-layout {
   .chat-layout {
     grid-template-columns: 1fr;
     position: fixed;
-    top: 3.5rem;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    top: calc(var(--header-height) + var(--sat));
+    bottom: calc(var(--bottom-nav-height) + var(--sab));
+    left: var(--sal);
+    right: var(--sar);
     height: auto;
     margin-top: 0;
-    width: 100%;
+    width: auto;
     z-index: 10;
   }
 
@@ -1652,16 +1648,48 @@ body.has-student-bottom-nav .chat-layout {
     display: none;
   }
 
+  @keyframes mobileChatSlideIn {
+    from {
+      opacity: 0;
+      transform: translateX(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
   .chat-layout.mobile-chat-active .chat-main {
     display: flex;
     position: absolute;
     inset: 0;
     height: 100%;
+    animation: mobileChatSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   /* Show the back button in chat header on mobile */
   .mobile-back-btn {
-    display: flex;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
+    border-radius: 50%;
+    border: 1px solid #E1E8EB;
+    background: #FFFFFF;
+    color: #243E4C;
+    cursor: pointer;
+    margin-right: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.18s ease;
+    flex-shrink: 0;
+  }
+
+  .mobile-back-btn:active {
+    background: #E4ECEE;
+    transform: scale(0.92);
   }
 
   /* Hide the old floating toggle button: we do not need it anymore */
@@ -1701,7 +1729,15 @@ body.has-student-bottom-nav .chat-layout {
 
   /* Prevent iOS Safari auto-zoom on input focus (must be >= 16px) */
   .chat-input-container textarea {
-    font-size: 16px;
+    font-size: 16px !important;
+  }
+
+  .chat-send-btn {
+    min-width: 42px;
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   /* Hide the privacy note on mobile to save space */
