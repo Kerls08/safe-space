@@ -710,6 +710,16 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 9999;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, visibility 0.2s ease;
+}
+
+body.kit-modal-open .student-bottom-nav,
+body.kit-modal-open .pro-bottom-nav,
+body.kit-modal-open .maint-bottom-nav {
+  transform: translateY(100%) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
 }
 
 .student-bottom-nav-inner {

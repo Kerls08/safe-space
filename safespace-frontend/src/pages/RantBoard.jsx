@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { postsApi } from '../services/api';
@@ -471,6 +472,7 @@ export default function RantBoard() {
     setJournalSaved(false);
     setKitModalOpen(true);
     document.body.style.overflow = 'hidden';
+    document.body.classList.add('kit-modal-open');
   };
 
   const closeKit = () => {
@@ -478,8 +480,17 @@ export default function RantBoard() {
     setKitModalOpen(false);
     setActiveKit(null);
     document.body.style.overflow = '';
+    document.body.classList.remove('kit-modal-open');
     showToast('Great job taking care of yourself.');
   };
+
+  // Ensure body scroll lock and modal state are cleaned up on unmount
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = '';
+      document.body.classList.remove('kit-modal-open');
+    };
+  }, []);
 
   const handleSelectBreathingPhase = (phaseIndex) => {
     kitStepRef.current = phaseIndex;
@@ -524,28 +535,26 @@ export default function RantBoard() {
 
   return (
     <div className="rant-layout">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div style={{
-          position: 'fixed',
-          bottom: '2rem',
-          right: '2rem',
-          background: '#243E4C',
-          color: '#F9FBFA',
-          padding: '0.85rem 1.4rem',
-          borderRadius: '0.75rem',
-          boxShadow: '0 10px 25px rgba(24, 42, 52, 0.25)',
-          border: '1px solid rgba(126, 159, 157, 0.4)',
-          zIndex: 11000,
-          fontWeight: 600,
-          fontSize: '0.88rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.6rem'
-        }}>
-          <i className="fas fa-circle-check" style={{ color: '#10B981' }}></i>
-          <span>{toastMessage}</span>
-        </div>
+      {/* Toast Notification (Portaled for optimal responsive positioning across mobile & desktop) */}
+      {toastMessage && createPortal(
+        <div
+          className="safespace-toast"
+          id="safespaceToast"
+          role="status"
+          aria-live="polite"
+        >
+          <i className="fas fa-circle-check toast-icon"></i>
+          <span className="toast-text">{toastMessage}</span>
+          <button
+            type="button"
+            className="toast-dismiss-btn"
+            onClick={() => setToastMessage('')}
+            aria-label="Dismiss notification"
+          >
+            <i className="fas fa-xmark"></i>
+          </button>
+        </div>,
+        document.body
       )}
 
       {/* Page Header */}
@@ -1181,284 +1190,307 @@ export default function RantBoard() {
       {/* ══════════════════════════════════════════════ */}
       {/* CALM-DOWN KIT MODAL */}
       {/* ══════════════════════════════════════════════ */}
-      <div 
-        className={`kit-modal-overlay ${kitModalOpen ? 'active' : ''}`} 
-        id="kitModalOverlay"
-        onClick={(e) => {
-          if (e.target.id === 'kitModalOverlay') closeKit();
-        }}
-      >
-        <div className="kit-modal" id="kitModal" role="dialog" aria-modal="true" aria-labelledby="kitModalTitle">
-          <div className="kit-modal-header">
-            <div className="kit-modal-header-info">
-              <div className={`kit-modal-badge ${activeKit || 'breathing'}`} id="kitModalBadge">
-                <i className={
-                  activeKit === 'breathing' ? 'fas fa-wind' :
-                  activeKit === 'grounding' ? 'fas fa-hand' :
-                  activeKit === 'muscle' ? 'fas fa-child-reaching' : 'fas fa-pen-fancy'
-                } id="kitModalIcon"></i>
+      {/* ══════════════════════════════════════════════ */}
+      {/* CALM-DOWN KIT MODAL (Portaled to root) */}
+      {/* ══════════════════════════════════════════════ */}
+      {kitModalOpen && activeKit && createPortal(
+        <div 
+          className="kit-modal-overlay active" 
+          id="kitModalOverlay"
+          onClick={(e) => {
+            if (e.target.id === 'kitModalOverlay') closeKit();
+          }}
+        >
+          <div className="kit-modal" id="kitModal" role="dialog" aria-modal="true" aria-labelledby="kitModalTitle">
+            <div className="kit-modal-header">
+              <div className="kit-modal-header-info">
+                <div className={`kit-modal-badge ${activeKit}`} id="kitModalBadge">
+                  <i className={
+                    activeKit === 'breathing' ? 'fas fa-wind' :
+                    activeKit === 'grounding' ? 'fas fa-hand' :
+                    activeKit === 'muscle' ? 'fas fa-child-reaching' : 'fas fa-pen-fancy'
+                  } id="kitModalIcon"></i>
+                </div>
+                <div>
+                  <h3 id="kitModalTitle">
+                    {activeKit === 'breathing' && 'Slow Box Breathing (4-4-4-4)'}
+                    {activeKit === 'grounding' && '5-4-3-2-1 Sensory Grounding'}
+                    {activeKit === 'muscle' && 'Muscle Relaxation'}
+                    {activeKit === 'journal' && '3 Good Things Journal'}
+                  </h3>
+                  <p id="kitModalSubtitle">
+                    {activeKit === 'breathing' && 'Slow down your breathing to help your mind and body relax.'}
+                    {activeKit === 'grounding' && 'Pause and notice the simple things around you right now.'}
+                    {activeKit === 'muscle' && 'Tighten and then relax your muscles to let go of body stress.'}
+                    {activeKit === 'journal' && 'Take a quiet moment to write down 3 good things in your day.'}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 id="kitModalTitle">
-                  {activeKit === 'breathing' && 'Slow Box Breathing (4-4-4-4)'}
-                  {activeKit === 'grounding' && '5-4-3-2-1 Sensory Grounding'}
-                  {activeKit === 'muscle' && 'Muscle Relaxation'}
-                  {activeKit === 'journal' && '3 Good Things Journal'}
-                </h3>
-                <p id="kitModalSubtitle">
-                  {activeKit === 'breathing' && 'Slow down your breathing to help your mind and body relax.'}
-                  {activeKit === 'grounding' && 'Pause and notice the simple things around you right now.'}
-                  {activeKit === 'muscle' && 'Tighten and then relax your muscles to let go of body stress.'}
-                  {activeKit === 'journal' && 'Take a quiet moment to write down 3 good things in your day.'}
-                </p>
-              </div>
+              <button className="kit-modal-close" onClick={closeKit} aria-label="Close exercise">
+                <i className="fas fa-xmark"></i>
+              </button>
             </div>
-            <button className="kit-modal-close" onClick={closeKit} aria-label="Close exercise">
-              <i className="fas fa-xmark"></i>
-            </button>
-          </div>
 
-          <div className="kit-modal-body" id="kitModalBody">
-            {/* 1. Box Breathing UI */}
-            {activeKit === 'breathing' && (
-              <>
-                <div className="breathing-sphere-wrap">
-                  <div className="breathing-ring-outer"></div>
-                  <div className={`breathing-sphere ${BOX_BREATHING_DATA[kitStep].phaseClass}`} id="breathingSphere">
-                    <span className="breathing-count" id="breathingCount">{kitCountdown}</span>
-                    <span className="breathing-label" id="breathingSphereLabel">{BOX_BREATHING_DATA[kitStep].sphereText}</span>
+            <div className="kit-modal-body" id="kitModalBody">
+              {/* 1. Box Breathing UI */}
+              {activeKit === 'breathing' && (
+                <div className="breathing-content-box">
+                  <div className="breathing-sphere-wrap">
+                    <div className="breathing-ring-outer"></div>
+                    <div className={`breathing-sphere ${BOX_BREATHING_DATA[kitStep].phaseClass}`} id="breathingSphere">
+                      <span className="breathing-count" id="breathingCount">{kitCountdown}</span>
+                      <span className="breathing-label" id="breathingSphereLabel">{BOX_BREATHING_DATA[kitStep].sphereText}</span>
+                    </div>
+                  </div>
+                  <div className="kit-phase-instruction" id="breathingPhaseName">{BOX_BREATHING_DATA[kitStep].name}</div>
+                  <div className="kit-phase-sub" id="breathingPhaseSub">{BOX_BREATHING_DATA[kitStep].sub}</div>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.65rem' }}>
+                    <span style={{ background: '#F4F7F7', color: '#243E4C', border: '1px solid #E1E8EB', padding: '0.25rem 0.85rem', borderRadius: '0.4rem', fontSize: '0.78rem', fontWeight: 700 }} id="breathingCycleCounter">
+                      Cycle {breathingCycle}
+                    </span>
+                  </div>
+                  <div className="box-phases-bar">
+                    <button
+                      type="button"
+                      className={`box-phase-chip ${kitStep === 0 ? 'active' : ''}`}
+                      onClick={() => handleSelectBreathingPhase(0)}
+                    >
+                      Inhale 4s
+                    </button>
+                    <button
+                      type="button"
+                      className={`box-phase-chip ${kitStep === 1 ? 'active' : ''}`}
+                      onClick={() => handleSelectBreathingPhase(1)}
+                    >
+                      Hold 4s
+                    </button>
+                    <button
+                      type="button"
+                      className={`box-phase-chip ${kitStep === 2 ? 'active' : ''}`}
+                      onClick={() => handleSelectBreathingPhase(2)}
+                    >
+                      Exhale 4s
+                    </button>
+                    <button
+                      type="button"
+                      className={`box-phase-chip ${kitStep === 3 ? 'active' : ''}`}
+                      onClick={() => handleSelectBreathingPhase(3)}
+                    >
+                      Hold 4s
+                    </button>
                   </div>
                 </div>
-                <div className="kit-phase-instruction" id="breathingPhaseName">{BOX_BREATHING_DATA[kitStep].name}</div>
-                <div className="kit-phase-sub" id="breathingPhaseSub">{BOX_BREATHING_DATA[kitStep].sub}</div>
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
-                  <span style={{ background: '#F4F7F7', color: '#243E4C', border: '1px solid #E1E8EB', padding: '0.25rem 0.85rem', borderRadius: '0.35rem', fontSize: '0.78rem', fontWeight: 700 }} id="breathingCycleCounter">
-                    Cycle {breathingCycle}
-                  </span>
-                </div>
-                <div className="box-phases-bar">
-                  <button
-                    type="button"
-                    className={`box-phase-chip ${kitStep === 0 ? 'active' : ''}`}
-                    onClick={() => handleSelectBreathingPhase(0)}
-                  >
-                    Inhale 4s
-                  </button>
-                  <button
-                    type="button"
-                    className={`box-phase-chip ${kitStep === 1 ? 'active' : ''}`}
-                    onClick={() => handleSelectBreathingPhase(1)}
-                  >
-                    Hold 4s
-                  </button>
-                  <button
-                    type="button"
-                    className={`box-phase-chip ${kitStep === 2 ? 'active' : ''}`}
-                    onClick={() => handleSelectBreathingPhase(2)}
-                  >
-                    Exhale 4s
-                  </button>
-                  <button
-                    type="button"
-                    className={`box-phase-chip ${kitStep === 3 ? 'active' : ''}`}
-                    onClick={() => handleSelectBreathingPhase(3)}
-                  >
-                    Hold 4s
-                  </button>
-                </div>
-              </>
-            )}
+              )}
 
-            {/* 2. 5-4-3-2-1 Sensory Grounding UI */}
-            {activeKit === 'grounding' && (
-              <>
-                <div className="grounding-progress-bar" style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '1.25rem' }}>
-                  {GROUNDING_DATA.map((d, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        width: '12px',
-                        height: '12px',
-                        borderRadius: '50%',
-                        background: idx === kitStep ? '#243E4C' : idx < kitStep ? '#10B981' : '#E1E8EB',
-                        cursor: 'pointer'
-                      }}
-                      onClick={() => setKitStep(idx)}
-                    />
-                  ))}
-                </div>
-
-                <div className="grounding-step-box" style={{ textAlign: 'center' }}>
-                  <div style={{ width: '3.25rem', height: '3.25rem', borderRadius: '50%', background: '#EBF2F3', color: '#243E4C', fontSize: '1.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem' }}>
-                    <i className={GROUNDING_DATA[kitStep].icon}></i>
-                  </div>
-                  <h4 style={{ fontSize: '1.25rem', color: '#182A34', marginBottom: '0.4rem', fontWeight: 800 }}>{GROUNDING_DATA[kitStep].prompt}</h4>
-                  <p style={{ fontSize: '0.85rem', color: '#51646E', maxWidth: '380px', margin: '0 auto 1.25rem' }}>{GROUNDING_DATA[kitStep].desc}</p>
-                </div>
-
-                <div style={{ display: 'grid', gap: '0.5rem', maxWidth: '400px', margin: '0 auto' }}>
-                  {GROUNDING_DATA[kitStep].items.map((itemText, i) => {
-                    const key = `${kitStep}-${i}`;
-                    const isChecked = Boolean(groundingChecks[key]);
-
-                    return (
-                      <div
-                        key={i}
-                        onClick={() => setGroundingChecks((prev) => ({ ...prev, [key]: !prev[key] }))}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                          padding: '0.75rem 1rem',
-                          borderRadius: '0.75rem',
-                          border: isChecked ? '1.5px solid #10B981' : '1.5px solid #E1E8EB',
-                          background: isChecked ? '#F0FDF4' : '#fff',
-                          cursor: 'pointer',
-                          fontSize: '0.88rem',
-                          color: isChecked ? '#166534' : '#182A34',
-                          fontWeight: isChecked ? 600 : 400
-                        }}
+              {/* 2. 5-4-3-2-1 Sensory Grounding UI */}
+              {activeKit === 'grounding' && (
+                <div className="grounding-content-box">
+                  <div className="grounding-step-tabs" role="tablist" aria-label="Grounding senses">
+                    {GROUNDING_DATA.map((d, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={`grounding-step-tab ${idx === kitStep ? 'active' : idx < kitStep ? 'completed' : ''}`}
+                        onClick={() => setKitStep(idx)}
+                        aria-label={`Step ${idx + 1}: ${d.prompt}`}
                       >
-                        <i className={isChecked ? 'fas fa-circle-check' : 'far fa-circle'} style={{ color: isChecked ? '#10B981' : '#728590' }}></i>
-                        <span>{itemText}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-
-            {/* 3. Progressive Muscle Relaxation UI */}
-            {activeKit === 'muscle' && (
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ width: '4rem', height: '4rem', borderRadius: '50%', background: '#F4F7F7', color: '#243E4C', border: '1.5px solid #E1E8EB', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', marginBottom: '1rem' }}>
-                  <i className={`fas ${PMR_DATA[kitStep].icon}`}></i>
-                </div>
-                <h4 style={{ fontSize: '1.2rem', color: '#182A34', fontWeight: 800, marginBottom: '0.5rem' }}>
-                  Step {kitStep + 1} of {PMR_DATA.length}: {PMR_DATA[kitStep].target}
-                </h4>
-                
-                <div style={{ background: '#FEF3C7', border: '1px solid #FDE68A', padding: '1rem', borderRadius: '0.75rem', color: '#92400E', fontSize: '0.85rem', marginBottom: '0.75rem', textAlign: 'left' }}>
-                  <strong>Squeeze (5s):</strong> {PMR_DATA[kitStep].tenseTip}
-                </div>
-
-                <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', padding: '1rem', borderRadius: '0.75rem', color: '#065F46', fontSize: '0.85rem', textAlign: 'left' }}>
-                  <strong>Relax (10s):</strong> {PMR_DATA[kitStep].releaseTip}
-                </div>
-              </div>
-            )}
-
-            {/* 4. 3 Good Things Journal UI */}
-            {activeKit === 'journal' && (
-              <div>
-                <p style={{ fontSize: '0.85rem', color: '#51646E', textAlign: 'center', marginBottom: '1.25rem' }}>
-                  Take a slow breath. Write down 3 small things that made you smile or feel thankful today:
-                </p>
-
-                <div style={{ display: 'grid', gap: '0.75rem' }}>
-                  <input
-                    type="text"
-                    placeholder="1. A kind person, a sweet moment, or someone who helped you..."
-                    value={journalEntries.one}
-                    onChange={(e) => setJournalEntries({ ...journalEntries, one: e.target.value })}
-                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '0.75rem', border: '1.5px solid #E1E8EB', fontSize: '0.88rem' }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="2. Something nice you saw, heard, or ate today..."
-                    value={journalEntries.two}
-                    onChange={(e) => setJournalEntries({ ...journalEntries, two: e.target.value })}
-                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '0.75rem', border: '1.5px solid #E1E8EB', fontSize: '0.88rem' }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="3. Something you did well today, or a kind thought for yourself..."
-                    value={journalEntries.three}
-                    onChange={(e) => setJournalEntries({ ...journalEntries, three: e.target.value })}
-                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '0.75rem', border: '1.5px solid #E1E8EB', fontSize: '0.88rem' }}
-                  />
-                </div>
-
-                {journalSaved && (
-                  <div style={{ background: '#ECFDF5', color: '#065F46', padding: '0.75rem', borderRadius: '0.6rem', marginTop: '1rem', fontSize: '0.85rem', textAlign: 'center', fontWeight: 600 }}>
-                    <i className="fas fa-check-circle"></i> Saved! You did a great job taking this quiet moment for yourself.
+                        <span className="grounding-tab-count">{d.count}</span>
+                        <span className="grounding-tab-sense">{d.sense}</span>
+                      </button>
+                    ))}
                   </div>
-                )}
-              </div>
-            )}
+
+                  <div className="grounding-header-box">
+                    <div className="grounding-header-icon">
+                      <i className={GROUNDING_DATA[kitStep].icon}></i>
+                    </div>
+                    <h4 className="grounding-header-title">{GROUNDING_DATA[kitStep].prompt}</h4>
+                    <p className="grounding-header-desc">{GROUNDING_DATA[kitStep].desc}</p>
+                  </div>
+
+                  <div className="grounding-items-list">
+                    {GROUNDING_DATA[kitStep].items.map((itemText, i) => {
+                      const key = `${kitStep}-${i}`;
+                      const isChecked = Boolean(groundingChecks[key]);
+
+                      return (
+                        <div
+                          key={i}
+                          className={`grounding-item-card ${isChecked ? 'checked' : ''}`}
+                          onClick={() => setGroundingChecks((prev) => ({ ...prev, [key]: !prev[key] }))}
+                          role="checkbox"
+                          aria-checked={isChecked}
+                          tabIndex={0}
+                        >
+                          <i className={isChecked ? 'fas fa-circle-check' : 'far fa-circle'}></i>
+                          <span>{itemText}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 3. Progressive Muscle Relaxation UI */}
+              {activeKit === 'muscle' && (
+                <div className="pmr-content-box">
+                  <div className="pmr-step-tabs" role="tablist" aria-label="Muscle steps">
+                    {PMR_DATA.map((d, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={`pmr-step-tab ${idx === kitStep ? 'active' : idx < kitStep ? 'completed' : ''}`}
+                        onClick={() => setKitStep(idx)}
+                        aria-label={`Step ${idx + 1}: ${d.target}`}
+                      >
+                        {idx + 1}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="pmr-icon-wrap">
+                    <i className={`fas ${PMR_DATA[kitStep].icon}`}></i>
+                  </div>
+                  <h4 className="pmr-step-title">
+                    Step {kitStep + 1} of {PMR_DATA.length}: {PMR_DATA[kitStep].target}
+                  </h4>
+                  
+                  <div className="pmr-tense-card">
+                    <strong>Squeeze (5s):</strong> {PMR_DATA[kitStep].tenseTip}
+                  </div>
+
+                  <div className="pmr-release-card">
+                    <strong>Relax (10s):</strong> {PMR_DATA[kitStep].releaseTip}
+                  </div>
+                </div>
+              )}
+
+              {/* 4. 3 Good Things Journal UI */}
+              {activeKit === 'journal' && (
+                <div className="journal-content-box">
+                  <p className="journal-intro-text">
+                    Take a slow breath. Write down 3 small things that made you smile or feel thankful today:
+                  </p>
+
+                  <div className="journal-inputs-group">
+                    <div className="journal-input-wrap">
+                      <span className="journal-input-num">1</span>
+                      <input
+                        type="text"
+                        className="journal-text-input"
+                        placeholder="A kind person, sweet moment, or someone who helped..."
+                        value={journalEntries.one}
+                        onChange={(e) => setJournalEntries({ ...journalEntries, one: e.target.value })}
+                        aria-label="Good thing 1"
+                      />
+                    </div>
+                    <div className="journal-input-wrap">
+                      <span className="journal-input-num">2</span>
+                      <input
+                        type="text"
+                        className="journal-text-input"
+                        placeholder="Something nice you saw, heard, or tasted today..."
+                        value={journalEntries.two}
+                        onChange={(e) => setJournalEntries({ ...journalEntries, two: e.target.value })}
+                        aria-label="Good thing 2"
+                      />
+                    </div>
+                    <div className="journal-input-wrap">
+                      <span className="journal-input-num">3</span>
+                      <input
+                        type="text"
+                        className="journal-text-input"
+                        placeholder="Something you did well, or a kind thought for yourself..."
+                        value={journalEntries.three}
+                        onChange={(e) => setJournalEntries({ ...journalEntries, three: e.target.value })}
+                        aria-label="Good thing 3"
+                      />
+                    </div>
+                  </div>
+
+                  {journalSaved && (
+                    <div className="journal-saved-alert">
+                      <i className="fas fa-circle-check"></i>
+                      <span>Saved! You did a great job taking this quiet moment for yourself.</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="kit-modal-footer" id="kitModalFooter">
+              {activeKit === 'breathing' && (
+                <>
+                  <button type="button" className="btn-kit-secondary" onClick={closeKit}>
+                    Finished
+                  </button>
+                  <button type="button" className="btn-kit-primary" onClick={() => setIsKitPaused(!isKitPaused)}>
+                    {isKitPaused ? 'Resume' : 'Pause'}
+                  </button>
+                </>
+              )}
+
+              {activeKit === 'grounding' && (
+                <>
+                  <button type="button" className="btn-kit-secondary" onClick={closeKit}>
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-kit-primary"
+                    onClick={() => {
+                      if (kitStep < GROUNDING_DATA.length - 1) setKitStep(kitStep + 1);
+                      else closeKit();
+                    }}
+                  >
+                    {kitStep < GROUNDING_DATA.length - 1 ? 'Next Step →' : 'Finish'}
+                  </button>
+                </>
+              )}
+
+              {activeKit === 'muscle' && (
+                <>
+                  <button type="button" className="btn-kit-secondary" onClick={closeKit}>
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-kit-primary"
+                    onClick={() => {
+                      if (kitStep < PMR_DATA.length - 1) setKitStep(kitStep + 1);
+                      else closeKit();
+                    }}
+                  >
+                    {kitStep < PMR_DATA.length - 1 ? 'Next Step →' : 'Finish'}
+                  </button>
+                </>
+              )}
+
+              {activeKit === 'journal' && (
+                <>
+                  <button type="button" className="btn-kit-secondary" onClick={closeKit}>
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-kit-primary"
+                    onClick={() => {
+                      setJournalSaved(true);
+                      setTimeout(() => closeKit(), 1500);
+                    }}
+                  >
+                    Save My 3 Things
+                  </button>
+                </>
+              )}
+            </div>
           </div>
+        </div>,
+        document.body
+      )}
 
-          <div className="kit-modal-footer" id="kitModalFooter">
-            {activeKit === 'breathing' && (
-              <>
-                <button type="button" className="btn-kit-secondary" onClick={closeKit}>
-                  Finished
-                </button>
-                <button type="button" className="btn-kit-primary" onClick={() => setIsKitPaused(!isKitPaused)}>
-                  {isKitPaused ? 'Resume' : 'Pause'}
-                </button>
-              </>
-            )}
-
-            {activeKit === 'grounding' && (
-              <>
-                <button type="button" className="btn-kit-secondary" onClick={closeKit}>
-                  Close
-                </button>
-                <button
-                  type="button"
-                  className="btn-kit-primary"
-                  onClick={() => {
-                    if (kitStep < GROUNDING_DATA.length - 1) setKitStep(kitStep + 1);
-                    else closeKit();
-                  }}
-                >
-                  {kitStep < GROUNDING_DATA.length - 1 ? 'Next Step →' : 'Finish'}
-                </button>
-              </>
-            )}
-
-            {activeKit === 'muscle' && (
-              <>
-                <button type="button" className="btn-kit-secondary" onClick={closeKit}>
-                  Close
-                </button>
-                <button
-                  type="button"
-                  className="btn-kit-primary"
-                  onClick={() => {
-                    if (kitStep < PMR_DATA.length - 1) setKitStep(kitStep + 1);
-                    else closeKit();
-                  }}
-                >
-                  {kitStep < PMR_DATA.length - 1 ? 'Next Step →' : 'Finish'}
-                </button>
-              </>
-            )}
-
-            {activeKit === 'journal' && (
-              <>
-                <button type="button" className="btn-kit-secondary" onClick={closeKit}>
-                  Close
-                </button>
-                <button
-                  type="button"
-                  className="btn-kit-primary"
-                  onClick={() => {
-                    setJournalSaved(true);
-                    setTimeout(() => closeKit(), 1500);
-                  }}
-                >
-                  Save My 3 Things
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Delete Post Confirmation Modal */}
-      {deleteModal.open && (
+      {/* Delete Post Confirmation Modal (Portaled) */}
+      {deleteModal.open && createPortal(
         <div className="modal-backdrop active" id="deletePostModal">
           <div className="modal-box delete-modal-box">
             <div className="delete-modal-icon">
@@ -1504,7 +1536,8 @@ export default function RantBoard() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
