@@ -846,7 +846,7 @@
 /*  Toast  */
 .alert-toast {
   position: fixed;
-  bottom: 1.5rem;
+  bottom: calc(var(--bottom-nav-height, 4.25rem) + var(--sab, 0px) + 1rem);
   left: 50%;
   transform: translateX(-50%);
   background: #243E4C;
@@ -859,6 +859,8 @@
   animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
   box-shadow: 0 4px 20px rgba(36, 62, 76, 0.25);
   border: 1px solid rgba(126, 159, 157, 0.3);
+  max-width: calc(100vw - 2rem);
+  box-sizing: border-box;
 }
 
 @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } }

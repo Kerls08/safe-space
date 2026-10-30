@@ -350,8 +350,9 @@ export default function Navbar() {
           }}
           style={{
             position: 'fixed',
-            top: '64px',
-            right: '1.5rem',
+            top: 'calc(var(--header-height, 56px) + var(--sat, 0px) + 0.65rem)',
+            right: 'max(1rem, var(--sar, 0px))',
+            maxWidth: 'calc(100vw - 2rem)',
             zIndex: 9999,
             background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
             color: '#FFFFFF',
@@ -363,7 +364,8 @@ export default function Navbar() {
             gap: '0.85rem',
             cursor: 'pointer',
             animation: 'fadeInTab 0.3s ease-out',
-            fontFamily: 'Inter, sans-serif'
+            fontFamily: 'Inter, sans-serif',
+            boxSizing: 'border-box'
           }}
         >
           <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

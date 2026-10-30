@@ -26,6 +26,11 @@ export default function StudentBottomNav() {
               to={l.href}
               className={`student-nav-btn${isActive ? ' active' : ''}`}
               title={l.title}
+              onClick={() => {
+                if (l.badgeKey) {
+                  updateBadge(l.badgeKey, 0);
+                }
+              }}
             >
               <span className="student-nav-icon-wrap">
                 <i className={l.icon}></i>
@@ -35,7 +40,7 @@ export default function StudentBottomNav() {
                   </span>
                 )}
               </span>
-              <span>{l.name}</span>
+              <span className="student-nav-label">{l.name}</span>
             </Link>
           );
         })}

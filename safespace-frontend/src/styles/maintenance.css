@@ -516,17 +516,23 @@ input:checked + .slider:before { transform: translateX(20px); }
   color: #243E4C;
 }
 
+.maint-nav-label {
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
 .maint-nav-icon-wrap {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  overflow: visible !important;
 }
 
 .maint-nav-badge {
   position: absolute;
   top: -6px;
-  right: -10px;
+  right: -9px;
   min-width: 17px;
   height: 17px;
   padding: 0 4px;
@@ -541,6 +547,9 @@ input:checked + .slider:before { transform: translateX(20px); }
   align-items: center;
   justify-content: center;
   z-index: 2;
+  overflow: visible !important;
+  box-sizing: border-box;
+  pointer-events: none;
 }
 
 .maint-nav-badge.badge-amber {
@@ -562,24 +571,44 @@ input:checked + .slider:before { transform: translateX(20px); }
     padding-bottom: var(--sab);
     padding-left: max(0.5rem, var(--sal));
     padding-right: max(0.5rem, var(--sar));
+    overflow: visible;
   }
   .maint-bottom-nav-inner {
     gap: 0.25rem;
+    overflow: visible;
   }
   .maint-nav-btn {
     padding: 0.35rem 0.25rem;
     font-size: 0.68rem;
     gap: 0.15rem;
     min-height: 44px;
+    min-width: 0;
+    overflow: visible;
   }
   .maint-nav-btn i {
     font-size: 1.05rem;
+    line-height: 1;
+    display: inline-block;
   }
-  .maint-nav-btn span {
+  .maint-nav-btn .maint-nav-label {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+    display: block;
+    line-height: 1.15;
+  }
+  .maint-nav-icon-wrap {
+    overflow: visible !important;
+  }
+  .maint-nav-badge {
+    top: -5px;
+    right: -8px;
+    min-width: 16px;
+    height: 16px;
+    line-height: 16px;
+    font-size: 0.6rem;
+    overflow: visible !important;
   }
   .dash-layout {
     margin-top: var(--header-height, 3.5rem);

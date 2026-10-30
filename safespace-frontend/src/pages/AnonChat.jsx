@@ -2045,8 +2045,9 @@ export default function AnonChat() {
           id="safeSpaceToast"
           style={{
             position: 'fixed',
-            top: '5rem',
-            right: '1.5rem',
+            top: 'calc(var(--header-height, 56px) + var(--sat, 0px) + 0.65rem)',
+            right: 'max(1rem, var(--sar, 0px))',
+            maxWidth: 'min(380px, calc(100vw - 2rem))',
             background: '#182A34',
             color: '#F8FAFC',
             padding: '0.75rem 1.25rem',
@@ -2059,7 +2060,7 @@ export default function AnonChat() {
             display: 'flex',
             alignItems: 'center',
             gap: '0.65rem',
-            maxWidth: '380px',
+            boxSizing: 'border-box',
             animation: 'fadeIn 0.25s ease-out'
           }}
         >

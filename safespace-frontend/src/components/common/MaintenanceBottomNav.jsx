@@ -70,7 +70,7 @@ export default function MaintenanceBottomNav() {
                   </span>
                 )}
               </span>
-              <span>{item.label}</span>
+              <span className="maint-nav-label">{item.label}</span>
             </button>
           );
         })}

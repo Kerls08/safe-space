@@ -55,7 +55,7 @@ export default function ProfessionalBottomNav() {
                   </span>
                 )}
               </span>
-              <span>{l.name}</span>
+              <span className="pro-nav-label">{l.name}</span>
             </Link>
           );
         })}
