@@ -4,7 +4,6 @@ import com.safe.space.dto.*;
 import com.safe.space.model.User;
 import com.safe.space.service.DashboardService;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,9 +13,9 @@ import org.springframework.web.bind.annotation.*;
  * Provides a centralized administrative view that aggregates data
  * from all subsystems into three monitoring endpoints:
  *
- *   GET /api/dashboard/overview   — Campus-wide snapshot with key metrics
- *   GET /api/dashboard/alerts     — Real-time priority-sorted crisis feed
- *   GET /api/dashboard/trends     — Daily time-series for emotional climate
+ * GET /api/dashboard/overview — Campus-wide snapshot with key metrics
+ * GET /api/dashboard/alerts — Real-time priority-sorted crisis feed
+ * GET /api/dashboard/trends — Daily time-series for emotional climate
  */
 @RestController
 @RequestMapping("/api/dashboard")
@@ -49,6 +48,7 @@ public class DashboardController {
 
     /**
      * Daily trend data for charting emotional climate over time.
+     * 
      * @param days number of days to include (default 30)
      */
     @GetMapping("/trends")
@@ -58,11 +58,12 @@ public class DashboardController {
     }
 
     /**
-     * Formal Monthly Situationer Report for USTP Balubal Psychometricians & Guidance Center.
+     * Formal Monthly Situationer Report for USTP Balubal Psychometricians &
+     * Guidance Center.
      * Generates aggregated, anonymized student mental health, emotional climate,
      * crisis triggers, and counseling analytics for printing or PDF export.
      *
-     * @param year report calendar year (e.g. 2026)
+     * @param year  report calendar year (e.g. 2026)
      * @param month report calendar month (1-12)
      */
     @GetMapping("/monthly-report")
@@ -72,7 +73,8 @@ public class DashboardController {
             HttpServletRequest request) {
         User currentUser = (User) request.getAttribute("auth.user");
         int targetYear = (year != null && year > 0) ? year : java.time.LocalDate.now().getYear();
-        int targetMonth = (month != null && month >= 1 && month <= 12) ? month : java.time.LocalDate.now().getMonthValue();
+        int targetMonth = (month != null && month >= 1 && month <= 12) ? month
+                : java.time.LocalDate.now().getMonthValue();
         return ResponseEntity.ok(dashboardService.getMonthlyReport(targetYear, targetMonth, currentUser));
     }
 }

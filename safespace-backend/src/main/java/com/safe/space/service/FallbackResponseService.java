@@ -1,6 +1,5 @@
 package com.safe.space.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -15,19 +14,21 @@ import java.util.concurrent.ConcurrentHashMap;
  * a student's message when no psychometrician is available. The fallback
  * system uses three layers of intelligence:
  *
- *   1. Professional Presence Tracking — Heartbeat-based online/offline detection
- *   2. Contextual Response Engine     — Generates emotion-aware, energy-calibrated responses
- *   3. Crisis Escalation Override     — Forces safety-tier responses when crisis is detected
+ * 1. Professional Presence Tracking — Heartbeat-based online/offline detection
+ * 2. Contextual Response Engine — Generates emotion-aware, energy-calibrated
+ * responses
+ * 3. Crisis Escalation Override — Forces safety-tier responses when crisis is
+ * detected
  *
  * Fallback triggers:
- *   - Session in WAITING status (no professional assigned yet)
- *   - Session in ACTIVE status but assigned professional has gone offline
+ * - Session in WAITING status (no professional assigned yet)
+ * - Session in ACTIVE status but assigned professional has gone offline
  *
  * The service does NOT replace human counselors. It provides:
- *   - Immediate acknowledgment ("You are not alone")
- *   - Emotional validation ("It's okay to feel this way")
- *   - Safety resources (when crisis is detected)
- *   - ETA messaging ("A counselor will be with you shortly")
+ * - Immediate acknowledgment ("You are not alone")
+ * - Emotional validation ("It's okay to feel this way")
+ * - Safety resources (when crisis is detected)
+ * - ETA messaging ("A counselor will be with you shortly")
  */
 @Service
 @Slf4j
@@ -51,13 +52,17 @@ public class FallbackResponseService {
      */
     private final ConcurrentHashMap<String, LocalDateTime> studentSessionHeartbeats = new ConcurrentHashMap<>();
 
-    /** Professional and student considered offline after this many seconds without heartbeat. */
+    /**
+     * Professional and student considered offline after this many seconds without
+     * heartbeat.
+     */
     private static final int HEARTBEAT_TIMEOUT_SECONDS = 15;
 
     // ── Student Presence ──
 
     public void recordStudentHeartbeat(String sessionId) {
-        if (sessionId == null || sessionId.isBlank()) return;
+        if (sessionId == null || sessionId.isBlank())
+            return;
         studentSessionHeartbeats.put(sessionId, LocalDateTime.now());
         log.debug("Student heartbeat recorded: sessionId={}", sessionId);
     }
@@ -70,9 +75,11 @@ public class FallbackResponseService {
     }
 
     public boolean isStudentOnline(String sessionId) {
-        if (sessionId == null || sessionId.isBlank()) return false;
+        if (sessionId == null || sessionId.isBlank())
+            return false;
         LocalDateTime lastBeat = studentSessionHeartbeats.get(sessionId);
-        if (lastBeat == null) return false;
+        if (lastBeat == null)
+            return false;
         return lastBeat.plusSeconds(HEARTBEAT_TIMEOUT_SECONDS).isAfter(LocalDateTime.now());
     }
 
@@ -82,7 +89,8 @@ public class FallbackResponseService {
      * Records a heartbeat from a professional, marking them as online.
      */
     public void recordHeartbeat(String professionalId) {
-        if (professionalId == null || professionalId.isBlank()) return;
+        if (professionalId == null || professionalId.isBlank())
+            return;
         professionalHeartbeats.put(professionalId, LocalDateTime.now());
         log.debug("Heartbeat recorded: professionalId={}", professionalId);
     }
@@ -101,9 +109,11 @@ public class FallbackResponseService {
      * Checks if a professional is currently online (heartbeat within timeout).
      */
     public boolean isProfessionalOnline(String professionalId) {
-        if (professionalId == null || professionalId.isBlank()) return false;
+        if (professionalId == null || professionalId.isBlank())
+            return false;
         LocalDateTime lastBeat = professionalHeartbeats.get(professionalId);
-        if (lastBeat == null) return false;
+        if (lastBeat == null)
+            return false;
         return lastBeat.plusSeconds(HEARTBEAT_TIMEOUT_SECONDS).isAfter(LocalDateTime.now());
     }
 
@@ -127,12 +137,12 @@ public class FallbackResponseService {
         List<Map<String, Object>> professionals = new ArrayList<>();
         for (Map.Entry<String, LocalDateTime> entry : professionalHeartbeats.entrySet()) {
             boolean online = entry.getValue().isAfter(cutoff);
-            if (online) onlineCount++;
+            if (online)
+                onlineCount++;
             professionals.add(Map.of(
                     "professionalId", entry.getKey(),
                     "lastHeartbeat", entry.getValue().toString(),
-                    "online", online
-            ));
+                    "online", online));
         }
 
         result.put("totalTracked", professionalHeartbeats.size());
@@ -147,8 +157,8 @@ public class FallbackResponseService {
     /**
      * Determines if a fallback response should be triggered.
      *
-     * @param sessionStatus     current session status (WAITING, ACTIVE)
-     * @param professionalId    assigned professional (null if WAITING)
+     * @param sessionStatus  current session status (WAITING, ACTIVE)
+     * @param professionalId assigned professional (null if WAITING)
      * @return true if fallback should be sent
      */
     public boolean shouldTriggerFallback(String sessionStatus, String professionalId) {
@@ -172,8 +182,8 @@ public class FallbackResponseService {
      * Analyzes the actual message for meaningfulness and responds accordingly.
      */
     public FallbackResult generateFallback(String emotionTag, Integer energyScore,
-                                            String messageContent, String sessionStatus,
-                                            boolean isFirstMessage) {
+            String messageContent, String sessionStatus,
+            boolean isFirstMessage) {
         int energy = energyScore != null ? energyScore : 5;
         String emotion = emotionTag != null ? emotionTag : "Neutral";
 
@@ -187,19 +197,23 @@ public class FallbackResponseService {
         if (crisisDetected) {
             // CRISIS OVERRIDE — immediate safety response
             responseType = "crisis_fallback";
-            response.append("Your safety matters most right now. If you are experiencing an immediate crisis or emotional emergency, please reach out directly:\n\n");
+            response.append(
+                    "Your safety matters most right now. If you are experiencing an immediate crisis or emotional emergency, please reach out directly:\n\n");
             response.append("• National Mental Health Crisis Hotline: 1553 (Toll-Free, 24/7)\n");
             response.append("• Crisis Text Line: Text HELLO to 741741\n");
             response.append("• Emergency Services: 911\n\n");
             response.append("A campus counselor has been flagged to prioritize your room as soon as possible.");
         } else if ("WAITING".equals(sessionStatus)) {
             responseType = "waiting_fallback";
-            response.append("Your conversation is queued. A campus counselor will be assigned to your room shortly. Everything you share here is completely anonymous and confidential.");
+            response.append(
+                    "Your conversation is queued. A campus counselor will be assigned to your room shortly. Everything you share here is completely anonymous and confidential.");
         } else {
             // ACTIVE but professional is offline/away
             responseType = "offline_fallback";
-            response.append("Your counselor is currently away. Your message has been safely saved and will be reviewed as soon as they return.\n\n");
-            response.append("If you need immediate support, please contact the National Crisis Hotline (1553) or campus health services.");
+            response.append(
+                    "Your counselor is currently away. Your message has been safely saved and will be reviewed as soon as they return.\n\n");
+            response.append(
+                    "If you need immediate support, please contact the National Crisis Hotline (1553) or campus health services.");
         }
 
         FallbackResult result = new FallbackResult(
@@ -207,8 +221,7 @@ public class FallbackResponseService {
                 responseType,
                 crisisDetected,
                 emotion,
-                energy
-        );
+                energy);
 
         log.info("System notice generated: type={}, crisis={}", responseType, crisisDetected);
         return result;
@@ -239,8 +252,8 @@ public class FallbackResponseService {
         // Check greeting
         List<String> greetings = List.of("hi", "hello", "hey", "good morning", "good afternoon",
                 "good evening", "yo", "sup", "hiya", "howdy", "greetings", "hi there", "hello there");
-        a.isGreeting = greetings.stream().anyMatch(g ->
-                lower.equals(g) || lower.equals(g + "!") || lower.equals(g + ".") || lower.equals(g + "!!"));
+        a.isGreeting = greetings.stream().anyMatch(
+                g -> lower.equals(g) || lower.equals(g + "!") || lower.equals(g + ".") || lower.equals(g + "!!"));
 
         // Check question
         a.isQuestion = trimmed.endsWith("?") || lower.startsWith("how ") || lower.startsWith("what ")
@@ -267,13 +280,15 @@ public class FallbackResponseService {
      */
     private boolean isGibberishText(String text) {
         String lower = text.toLowerCase().replaceAll("[^a-z\\s]", "");
-        if (lower.isBlank()) return false;
+        if (lower.isBlank())
+            return false;
 
         String[] words = lower.split("\\s+");
         int gibberishWords = 0;
 
         for (String word : words) {
-            if (word.length() < 2) continue;
+            if (word.length() < 2)
+                continue;
             // Count vowel ratio
             long vowels = word.chars().filter(c -> "aeiou".indexOf(c) >= 0).count();
             double vowelRatio = (double) vowels / word.length();
@@ -306,8 +321,7 @@ public class FallbackResponseService {
                 "I'm here to help, but I wasn't quite able to understand your message. Could you try rephrasing what you'd like to share? A counselor will be with you soon.",
                 "It seems like your message may not have come through clearly. Could you tell me more about what's on your mind? I want to make sure you get the right support.",
                 "I want to make sure I understand you correctly. Could you share a bit more about how you're feeling or what you need help with? A counselor is on the way.",
-                "I noticed your message might not have conveyed what you intended. Feel free to share your thoughts — whether it's about stress, feelings, or anything at all. We're here for you."
-        );
+                "I noticed your message might not have conveyed what you intended. Feel free to share your thoughts — whether it's about stress, feelings, or anything at all. We're here for you.");
         return responses.get(new Random().nextInt(responses.size()));
     }
 
@@ -315,8 +329,7 @@ public class FallbackResponseService {
         List<String> responses = List.of(
                 "Thanks for reaching out. Could you share a bit more about what's going on? The more context you provide, the better a counselor can support you.",
                 "I'm listening. Feel free to share more details about what you're experiencing — there's no judgment here, and everything stays confidential.",
-                "I'd like to help you better. Could you elaborate a little more on what's on your mind? A counselor will join soon and will want to understand your situation."
-        );
+                "I'd like to help you better. Could you elaborate a little more on what's on your mind? A counselor will join soon and will want to understand your situation.");
         return responses.get(new Random().nextInt(responses.size()));
     }
 
@@ -356,8 +369,7 @@ public class FallbackResponseService {
                 "Thank you for sharing more. Your messages are being saved and a counselor will review everything when they join. You are not alone in this.",
                 "I appreciate you continuing to open up. A professional is being notified and will be with you soon. Everything you've shared will help them understand your situation better.",
                 "Thank you for trusting us with this. Your counselor will see all your messages when they arrive. Keep sharing if it helps — we're here for you.",
-                "Your words matter, and they're being heard. A counselor is on the way and will have the full context of everything you've shared. Please hang in there."
-        );
+                "Your words matter, and they're being heard. A counselor is on the way and will have the full context of everything you've shared. Please hang in there.");
         return responses.get(new Random().nextInt(responses.size()));
     }
 
@@ -380,8 +392,10 @@ public class FallbackResponseService {
             case "Frustrated" -> energy >= 7
                     ? "I hear your frustration, and it's completely valid. Sometimes things pile up and it all feels like too much."
                     : "It sounds like things have been challenging. Thank you for reaching out — let's work through this together.";
-            case "Happy" -> "That's wonderful to hear! I'm glad you're in a good space. A counselor will be happy to chat with you.";
-            case "Relieved" -> "I'm glad you're feeling some relief. A counselor will be with you shortly if you'd like to talk more.";
+            case "Happy" ->
+                "That's wonderful to hear! I'm glad you're in a good space. A counselor will be happy to chat with you.";
+            case "Relieved" ->
+                "I'm glad you're feeling some relief. A counselor will be with you shortly if you'd like to talk more.";
             default -> "Thank you for reaching out. You've taken a brave step, and someone will be with you shortly.";
         };
     }
@@ -394,15 +408,13 @@ public class FallbackResponseService {
                     "I hear you. Your feelings are valid, and a counselor is being notified right now. Please stay with us.",
                     "Thank you for continuing to share. You're being incredibly brave. A professional will join very soon.",
                     "I'm still here with you. A counselor has been alerted and will prioritize connecting with you.",
-                    "Your messages are being received. Someone who can help is on their way. You are not alone in this."
-            );
+                    "Your messages are being received. Someone who can help is on their way. You are not alone in this.");
         } else {
             responses = List.of(
                     "Thank you for sharing. A counselor will be available soon. Everything you share here stays confidential.",
                     "I'm here with you while we wait. A professional will join your conversation shortly.",
                     "Your message has been received. A counselor is on the way — in the meantime, feel free to share as much as you'd like.",
-                    "Thank you for your patience. A professional will be with you soon. This is a safe space for you."
-            );
+                    "Thank you for your patience. A professional will be with you soon. This is a safe space for you.");
         }
 
         return responses.get(new Random().nextInt(responses.size()));
@@ -415,14 +427,12 @@ public class FallbackResponseService {
             responses = List.of(
                     "Your counselor has momentarily stepped away. Your message has been saved, and they will see it as soon as they return. You are not forgotten.",
                     "It looks like your counselor is briefly unavailable, but your message is important and has been recorded. They'll respond as soon as possible.",
-                    "Your counselor will be right back. In the meantime, please know that everything you've shared is safe and will be reviewed. You matter."
-            );
+                    "Your counselor will be right back. In the meantime, please know that everything you've shared is safe and will be reviewed. You matter.");
         } else {
             responses = List.of(
                     "Your counselor is briefly away. Your message has been saved, and they'll respond when they return. Thank you for your patience.",
                     "It seems your counselor has stepped away momentarily. Don't worry — your message is safe and they'll follow up soon.",
-                    "Your counselor will return shortly. Feel free to keep sharing — everything is saved for when they're back."
-            );
+                    "Your counselor will return shortly. Feel free to keep sharing — everything is saved for when they're back.");
         }
 
         return responses.get(new Random().nextInt(responses.size()));
@@ -438,6 +448,6 @@ public class FallbackResponseService {
             String responseType,
             boolean crisisDetected,
             String emotionTag,
-            int energyScore
-    ) {}
+            int energyScore) {
+    }
 }

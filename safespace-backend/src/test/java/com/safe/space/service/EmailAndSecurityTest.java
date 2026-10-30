@@ -24,6 +24,7 @@ class EmailAndSecurityTest {
     @Mock private UserRepository userRepository;
     @Mock private EmailService emailService;
     @Mock private CrisisAlertRepository alertRepository;
+    @Mock private CrisisKeywordService crisisKeywordService;
 
     private PasswordResetService passwordResetService;
 
@@ -132,7 +133,8 @@ class EmailAndSecurityTest {
                 null,
                 null,
                 emailService,
-                userRepository
+                userRepository,
+                crisisKeywordService
         );
 
         CrisisAlert createdAlert = crisisAlertService.alertCrisisChat("chat-123", "Echo", "I feel overwhelmed and hopeless", "Crisis", 9);
@@ -197,14 +199,15 @@ class EmailAndSecurityTest {
                 null,
                 null,
                 emailService,
-                userRepository
+                userRepository,
+                crisisKeywordService
         );
 
-        // Test Energy 10 -> CRITICAL
+        // Test Energy 10 -> HIGH (capped at HIGH per clinical policy reserving CRITICAL for acute crisis keywords)
         CrisisAlert alert10 = crisisAlertService.alertHighEnergyPost("post-10", "StressedStudent", "I can't take this anymore", "Despair", 10);
         assertNotNull(alert10);
         assertEquals("HIGH_ENERGY_POST", alert10.getAlertType());
-        assertEquals("CRITICAL", alert10.getSeverity());
+        assertEquals("HIGH", alert10.getSeverity());
         assertEquals(10, alert10.getEnergyScore());
 
         // Test Energy 9 -> HIGH
@@ -221,12 +224,12 @@ class EmailAndSecurityTest {
         assertEquals("MODERATE", alert8.getSeverity());
         assertEquals(8, alert8.getEnergyScore());
 
-        // Verify email dispatched for energy 10 with CRITICAL severity
+        // Verify email dispatched for energy 10 with HIGH severity
         verify(emailService, times(1)).sendCrisisAlertEmail(
                 eq("dr.clara@gmail.com"),
                 eq("Dr. Clara Reyes"),
                 eq("HIGH_ENERGY_POST"),
-                eq("CRITICAL"),
+                eq("HIGH"),
                 eq("StressedStudent"),
                 anyString(),
                 anyString(),

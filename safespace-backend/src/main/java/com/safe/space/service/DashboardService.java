@@ -6,7 +6,6 @@ import com.safe.space.model.ChatSession;
 import com.safe.space.model.Post;
 import com.safe.space.model.User;
 import com.safe.space.repository.*;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

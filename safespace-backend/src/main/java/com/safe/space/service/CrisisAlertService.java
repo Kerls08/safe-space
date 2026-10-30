@@ -1,6 +1,5 @@
 package com.safe.space.service;
 
-import com.safe.space.dto.ChatSessionRequest;
 import com.safe.space.dto.ChatSessionResponse;
 import com.safe.space.model.ChatSession;
 import com.safe.space.model.CrisisAlert;
@@ -140,9 +139,6 @@ public class CrisisAlertService {
         return saved;
     }
 
-    private String mapEnergySeverity(int energyScore) {
-        return mapEnergySeverity(energyScore, null);
-    }
 
     private String mapEnergySeverity(int energyScore, String content) {
         if (isRepetitiveOrKeyboardMash(content)) {
