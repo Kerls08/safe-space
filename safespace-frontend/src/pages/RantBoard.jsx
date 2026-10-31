@@ -37,7 +37,8 @@ const PROFANITY_WORDS = [
   'bilat', 'burikat', 'oten', 'pukingkay', 'bogo', 'bugo',
   'iyot', 'iyt', 'iyotan', 'iyota', 'nag-iyot', 'nagiyot', 'makig-iyot', 'makigiyot',
   'gi-iyot', 'giyot', 'mangiyot', 'mangi-iyot', 'mag-iyot', 'magiyot', 'ka-iyot', 'kaiyot',
-  'pa-iyot', 'paiyot', 'kolera', 'lubot'
+  'pa-iyot', 'paiyot', 'kolera', 'lubot',
+  'uwag', 'uwagan', 'gi uwagan', 'gi-uwagan', 'giuwagan', 'kauwag', 'kauwagan'
 ];
 
 const CRISIS_KEYWORDS = [

@@ -123,6 +123,25 @@ class CrisisAndSensitiveWordTest {
     }
 
     @Test
+    @DisplayName("SensitiveWordService detects Bisaya vulgar words 'uwag', 'uwagan', 'gi uwagan' and variations")
+    void testBisayaUwagProfanity() {
+        assertTrue(sensitiveWordService.scan("uwag").hasProfanity());
+        assertTrue(sensitiveWordService.scan("uwagan").hasProfanity());
+        assertTrue(sensitiveWordService.scan("uwagan kaayo").hasProfanity());
+        assertTrue(sensitiveWordService.scan("gi uwagan").hasProfanity());
+        assertTrue(sensitiveWordService.scan("gi-uwagan").hasProfanity());
+        assertTrue(sensitiveWordService.scan("giuwagan").hasProfanity());
+        assertTrue(sensitiveWordService.scan("kauwag").hasProfanity());
+        assertTrue(sensitiveWordService.scan("kauwagan").hasProfanity());
+
+        // Ensure sensitiveWordService.containsSensitiveWords returns true
+        assertTrue(sensitiveWordService.containsSensitiveWords("uwag"));
+        assertTrue(sensitiveWordService.containsSensitiveWords("uwagan"));
+        assertTrue(sensitiveWordService.containsSensitiveWords("gi uwagan"));
+        assertTrue(sensitiveWordService.containsSensitiveWords("gi-uwagan"));
+    }
+
+    @Test
     @DisplayName("Word boundary check prevents false positives on clean words like 'anyway'")
     void testBoundaryCheckNoFalsePositive() {
         SensitiveWordService.ScanResult result = sensitiveWordService.scan("Anyway, I had a tough day studying.");
