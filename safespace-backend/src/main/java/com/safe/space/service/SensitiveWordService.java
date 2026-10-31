@@ -41,15 +41,18 @@ public class SensitiveWordService {
             "putangina", "tangina", "tang ina", "pota", "potangina", "tanginamo", "tangina mo",
             "gago", "gaga", "tarantado", "tarantada", "ulol", "bobo", "tanga", "inutil",
             "kupal", "pakyu", "pakshet", "punyeta", "leche", "lintik", "bwisit", "buwisit", "hinayupak", "hudas",
-            "kantot", "kantutan", "pokpok", "bayag", "titi", "puke", "pepe",
+            "kantot", "kantutan", "kinantot", "pokpok", "bayag", "titi", "puke", "pepe", "pekpek", "chupa", "tsupa", "hindot",
 
             // Bisaya / Cebuano
             "esmeringhoy", "esmiringhoy", "esmiringkokiks", "esmeringkokes",
-            "yawa", "ywa", "yw", "yua", "yawo", "yawaa", "kayawa", "giyawa", "pisting yawa",
+            "yawa", "ywa", "yw", "yua", "yawo", "yawaa", "kayawa", "giyawa", "pisting yawa", "pesteng yawa",
             "boang", "buang", "bwang", "bwng", "boang-boang", "buang-buang",
             "pisti", "piste", "peste", "pisteha", "pisting",
             "giatay", "atay", "kayatay",
-            "bilat", "burikat", "oten", "pukingkay", "bogo", "bugo"
+            "bilat", "burikat", "oten", "pukingkay", "bogo", "bugo",
+            "iyot", "iyt", "iyotan", "iyota", "nag-iyot", "nagiyot", "makig-iyot", "makigiyot",
+            "gi-iyot", "giyot", "mangiyot", "mangi-iyot", "mag-iyot", "magiyot", "ka-iyot", "kaiyot",
+            "pa-iyot", "paiyot", "kolera", "lubot"
     );
 
     /**

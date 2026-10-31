@@ -28,6 +28,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     Page<Post> findByFlaggedFalseAndArchivedFalseOrderByCreatedAtDesc(Pageable pageable);
 
+    /** Unpaginated list for strict peer-safety scanning & memory slicing. */
+    List<Post> findByFlaggedFalseAndArchivedFalseOrderByCreatedAtDesc();
+
     /** Paginated flagged posts for professional review. */
     Page<Post> findByFlaggedTrueOrderByCreatedAtDesc(Pageable pageable);
 

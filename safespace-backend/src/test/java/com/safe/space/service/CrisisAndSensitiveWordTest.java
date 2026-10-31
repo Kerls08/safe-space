@@ -20,15 +20,18 @@ class CrisisAndSensitiveWordTest {
     }
 
     @Test
-    @DisplayName("Detects Bisaya suicidal phrases with 'naku' and 'nako' variations")
+    @DisplayName("Detects Bisaya suicidal phrases with 'naku', 'nako', 'nko', 'nku' variations")
     void testBisayaCrisisVariations() {
         // The user's exact case from the photo
         assertTrue(crisisKeywordService.isCrisis("gusto naku mamatay"));
         assertTrue(crisisKeywordService.isCrisis("gusto nako mamatay"));
+        assertTrue(crisisKeywordService.isCrisis("gusto nko mamatay"));
+        assertTrue(crisisKeywordService.isCrisis("gusto nku mamatay"));
         assertTrue(crisisKeywordService.isCrisis("gusto ku mamatay"));
         assertTrue(crisisKeywordService.isCrisis("gusto ko mamatay"));
         assertTrue(crisisKeywordService.isCrisis("mamatay nlng ko"));
         assertTrue(crisisKeywordService.isCrisis("mamatay naku"));
+        assertTrue(crisisKeywordService.isCrisis("mamatay nako"));
         assertTrue(crisisKeywordService.isCrisis("mamatay"));
 
         List<CrisisKeywordService.KeywordMatch> matches = crisisKeywordService.scan("gusto naku mamatay");
@@ -41,6 +44,7 @@ class CrisisAndSensitiveWordTest {
     void testBisayaHikogAndLethal() {
         assertTrue(crisisKeywordService.isCrisis("maghikog naku"));
         assertTrue(crisisKeywordService.isCrisis("maghikog ko"));
+        assertTrue(crisisKeywordService.isCrisis("maghikog nko"));
         assertTrue(crisisKeywordService.isCrisis("hikog"));
         assertTrue(crisisKeywordService.isCrisis("patyon naku akong kaugalingon"));
         assertTrue(crisisKeywordService.isCrisis("muambak ko sa tulay"));
@@ -100,6 +104,25 @@ class CrisisAndSensitiveWordTest {
     }
 
     @Test
+    @DisplayName("SensitiveWordService detects Bisaya vulgar words 'iyot' and 'iyt' and variations")
+    void testBisayaIyotProfanity() {
+        assertTrue(sensitiveWordService.scan("iyot").hasProfanity());
+        assertTrue(sensitiveWordService.scan("iyot ka").hasProfanity());
+        assertTrue(sensitiveWordService.scan("iyt").hasProfanity());
+        assertTrue(sensitiveWordService.scan("nag-iyot").hasProfanity());
+        assertTrue(sensitiveWordService.scan("nagiyot sila").hasProfanity());
+        assertTrue(sensitiveWordService.scan("iyotan").hasProfanity());
+        assertTrue(sensitiveWordService.scan("makig-iyot").hasProfanity());
+        assertTrue(sensitiveWordService.scan("gi-iyot").hasProfanity());
+        assertTrue(sensitiveWordService.scan("giyot").hasProfanity());
+
+        // Ensure sensitiveWordService.containsSensitiveWords returns true
+        assertTrue(sensitiveWordService.containsSensitiveWords("iyot"));
+        assertTrue(sensitiveWordService.containsSensitiveWords("iyt"));
+        assertTrue(sensitiveWordService.containsSensitiveWords("nag-iyot"));
+    }
+
+    @Test
     @DisplayName("Word boundary check prevents false positives on clean words like 'anyway'")
     void testBoundaryCheckNoFalsePositive() {
         SensitiveWordService.ScanResult result = sensitiveWordService.scan("Anyway, I had a tough day studying.");
@@ -117,4 +140,3 @@ class CrisisAndSensitiveWordTest {
         assertFalse(result.hasProfanity());
     }
 }
-

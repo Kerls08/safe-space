@@ -25,15 +25,24 @@ public class DefaultAdminSeeder implements ApplicationRunner {
     private final UserRepository userRepository;
     private final com.safe.space.service.CredentialService credentialService;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+    private final com.safe.space.repository.PostRepository postRepository;
+    private final com.safe.space.service.SensitiveWordService sensitiveWordService;
+    private final com.safe.space.service.CrisisAlertService crisisAlertService;
     private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder(12);
     private static final String DEFAULT_PASSWORD = "SafeSpace2026!";
 
     public DefaultAdminSeeder(UserRepository userRepository,
                               com.safe.space.service.CredentialService credentialService,
-                              org.springframework.jdbc.core.JdbcTemplate jdbcTemplate) {
+                              org.springframework.jdbc.core.JdbcTemplate jdbcTemplate,
+                              com.safe.space.repository.PostRepository postRepository,
+                              com.safe.space.service.SensitiveWordService sensitiveWordService,
+                              com.safe.space.service.CrisisAlertService crisisAlertService) {
         this.userRepository = userRepository;
         this.credentialService = credentialService;
         this.jdbcTemplate = jdbcTemplate;
+        this.postRepository = postRepository;
+        this.sensitiveWordService = sensitiveWordService;
+        this.crisisAlertService = crisisAlertService;
     }
 
     @Override
@@ -96,6 +105,45 @@ public class DefaultAdminSeeder implements ApplicationRunner {
                 "College of Information Technology", "2nd Year", "STUDENT", encodedPassword);
 
         log.info("── Seeded 4 test accounts (1 Maintenance, 1 Super Admin Psychometrician, 1 Psychologist, 1 Student) ──");
+
+        // Sanitize historical database posts: ensure any post with crisis or sensitive words is flagged
+        sanitizeHistoricalPosts();
+    }
+
+    private void sanitizeHistoricalPosts() {
+        try {
+            var posts = postRepository.findAll();
+            int count = 0;
+            for (var p : posts) {
+                if (p.getContent() == null || p.getContent().isBlank()) continue;
+                var scan = sensitiveWordService.scan(p.getContent());
+                if (scan.blocked()) {
+                    boolean wasFlagged = p.isFlagged();
+                    p.setFlagged(true);
+                    p.setFlaggedKeywords(scan.detectedWords());
+                    if (scan.hasCrisis()) {
+                        p.setSeverity(scan.severity());
+                        try {
+                            crisisAlertService.alertCrisisPost(
+                                    p.getPostId(), p.getPseudonym(), p.getContent(),
+                                    p.getEmotionTag(), p.getEnergyScore(),
+                                    scan.severity(), scan.detectedWords());
+                        } catch (Exception ex) {
+                            log.debug("Crisis alert already exists or failed for post {}: {}", p.getPostId(), ex.getMessage());
+                        }
+                    }
+                    postRepository.save(p);
+                    if (!wasFlagged) {
+                        count++;
+                    }
+                }
+            }
+            if (count > 0) {
+                log.info("Sanitized {} historical posts containing crisis/sensitive words (set flagged=true).", count);
+            }
+        } catch (Exception e) {
+            log.warn("Historical post sanitization encountered error: {}", e.getMessage());
+        }
     }
 
     private void seedUser(String institutionalId, String username, String fullName, String email,

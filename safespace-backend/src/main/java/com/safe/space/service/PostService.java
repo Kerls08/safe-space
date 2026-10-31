@@ -269,51 +269,90 @@ public class PostService {
     // ── 2. Feed Retrieval ──
 
     /**
-     * Paginated feed, newest first (Peer Mirror).
-     * Flagged keywords and severity are hidden from student view.
+     * Determines whether a post is strictly safe to be displayed on the public Peer Mirror feed.
+     * Posts containing crisis keywords, profanity, or sensitive words are NEVER allowed on the Peer Mirror.
      */
-    @Transactional(readOnly = true)
-    public Map<String, Object> getPostsPaginated(int page, int size, String emotion) {
-        Page<Post> postPage;
-        if (emotion != null && !emotion.isBlank() && !"ALL".equalsIgnoreCase(emotion)) {
-            // Filter by emotion — exclude flagged and archived posts to prevent triggering peers
-            List<Post> filtered = postRepository.findByFlaggedFalseAndArchivedFalseAndEmotionTagOrderByCreatedAtDesc(emotion);
-            int start = Math.min(page * size, filtered.size());
-            int end = Math.min(start + size, filtered.size());
-            List<PostResponse> content = filtered.subList(start, end).stream()
-                    .map(this::toStudentResponse)
-                    .collect(Collectors.toList());
-            return Map.of(
-                    "content", content,
-                    "page", page,
-                    "size", size,
-                    "totalElements", filtered.size(),
-                    "totalPages", (int) Math.ceil((double) filtered.size() / size)
-            );
+    public boolean isSafeForPeerFeed(Post post) {
+        if (post == null || post.isFlagged() || post.isArchived()) {
+            return false;
+        }
+        String text = post.getContent();
+        if (text == null || text.isBlank()) {
+            return true;
         }
 
-        // Exclude flagged and archived posts to prevent triggering peers
-        postPage = postRepository.findByFlaggedFalseAndArchivedFalseOrderByCreatedAtDesc(PageRequest.of(page, size));
-        List<PostResponse> content = postPage.getContent().stream()
+        SensitiveWordService.ScanResult scan = sensitiveWordService.scan(text);
+        if (scan.blocked()) {
+            // Self-healing database mechanism: flag historical or unflagged post immediately
+            try {
+                post.setFlagged(true);
+                post.setFlaggedKeywords(scan.detectedWords());
+                if (scan.hasCrisis()) {
+                    post.setSeverity(scan.severity());
+                    // Ensure crisis alert exists for counselor intervention
+                    crisisAlertService.alertCrisisPost(
+                            post.getPostId(), post.getPseudonym(), text,
+                            post.getEmotionTag(), post.getEnergyScore(),
+                            scan.severity(), scan.detectedWords());
+                }
+                postRepository.save(post);
+                log.info("Auto-healed post {} with flagged=true due to detected sensitive words: {}",
+                        post.getPostId(), scan.detectedWords());
+            } catch (Exception e) {
+                log.warn("Failed to auto-heal flagged post {}: {}", post.getPostId(), e.getMessage());
+            }
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Paginated feed, newest first (Peer Mirror).
+     * Strictly filters out ANY crisis keywords, profanities, and sensitive words to protect peers.
+     */
+    @Transactional
+    public Map<String, Object> getPostsPaginated(int page, int size, String emotion) {
+        List<Post> candidates;
+        if (emotion != null && !emotion.isBlank() && !"ALL".equalsIgnoreCase(emotion)) {
+            candidates = postRepository.findByFlaggedFalseAndArchivedFalseAndEmotionTagOrderByCreatedAtDesc(emotion);
+        } else {
+            candidates = postRepository.findByFlaggedFalseAndArchivedFalseOrderByCreatedAtDesc();
+        }
+
+        // Apply strict safety filter — strictly zero crisis, profanity, or sensitive words on Peer Mirror
+        List<Post> safePosts = candidates.stream()
+                .filter(this::isSafeForPeerFeed)
+                .collect(Collectors.toList());
+
+        int safeSize = safePosts.size();
+        int safePage = Math.max(0, page);
+        int pageSize = Math.max(1, size);
+        int start = Math.min(safePage * pageSize, safeSize);
+        int end = Math.min(start + pageSize, safeSize);
+
+        List<PostResponse> content = safePosts.subList(start, end).stream()
                 .map(this::toStudentResponse)
                 .collect(Collectors.toList());
 
+        int totalPages = (int) Math.ceil((double) safeSize / pageSize);
+
         return Map.of(
                 "content", content,
-                "page", postPage.getNumber(),
-                "size", postPage.getSize(),
-                "totalElements", postPage.getTotalElements(),
-                "totalPages", postPage.getTotalPages()
+                "page", safePage,
+                "size", pageSize,
+                "totalElements", safeSize,
+                "totalPages", totalPages
         );
     }
 
     /**
-     * All posts (legacy non-paginated).
+     * All posts (legacy non-paginated) - strictly safe for peer view.
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<PostResponse> getAllPosts() {
         return postRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(this::toResponse)
+                .filter(this::isSafeForPeerFeed)
+                .map(this::toStudentResponse)
                 .collect(Collectors.toList());
     }
 

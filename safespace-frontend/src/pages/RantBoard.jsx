@@ -26,16 +26,92 @@ const PROFANITY_WORDS = [
   'putangina', 'tangina', 'tang ina', 'pota', 'potangina', 'tanginamo', 'tangina mo',
   'gago', 'gaga', 'tarantado', 'tarantada', 'ulol', 'bobo', 'tanga', 'inutil',
   'kupal', 'pakyu', 'pakshet', 'punyeta', 'leche', 'lintik', 'bwisit', 'buwisit', 'hinayupak', 'hudas',
-  'kantot', 'kantutan', 'pokpok', 'bayag', 'titi', 'puke', 'pepe',
+  'kantot', 'kantutan', 'kinantot', 'pokpok', 'bayag', 'titi', 'puke', 'pepe', 'pekpek', 'chupa', 'tsupa', 'hindot',
 
   // Bisaya / Cebuano
   'esmeringhoy', 'esmiringhoy', 'esmiringkokiks', 'esmeringkokes',
-  'yawa', 'ywa', 'yw', 'yua', 'yawo', 'yawaa', 'kayawa', 'giyawa', 'pisting yawa',
+  'yawa', 'ywa', 'yw', 'yua', 'yawo', 'yawaa', 'kayawa', 'giyawa', 'pisting yawa', 'pesteng yawa',
   'boang', 'buang', 'bwang', 'bwng', 'boang-boang', 'buang-buang',
   'pisti', 'piste', 'peste', 'pisteha', 'pisting',
   'giatay', 'atay', 'kayatay',
-  'bilat', 'burikat', 'oten', 'pukingkay', 'bogo', 'bugo'
+  'bilat', 'burikat', 'oten', 'pukingkay', 'bogo', 'bugo',
+  'iyot', 'iyt', 'iyotan', 'iyota', 'nag-iyot', 'nagiyot', 'makig-iyot', 'makigiyot',
+  'gi-iyot', 'giyot', 'mangiyot', 'mangi-iyot', 'mag-iyot', 'magiyot', 'ka-iyot', 'kaiyot',
+  'pa-iyot', 'paiyot', 'kolera', 'lubot'
 ];
+
+const CRISIS_KEYWORDS = [
+  // English
+  'suicide', 'suicidal', 'want to die', 'i want to die', 'kill myself', 'end my life', 'end it all',
+  'can t go on', 'cant go on', 'don t want to live', 'dont want to live', 'tired of living', 'tired of life',
+  'wish i was dead', 'wish i were dead', 'better off dead', 'hang myself', 'slit my wrists', 'overdose',
+  // Tagalog
+  'mamatay', 'magpakamatay', 'magpapakamatay', 'magpapatiwakal', 'magpatiwakal',
+  'gusto kong mamatay', 'gusto ko mamatay', 'gusto ko na mamatay', 'gusto ko nang mamatay',
+  'sana mamatay na ako', 'mamatay na lang ako', 'sana mawala na lang ako',
+  'ayaw ko na mabuhay', 'ayoko na mabuhay', 'ayaw ko nang mabuhay', 'ayoko nang mabuhay',
+  'patayin ko ang sarili ko', 'patayin ang sarili', 'magbigti', 'maglaslas',
+  // Bisaya
+  'gusto nako mamatay', 'gusto naku mamatay', 'gusto nko mamatay', 'gusto nku mamatay',
+  'gusto na ko mamatay', 'gusto na ku mamatay', 'gusto na mamatay',
+  'mamatay na ko', 'mamatay na ku', 'mamatay nako', 'mamatay naku', 'mamatay nko', 'mamatay nku',
+  'mamatay na lang ko', 'mamatay na lang ku', 'mamatay nlng ko', 'mamatay nlng ku',
+  'sana mamatay na ko', 'sana mamatay na ku', 'sana mamatay ko', 'sana mamatay ku',
+  'hikog', 'maghikog', 'maghikog ko', 'maghikog ku', 'maghikog nako', 'maghikog naku', 'maghikog nko', 'maghikog nku',
+  'maghikog na lang ko', 'maghikog nlng ko', 'ihikog', 'naghikog',
+  'magpakamatay', 'magpakamatay ko', 'magpakamatay ku', 'magpakamatay na ko', 'magpakamatay nako', 'magpakamatay naku',
+  'patyon nako ang akong kaugalingon', 'patyon naku ang akong kaugalingon',
+  'patyon nako akong kaugalingon', 'patyon naku akong kaugalingon', 'patyon naku akung kaugalingon',
+  'patyon nko akong kaugalingon', 'patyon nku akung kaugalingon',
+  'patyon ko akong kaugalingon', 'patyon ko akung kaugalingon',
+  'di na ko gusto mabuhi', 'dili na ko gusto mabuhi', 'di na ku ganahan mabuhi', 'dili na ku ganahan mabuhi',
+  'di nako ganahan mabuhi', 'di naku ganahan mabuhi',
+  'di na naku kaya', 'di na nako makaya', 'di nako kaya', 'di naku kaya', 'di na nku kaya',
+  'gikapoy na ko mabuhi', 'kapoy na mabuhi', 'kapoy na kaayo mabuhi', 'gikapoy nako sa kinabuhi', 'gikapoy naku sa kinabuhi',
+  'wa na koy rason mabuhi', 'wala na koy rason mabuhi', 'wala na koy pulos', 'wa na koy pulos',
+  'wa nay gamit akong kinabuhi', 'gusto nako mawala', 'gusto naku mawala'
+];
+
+const SAFE_IDIOMS = [
+  'mamatay sa katawa', 'mamatay kog katawa', 'mamatay ku ug katawa',
+  'mamatay ko sa katawa', 'mamatay ku sa katawa', 'mamatay sa tawa',
+  'mamatay sa kilig', 'mamatay ko sa kilig'
+];
+
+function isSafeForPeerFeed(post) {
+  if (!post || post.flagged || post.archived) return false;
+  const text = post.content || '';
+  if (!text.trim()) return true;
+
+  const normalized = text.toLowerCase().replace(/[^a-z0-9\s']/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // 1. Check profanity & sensitive words
+  for (const w of PROFANITY_WORDS) {
+    const normW = w.toLowerCase().replace(/[^a-z0-9\s']/g, ' ').replace(/\s+/g, ' ').trim();
+    if (normW && new RegExp(`\\b${normW}\\b`, 'i').test(normalized)) {
+      return false;
+    }
+  }
+
+  // 2. Check crisis keywords
+  for (const phrase of CRISIS_KEYWORDS) {
+    const normPhrase = phrase.toLowerCase().replace(/[^a-z0-9\s']/g, ' ').replace(/\s+/g, ' ').trim();
+    if (normPhrase && new RegExp(`\\b${normPhrase}\\b`, 'i').test(normalized)) {
+      let isSafe = false;
+      for (const idiom of SAFE_IDIOMS) {
+        if (normalized.includes(idiom)) {
+          isSafe = true;
+          break;
+        }
+      }
+      if (!isSafe) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
 
 const BOX_BREATHING_DATA = [
   { name: 'Inhale', sub: 'Breathe in slowly through your nose...', duration: 4, phaseClass: 'inhale', sphereText: 'Inhale' },
@@ -273,10 +349,11 @@ export default function RantBoard() {
         emotion: feedEmotion
       });
       const contentList = Array.isArray(data) ? data : data.content || [];
+      const safeContentList = contentList.filter(isSafeForPeerFeed);
       const totalPages = data.totalPages !== undefined ? data.totalPages : 1;
-      const totalElems = data.totalElements !== undefined ? data.totalElements : contentList.length;
+      const totalElems = data.totalElements !== undefined ? data.totalElements : safeContentList.length;
 
-      setPosts((prev) => append ? [...prev, ...contentList] : contentList);
+      setPosts((prev) => append ? [...prev, ...safeContentList] : safeContentList);
       setFeedPage(pageToLoad);
       setFeedTotalPages(totalPages);
       setFeedTotalElements(totalElems);
@@ -925,18 +1002,18 @@ export default function RantBoard() {
 
             {/* Feed Cards Container */}
             <div id="feedContainer">
-              {feedLoading && posts.length === 0 ? (
+              {feedLoading && posts.filter(isSafeForPeerFeed).length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#51646E' }}>
                   <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.8rem', marginBottom: '0.75rem' }}></i>
                   <p>Loading rants from the SafeSpace community...</p>
                 </div>
-              ) : posts.length === 0 ? (
+              ) : posts.filter(isSafeForPeerFeed).length === 0 ? (
                 <div className="feed-empty">
                   <i className="fas fa-leaf"></i>
                   <p>No posts yet. Be the first to share!</p>
                 </div>
               ) : (
-                posts.map((post) => {
+                posts.filter(isSafeForPeerFeed).map((post) => {
                   const initials = (post.pseudonym || 'AN').substring(0, 2).toUpperCase();
                   const timeAgo = getTimeAgo(post.createdAt);
                   const energyScoreVal = post.energyScore || 5;
