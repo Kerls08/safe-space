@@ -17,9 +17,24 @@ const EMOTIONS = [
 ];
 
 const PROFANITY_WORDS = [
-  'fuck', 'shit', 'bitch', 'asshole', 'cunt',
-  'putangina', 'gago', 'tarantado', 'bobo', 'puta',
-  'pisti', 'giatay', 'buang'
+  // English
+  'fuck', 'fucking', 'fucker', 'motherfucker',
+  'shit', 'bullshit', 'bitch', 'asshole', 'cunt', 'bastard', 'dumbass', 'jackass',
+  'faggot', 'retard', 'nigger', 'slut', 'whore',
+
+  // Tagalog
+  'putangina', 'tangina', 'tang ina', 'pota', 'potangina', 'tanginamo', 'tangina mo',
+  'gago', 'gaga', 'tarantado', 'tarantada', 'ulol', 'bobo', 'tanga', 'inutil',
+  'kupal', 'pakyu', 'pakshet', 'punyeta', 'leche', 'lintik', 'bwisit', 'buwisit', 'hinayupak', 'hudas',
+  'kantot', 'kantutan', 'pokpok', 'bayag', 'titi', 'puke', 'pepe',
+
+  // Bisaya / Cebuano
+  'esmeringhoy', 'esmiringhoy', 'esmiringkokiks', 'esmeringkokes',
+  'yawa', 'ywa', 'yw', 'yua', 'yawo', 'yawaa', 'kayawa', 'giyawa', 'pisting yawa',
+  'boang', 'buang', 'bwang', 'bwng', 'boang-boang', 'buang-buang',
+  'pisti', 'piste', 'peste', 'pisteha', 'pisting',
+  'giatay', 'atay', 'kayatay',
+  'bilat', 'burikat', 'oten', 'pukingkay', 'bogo', 'bugo'
 ];
 
 const BOX_BREATHING_DATA = [
@@ -239,7 +254,8 @@ export default function RantBoard() {
     const normalized = val.toLowerCase().replace(/[^a-z0-9\s']/g, ' ').replace(/\s+/g, ' ').trim();
     let blocked = false;
     for (const w of PROFANITY_WORDS) {
-      if (new RegExp(`\\b${w}\\b`).test(normalized)) {
+      const normW = w.toLowerCase().replace(/[^a-z0-9\s']/g, ' ').replace(/\s+/g, ' ').trim();
+      if (normW && new RegExp(`\\b${normW}\\b`, 'i').test(normalized)) {
         blocked = true;
         break;
       }

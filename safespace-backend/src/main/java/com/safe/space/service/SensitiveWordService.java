@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Unified Sensitive Word Filter.
@@ -31,9 +32,25 @@ public class SensitiveWordService {
 
     // ── Profanity & hate-speech words (English, Tagalog, Bisaya) ──
     private static final List<String> PROFANITY_WORDS = List.of(
-            "fuck", "shit", "bitch", "asshole", "cunt",
-            "putangina", "gago", "tarantado", "bobo", "puta",
-            "pisti", "giatay", "buang");
+            // English
+            "fuck", "fucking", "fucker", "motherfucker",
+            "shit", "bullshit", "bitch", "asshole", "cunt", "bastard", "dumbass", "jackass",
+            "faggot", "retard", "nigger", "slut", "whore",
+
+            // Tagalog
+            "putangina", "tangina", "tang ina", "pota", "potangina", "tanginamo", "tangina mo",
+            "gago", "gaga", "tarantado", "tarantada", "ulol", "bobo", "tanga", "inutil",
+            "kupal", "pakyu", "pakshet", "punyeta", "leche", "lintik", "bwisit", "buwisit", "hinayupak", "hudas",
+            "kantot", "kantutan", "pokpok", "bayag", "titi", "puke", "pepe",
+
+            // Bisaya / Cebuano
+            "esmeringhoy", "esmiringhoy", "esmiringkokiks", "esmeringkokes",
+            "yawa", "ywa", "yw", "yua", "yawo", "yawaa", "kayawa", "giyawa", "pisting yawa",
+            "boang", "buang", "bwang", "bwng", "boang-boang", "buang-buang",
+            "pisti", "piste", "peste", "pisteha", "pisting",
+            "giatay", "atay", "kayatay",
+            "bilat", "burikat", "oten", "pukingkay", "bogo", "bugo"
+    );
 
     /**
      * Result of a sensitive word scan.
@@ -82,7 +99,11 @@ public class SensitiveWordService {
                 .trim();
 
         for (String word : PROFANITY_WORDS) {
-            if (normalized.matches(".*\\b" + word + "\\b.*")) {
+            String normWord = word.toLowerCase()
+                    .replaceAll("[^a-z0-9\\s]", " ")
+                    .replaceAll("\\s+", " ")
+                    .trim();
+            if (!normWord.isEmpty() && normalized.matches(".*\\b" + Pattern.quote(normWord) + "\\b.*")) {
                 hasProfanity = true;
                 detectedList.add("[profanity] " + word);
             }
