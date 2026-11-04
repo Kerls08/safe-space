@@ -1,44 +1,36 @@
 package com.safe.space.config;
 
-import com.safe.space.model.User;
-import com.safe.space.repository.UserRepository;
+import com.safe.space.repository.PostRepository;
+import com.safe.space.service.CrisisAlertService;
+import com.safe.space.service.SensitiveWordService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * Seeds exactly one default test account per role on startup:
- *   1. MAINTENANCE  - IT Infrastructure & System Maintenance (username: maintenance)
- *   2. SUPER_ADMIN  - Lead Psychometrician / Clinic Head (username: psychometrician)
- *   3. PROFESSIONAL - Staff Psychologist (username: psychologist)
- *   4. STUDENT      - University Student (username: student)
+ * Startup runner responsible for database schema verification and
+ * historical post data sanitization.
  *
- * All seeded test accounts share the unified password:
- *   Password: SafeSpace2026!
+ * Security Note:
+ * In accordance with OWASP security best practices, user accounts and credentials
+ * are strictly managed in the database (PostgreSQL / Neon) and are NEVER hardcoded
+ * or seeded directly inside application source code.
  */
 @Component
 @Slf4j
 public class DefaultAdminSeeder implements ApplicationRunner {
 
-    private final UserRepository userRepository;
-    private final com.safe.space.service.CredentialService credentialService;
-    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
-    private final com.safe.space.repository.PostRepository postRepository;
-    private final com.safe.space.service.SensitiveWordService sensitiveWordService;
-    private final com.safe.space.service.CrisisAlertService crisisAlertService;
-    private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder(12);
-    private static final String DEFAULT_PASSWORD = "SafeSpace2026!";
+    private final JdbcTemplate jdbcTemplate;
+    private final PostRepository postRepository;
+    private final SensitiveWordService sensitiveWordService;
+    private final CrisisAlertService crisisAlertService;
 
-    public DefaultAdminSeeder(UserRepository userRepository,
-                              com.safe.space.service.CredentialService credentialService,
-                              org.springframework.jdbc.core.JdbcTemplate jdbcTemplate,
-                              com.safe.space.repository.PostRepository postRepository,
-                              com.safe.space.service.SensitiveWordService sensitiveWordService,
-                              com.safe.space.service.CrisisAlertService crisisAlertService) {
-        this.userRepository = userRepository;
-        this.credentialService = credentialService;
+    public DefaultAdminSeeder(JdbcTemplate jdbcTemplate,
+                              PostRepository postRepository,
+                              SensitiveWordService sensitiveWordService,
+                              CrisisAlertService crisisAlertService) {
         this.jdbcTemplate = jdbcTemplate;
         this.postRepository = postRepository;
         this.sensitiveWordService = sensitiveWordService;
@@ -47,7 +39,7 @@ public class DefaultAdminSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        log.info("── Initializing Safe Space Test Database Seeder ──");
+        log.info("── Initializing Safe Space Database Startup Verification ──");
 
         try {
             jdbcTemplate.execute("ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS deleted_by_student BOOLEAN DEFAULT FALSE NOT NULL");
@@ -68,46 +60,10 @@ public class DefaultAdminSeeder implements ApplicationRunner {
             log.warn("Database column check on schema tables: {}", e.getMessage());
         }
 
-        String encodedPassword = ENCODER.encode(DEFAULT_PASSWORD);
-
-        // Check for optional real email override from environment
-        String alertEmailOverride = System.getenv("PROFESSIONAL_ALERT_EMAIL");
-        if (alertEmailOverride == null || alertEmailOverride.isBlank()) {
-            alertEmailOverride = System.getProperty("PROFESSIONAL_ALERT_EMAIL");
-        }
-        String psychometricianEmail = (alertEmailOverride != null && !alertEmailOverride.isBlank()) ? alertEmailOverride.trim() : "psychometrician@safespace.edu";
-        String psychologistEmail = (alertEmailOverride != null && !alertEmailOverride.isBlank()) ? alertEmailOverride.trim() : "psychologist@safespace.edu";
-
-        // Purge legacy "admin" / "ADMIN-001" account if present in the database
-        userRepository.findByUsername("admin").ifPresent(legacy -> {
-            log.info("Purging legacy admin account: username={}, id={}", legacy.getUsername(), legacy.getInstitutionalId());
-            userRepository.delete(legacy);
-        });
-        userRepository.findByInstitutionalId("ADMIN-001").ifPresent(legacy -> {
-            log.info("Purging legacy admin account by institutionalId: {}", legacy.getInstitutionalId());
-            userRepository.delete(legacy);
-        });
-
-        // 1. Maintenance (IT / Developer - Infrastructure & Telemetry)
-        seedUser("IT-DEV-001", "maintenance", "System Maintenance Engineer", "maintenance@safespace.edu",
-                "IT & Platform Services", null, "MAINTENANCE", encodedPassword);
-
-        // 2. Super Admin (Lead Psychometrician - Clinic & Counseling Head)
-        seedUser("RPM-001", "psychometrician", "Lead Psychometrician, RPM", psychometricianEmail,
-                "Guidance & Counseling Center (Clinic Head)", null, "SUPER_ADMIN", encodedPassword);
-
-        // 3. Professional (Staff Psychologist)
-        seedUser("RPSY-001", "psychologist", "Dr. Clara Reyes, RPsy", psychologistEmail,
-                "Guidance & Counseling Center (Staff Psychologist)", null, "PROFESSIONAL", encodedPassword);
-
-        // 4. Student (University Student)
-        seedUser("2024-STU-001", "student", "Juan Dela Cruz", "student@safespace.edu",
-                "College of Information Technology", "2nd Year", "STUDENT", encodedPassword);
-
-        log.info("── Seeded 4 test accounts (1 Maintenance, 1 Super Admin Psychometrician, 1 Psychologist, 1 Student) ──");
-
         // Sanitize historical database posts: ensure any post with crisis or sensitive words is flagged
         sanitizeHistoricalPosts();
+
+        log.info("Safe Space startup tasks completed. All user accounts are securely managed via the database.");
     }
 
     private void sanitizeHistoricalPosts() {
@@ -144,62 +100,5 @@ public class DefaultAdminSeeder implements ApplicationRunner {
         } catch (Exception e) {
             log.warn("Historical post sanitization encountered error: {}", e.getMessage());
         }
-    }
-
-    private void seedUser(String institutionalId, String username, String fullName, String email,
-                          String department, String yearLevel, String role, String encodedPassword) {
-        String seedToken = "session-seed-" + username;
-
-        userRepository.findByUsername(username)
-            .or(() -> userRepository.findByInstitutionalId(institutionalId))
-            .ifPresentOrElse(
-            existing -> {
-                existing.setInstitutionalId(institutionalId);
-                existing.setUsername(username);
-                existing.setFullName(fullName);
-                // Update email if provided
-                if (email != null && !email.isBlank()) {
-                    existing.setEmail(email.trim());
-                }
-                existing.setDepartment(department);
-                existing.setYearLevel(yearLevel);
-                existing.setRole(role);
-                existing.setActive(true);
-                existing.setPasswordChanged(true);
-                existing.setForcePasswordChange(false);
-
-                // Preserve existing session token if already active, or establish deterministic seed token
-                String effectiveToken = existing.getSessionToken();
-                if (effectiveToken == null || effectiveToken.isBlank()) {
-                    effectiveToken = seedToken;
-                    existing.setSessionToken(effectiveToken);
-                }
-                userRepository.save(existing);
-
-                // Register both the active token and the seed token for testing resilience
-                credentialService.registerActiveToken(effectiveToken, username);
-                credentialService.registerActiveToken(seedToken, username);
-            },
-            () -> {
-                User user = User.builder()
-                        .institutionalId(institutionalId)
-                        .username(username)
-                        .passwordHash(encodedPassword)
-                        .fullName(fullName)
-                        .email(email != null ? email.trim() : null)
-                        .department(department)
-                        .yearLevel(yearLevel)
-                        .role(role)
-                        .sessionToken(seedToken)
-                        .active(true)
-                        .passwordChanged(true)
-                        .forcePasswordChange(false)
-                        .build();
-                userRepository.save(user);
-
-                // Register token in memory
-                credentialService.registerActiveToken(seedToken, username);
-            }
-        );
     }
 }

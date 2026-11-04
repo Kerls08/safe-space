@@ -175,7 +175,6 @@ public class CredentialService {
         user.setSessionToken(token);
         userRepository.saveAndFlush(user);
         activeTokens.put(token, user.getUsername());
-        activeTokens.put("session-seed-" + user.getUsername(), user.getUsername());
 
         log.info("Login successful: username={}, role={}, forceChange={}",
                 user.getUsername(), user.getRole(), user.isForcePasswordChange());
@@ -940,11 +939,9 @@ public class CredentialService {
             List<User> users = userRepository.findAll();
             for (User u : users) {
                 if (u.isActive()) {
-                    if (u.getSessionToken() != null && !u.getSessionToken().isBlank()) {
+                    if (u.getSessionToken() != null && !u.getSessionToken().isBlank() && !u.getSessionToken().startsWith("session-seed-")) {
                         activeTokens.put(u.getSessionToken(), u.getUsername());
                     }
-                    // Pre-warm deterministic seed token for seamless developer / test access
-                    activeTokens.put("session-seed-" + u.getUsername(), u.getUsername());
                 }
             }
             log.info("Session store initialized: {} active user tokens pre-warmed into memory.", activeTokens.size());
@@ -965,16 +962,6 @@ public class CredentialService {
             if (user.isActive()) {
                 activeTokens.put(token, user.getUsername());
                 return user.getUsername();
-            }
-        }
-
-        // Recognized deterministic seed token fallback for test accounts
-        if (token.startsWith("session-seed-")) {
-            String seedUsername = token.substring("session-seed-".length());
-            Optional<User> seedUser = userRepository.findByUsername(seedUsername);
-            if (seedUser.isPresent() && seedUser.get().isActive()) {
-                activeTokens.put(token, seedUser.get().getUsername());
-                return seedUser.get().getUsername();
             }
         }
 

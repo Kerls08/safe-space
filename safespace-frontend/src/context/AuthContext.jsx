@@ -73,9 +73,7 @@ export function AuthProvider({ children }) {
     if (token) {
       authApi.validateToken(token).then((res) => {
         if (res && res.valid === false) {
-          if (!token.startsWith('session-seed-')) {
-            logout();
-          }
+          logout();
         }
       });
     }
