@@ -304,10 +304,11 @@ function SvgDonutChart({ emotions = [], total = 0 }) {
                   </span>
                   <span className="donut-pct">{s.pct}%</span>
                   <span
-                    className="donut-band-tag"
-                    style={{ background: s.band.bg, color: s.band.color, borderColor: s.band.border }}
+                    className="donut-band-score"
+                    style={{ color: s.band.color }}
                   >
-                    {s.avgEnergy ? (Number.isInteger(s.avgEnergy) ? s.avgEnergy : s.avgEnergy.toFixed(1)) : 'N/A'}/10
+                    {s.avgEnergy ? (Number.isInteger(s.avgEnergy) ? s.avgEnergy : s.avgEnergy.toFixed(1)) : 'N/A'}
+                    <span className="donut-band-denom">/10</span>
                   </span>
                   <span className="donut-row-arrow">
                     <i className="fas fa-chevron-right"></i>
@@ -364,8 +365,8 @@ function EmotionStudentsModal({ emotionData, totalPosts, onClose }) {
       <div className="date-students-modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="date-students-modal-header">
           <div className="modal-title-wrap">
-            <div className="modal-title-badge" style={{ background: `${color}1A`, color: color }}>
-              <span className="modal-emotion-dot" style={{ background: color }}></span>
+            <div className="modal-title-icon" style={{ color: color }}>
+              <span className="modal-emotion-dot" style={{ backgroundColor: color }}></span>
             </div>
             <div>
               <h3>{emotionData.emotion} — Student Telemetry</h3>
@@ -392,12 +393,15 @@ function EmotionStudentsModal({ emotionData, totalPosts, onClose }) {
           </div>
           <div className="strip-metric">
             <span className="metric-label">Avg Intensity</span>
-            <span
-              className="metric-tier-pill"
-              style={{ background: band.bg, color: band.color, borderColor: band.border }}
-            >
-              {emotionData.avgEnergy ? (Number.isInteger(emotionData.avgEnergy) ? emotionData.avgEnergy : emotionData.avgEnergy.toFixed(1)) : 'N/A'}/10 • {band.label}
-            </span>
+            <div className="metric-intensity-row">
+              <span className="metric-val" style={{ color: band.color }}>
+                {emotionData.avgEnergy ? (Number.isInteger(emotionData.avgEnergy) ? emotionData.avgEnergy : emotionData.avgEnergy.toFixed(1)) : 'N/A'}
+                <span className="metric-denom">/10</span>
+              </span>
+              <span className="metric-tier-text" style={{ color: band.color }}>
+                {band.label}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -432,8 +436,8 @@ function EmotionStudentsModal({ emotionData, totalPosts, onClose }) {
                 return (
                   <div key={st.pseudonym} className="student-roster-card">
                     <div className="roster-card-left">
-                      <div className="roster-avatar" style={{ background: stBand.bg, color: stBand.color }}>
-                        <i className="fas fa-user"></i>
+                      <div className="roster-avatar" style={{ color: stBand.color }}>
+                        <i className="fas fa-circle-user"></i>
                       </div>
                       <div className="roster-meta">
                         <span className="roster-pseudonym">@{st.pseudonym}</span>
@@ -443,11 +447,9 @@ function EmotionStudentsModal({ emotionData, totalPosts, onClose }) {
                       </div>
                     </div>
                     <div className="roster-card-right">
-                      <span
-                        className="roster-score-pill"
-                        style={{ background: stBand.bg, color: stBand.color, borderColor: stBand.border }}
-                      >
-                        {st.avgEnergy ? (Number.isInteger(st.avgEnergy) ? st.avgEnergy : st.avgEnergy.toFixed(1)) : 'N/A'}/10
+                      <span className="roster-score" style={{ color: stBand.color }}>
+                        {st.avgEnergy ? (Number.isInteger(st.avgEnergy) ? st.avgEnergy : st.avgEnergy.toFixed(1)) : 'N/A'}
+                        <span className="roster-denom">/10</span>
                       </span>
                       <span className="roster-tier-name" style={{ color: stBand.color }}>
                         {stBand.label}
@@ -506,7 +508,7 @@ function DateStudentsModal({ datePoint, onClose }) {
       <div className="date-students-modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="date-students-modal-header">
           <div className="modal-title-wrap">
-            <div className="modal-title-badge">
+            <div className="modal-title-icon" style={{ color: '#243E4C' }}>
               <i className="fas fa-calendar-day"></i>
             </div>
             <div>
@@ -531,15 +533,13 @@ function DateStudentsModal({ datePoint, onClose }) {
           <div className="strip-metric">
             <span className="metric-label">Affective Intensity</span>
             <span className="metric-val" style={{ color: datePoint.band?.color }}>
-              {datePoint.avgEnergy ? (Number.isInteger(datePoint.avgEnergy) ? datePoint.avgEnergy : datePoint.avgEnergy.toFixed(1)) : 'N/A'}/10
+              {datePoint.avgEnergy ? (Number.isInteger(datePoint.avgEnergy) ? datePoint.avgEnergy : datePoint.avgEnergy.toFixed(1)) : 'N/A'}
+              <span className="metric-denom">/10</span>
             </span>
           </div>
           <div className="strip-metric">
             <span className="metric-label">Clinical Tier</span>
-            <span
-              className="metric-tier-pill"
-              style={{ background: datePoint.band?.bg, color: datePoint.band?.color, borderColor: datePoint.band?.border }}
-            >
+            <span className="metric-val" style={{ color: datePoint.band?.color, fontSize: '0.92rem' }}>
               {datePoint.band?.label}
             </span>
           </div>
@@ -576,8 +576,8 @@ function DateStudentsModal({ datePoint, onClose }) {
                 return (
                   <div key={st.pseudonym} className="student-roster-card">
                     <div className="roster-card-left">
-                      <div className="roster-avatar" style={{ background: stBand.bg, color: stBand.color }}>
-                        <i className="fas fa-user"></i>
+                      <div className="roster-avatar" style={{ color: stBand.color }}>
+                        <i className="fas fa-circle-user"></i>
                       </div>
                       <div className="roster-meta">
                         <span className="roster-pseudonym">@{st.pseudonym}</span>
@@ -587,11 +587,9 @@ function DateStudentsModal({ datePoint, onClose }) {
                       </div>
                     </div>
                     <div className="roster-card-right">
-                      <span
-                        className="roster-score-pill"
-                        style={{ background: stBand.bg, color: stBand.color, borderColor: stBand.border }}
-                      >
-                        {st.avgEnergy ? (Number.isInteger(st.avgEnergy) ? st.avgEnergy : st.avgEnergy.toFixed(1)) : 'N/A'}/10
+                      <span className="roster-score" style={{ color: stBand.color }}>
+                        {st.avgEnergy ? (Number.isInteger(st.avgEnergy) ? st.avgEnergy : st.avgEnergy.toFixed(1)) : 'N/A'}
+                        <span className="roster-denom">/10</span>
                       </span>
                       <span className="roster-tier-name" style={{ color: stBand.color }}>
                         {stBand.label}
@@ -991,27 +989,33 @@ function SeveritySpectrumBar({ low = 0, mod = 0, high = 0, total = 0 }) {
         <div className="severity-legend-card low">
           <div className="card-top">
             <span className="clinical-indicator-dot low"></span>
-            <span className="tier-name">Balanced (1–3)</span>
+            <span className="tier-name" style={{ color: '#059669' }}>Balanced (1–3)</span>
           </div>
-          <div className="card-val">{low} <span className="card-pct">({lowPct}%)</span></div>
+          <div className="card-val" style={{ color: '#059669' }}>
+            {low} <span className="card-pct">({lowPct}%)</span>
+          </div>
           <div className="card-desc">Baseline psychological state; routine peer mirror support.</div>
         </div>
 
         <div className="severity-legend-card mod">
           <div className="card-top">
             <span className="clinical-indicator-dot mod"></span>
-            <span className="tier-name">Moderate (4–7)</span>
+            <span className="tier-name" style={{ color: '#D97706' }}>Moderate (4–7)</span>
           </div>
-          <div className="card-val">{mod} <span className="card-pct">({modPct}%)</span></div>
+          <div className="card-val" style={{ color: '#D97706' }}>
+            {mod} <span className="card-pct">({modPct}%)</span>
+          </div>
           <div className="card-desc">Situational strain; self-directed calm-down kit recommended.</div>
         </div>
 
         <div className="severity-legend-card high">
           <div className="card-top">
             <span className="clinical-indicator-dot high"></span>
-            <span className="tier-name">Acute (8–10)</span>
+            <span className="tier-name" style={{ color: '#DC2626' }}>Acute (8–10)</span>
           </div>
-          <div className="card-val">{high} <span className="card-pct">({highPct}%)</span></div>
+          <div className="card-val" style={{ color: '#DC2626' }}>
+            {high} <span className="card-pct">({highPct}%)</span>
+          </div>
           <div className="card-desc">Acute distress threshold; active psychological triage monitoring.</div>
         </div>
       </div>
@@ -1032,7 +1036,7 @@ function PriorityTriageWidget({ alerts = [], totalAlerts = 0, overview }) {
         </div>
         <Link to="/crisis-alerts" className="btn-open-alerts" title="Open full triage room">
           <span>Alerts Console</span>
-          {totalAlerts > 0 && <span className="triage-count-badge">{totalAlerts}</span>}
+          {totalAlerts > 0 && <span className="triage-count-badge">({totalAlerts})</span>}
           <i className="fas fa-arrow-right"></i>
         </Link>
       </div>
@@ -1084,18 +1088,26 @@ function PriorityTriageWidget({ alerts = [], totalAlerts = 0, overview }) {
               ? 'ELEVATED'
               : 'MODERATE';
 
+            const itemColor = isCritical
+              ? '#DC2626'
+              : isHigh
+              ? '#EA580C'
+              : isElevated
+              ? '#D97706'
+              : '#2563EB';
+
             const typeLabel = (a.alertType || '').replace(/_/g, ' ');
 
             return (
               <div key={a.id || a.referenceId || idx} className={`triage-mini-item ${badgeClass}`}>
                 <div className="mini-item-header">
-                  <span className={`mini-item-badge ${badgeClass}`}>
+                  <span className={`mini-item-badge ${badgeClass}`} style={{ color: itemColor }}>
                     {badgeLabel}
                   </span>
                   <span className="mini-item-type">{typeLabel}</span>
                   {energyVal !== null && (
-                    <span className="mini-item-score-pill">
-                      {energyVal}/10
+                    <span className="mini-item-score" style={{ color: itemColor }}>
+                      {energyVal}<span className="score-denom">/10</span>
                     </span>
                   )}
                   <span className="mini-item-time">{timeAgo(a.timestamp)}</span>
@@ -1415,15 +1427,14 @@ export default function ProDashboard() {
               {/* Card 2: Campus Emotional Intensity */}
               <div className="stat-card intensity-card">
                 <div className="stat-card-top-row">
-                  <div className="stat-card-value">
+                  <div className="stat-card-value" style={{ color: energyBand.color }}>
                     {formattedEnergyScore} <span className="scale-denominator">/ 10</span>
                   </div>
-                  <span
-                    className="clinical-band-pill"
-                    style={{ background: energyBand.bg, color: energyBand.color, borderColor: energyBand.border }}
-                  >
+                  <span className="clinical-band-status">
                     <span className="clinical-indicator-dot" style={{ backgroundColor: energyBand.color }}></span>
-                    {energyBand.label}
+                    <span className="clinical-band-text" style={{ color: energyBand.color }}>
+                      {energyBand.label}
+                    </span>
                   </span>
                 </div>
                 <div className="stat-card-label-row">
