@@ -1899,6 +1899,77 @@
 .rep-badge.moderate { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
 .rep-badge.reviewed { background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; }
 .rep-badge.pending { background: #FEE2E2; color: #B91C1C; border: 1px solid #FCA5A5; font-weight: 800; }
+.rep-badge.in-progress { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; font-weight: 700; }
+.rep-badge.escalated { background: #F3E8FF; color: #6B21A8; border: 1px solid #D8B4FE; font-weight: 700; }
+.rep-badge.active { background: #FEE2E2; color: #B91C1C; border: 1px solid #FCA5A5; font-weight: 800; }
+.rep-badge.low { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
+
+/* Department Climate Cards */
+.rep-dept-card {
+  background: #F8FAFB;
+  border: 1px solid #E1E8EB;
+  border-radius: 0.5rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.85rem;
+  page-break-inside: avoid;
+}
+
+.rep-dept-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.55rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px dashed #CBD5E1;
+}
+
+.rep-dept-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.rep-dept-name {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #182A34;
+}
+
+.rep-dept-meta {
+  font-size: 0.72rem;
+  color: #51646E;
+  font-weight: 600;
+}
+
+.rep-dept-energy-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.18rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.rep-dept-energy-badge.distress {
+  background: #FEE2E2;
+  color: #991B1B;
+  border: 1px solid #F87171;
+}
+
+.rep-dept-energy-badge.mod {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FCD34D;
+}
+
+.rep-dept-energy-badge.calm {
+  background: #DCFCE7;
+  color: #166534;
+  border: 1px solid #86EFAC;
+}
 
 /* Mini Progress Bar */
 .rep-mini-bar {

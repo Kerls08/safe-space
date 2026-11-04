@@ -58,14 +58,17 @@ public class MonthlyReportResponse {
     // ── 4. Ranked Emotion Breakdown ──
     private List<EmotionStat> emotionBreakdown;
 
-    // ── 5. Department & Academic Level Distribution ──
+    // ── 5. Department & Academic Level Distribution (with Mood & Energy Cross-Tabulation) ──
     private List<DepartmentStat> departmentBreakdown;
     private List<YearLevelStat> yearLevelBreakdown;
 
-    // ── 6. Crisis Incidents & Trigger Audit (Strictly Anonymized) ──
+    // ── 6. Crisis Incidents & Trigger Audit (Mapped to CrisisAlert) ──
     private List<CrisisIncidentItem> crisisIncidents;
     private long crisisReviewedCount;
     private long crisisPendingCount;
+    private long crisisInProgressCount;
+    private long crisisResolvedCount;
+    private long crisisEscalatedCount;
 
     // ── 7. Support Dialogues Breakdown ──
     private List<SupportDialogueItem> recentDialogues;
@@ -89,10 +92,27 @@ public class MonthlyReportResponse {
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class DepartmentEmotionStat {
+        private String emotion;
+        private long count;
+        private double percentage;
+        private double avgEnergy;
+        private String intensityLevel;
+    }
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class DepartmentStat {
         private String department;
         private long count;
+        private long expressionCount;
+        private long uniqueStudents;
         private double percentage;
+        private double avgEnergyScore;
+        private String climateStatus;
+        private long energyLow;
+        private long energyModerate;
+        private long energyHigh;
+        private List<DepartmentEmotionStat> emotionBreakdown;
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -105,16 +125,27 @@ public class MonthlyReportResponse {
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class CrisisIncidentItem {
         private String incidentId;
-        private String source; // "RANT_POST" or "SUPPORT_CHAT"
+        private String alertId;
+        private String source;
+        private String alertType;
+        private String alertTypeLabel;
         private String pseudonym;
+        private String department;
         private String severity; // "CRITICAL", "HIGH", "MODERATE"
+        private String triageStatus; // "ACTIVE", "ACKNOWLEDGED", "RESOLVED", "ESCALATED"
+        private String triageStatusLabel; // "Needs Action", "In Casework", "Resolved", "Escalated"
+        private String triggerCategory;
         private String summary;
         private String flaggedKeywords;
         private String emotionTag;
         private int energyScore;
         private boolean reviewed;
         private String reviewedBy;
+        private String assignedOfficer;
+        private String outreachStatus;
+        private String resolutionSummary;
         private LocalDateTime timestamp;
+        private LocalDateTime resolvedAt;
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder

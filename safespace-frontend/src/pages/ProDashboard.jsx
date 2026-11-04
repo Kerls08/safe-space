@@ -1197,11 +1197,13 @@ export default function ProDashboard() {
                     </div>
                     <div className="rep-kpi-card">
                       <div className="rep-kpi-val" style={{ color: '#DC2626' }}>
-                        {reportData.totalCrisisAlerts} <span className="unit">cases</span>
+                        {reportData.totalCrisisAlerts} <span className="unit">alerts</span>
                       </div>
-                      <div className="rep-kpi-label">Crisis Triggers Intercepted</div>
+                      <div className="rep-kpi-label">Crisis Sentinel Alerts</div>
                       <div className="rep-kpi-sub">
-                        {reportData.flaggedPosts} flagged, {reportData.crisisChatSessions} urgent chats
+                        <span style={{ color: '#DC2626', fontWeight: 700 }}>{reportData.crisisPendingCount || 0}</span> pending,{' '}
+                        <span style={{ color: '#D97706', fontWeight: 700 }}>{reportData.crisisInProgressCount || 0}</span> casework,{' '}
+                        <span style={{ color: '#166534', fontWeight: 700 }}>{(reportData.crisisResolvedCount || 0) + (reportData.crisisEscalatedCount || 0)}</span> resolved
                       </div>
                     </div>
                     <div className="rep-kpi-card">
@@ -1302,78 +1304,135 @@ export default function ProDashboard() {
                   </div>
                 </section>
 
-                {/* Section III: Department & Year Level Analysis */}
+                {/* Section III: Departmental Affective & Academic Cohort Breakdown */}
                 <section className="rep-section">
                   <div className="rep-section-header">
-                    <i className="fas fa-graduation-cap"></i> III. Departmental & Academic Cohort Breakdown
+                    <i className="fas fa-graduation-cap"></i> III. Departmental Affective & Energy Climate Matrix
                   </div>
-                  <div className="rep-split-grid">
-                    <div>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#243E4C', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
-                        Academic Department / Program
-                      </div>
-                      <div className="rep-table-wrap">
-                        <table className="rep-table">
-                          <thead>
-                            <tr>
-                              <th>Program</th>
-                              <th style={{ textAlign: 'center' }}>Count</th>
-                              <th style={{ textAlign: 'right' }}>Share</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {reportData.departmentBreakdown && reportData.departmentBreakdown.length > 0 ? (
-                              reportData.departmentBreakdown.map((dept, idx) => (
-                                <tr key={dept.department || idx}>
-                                  <td><strong>{dept.department}</strong></td>
-                                  <td style={{ textAlign: 'center', fontWeight: 700 }}>{dept.count}</td>
-                                  <td style={{ textAlign: 'right', fontWeight: 700, color: '#0284C7' }}>{dept.percentage}%</td>
-                                </tr>
-                              ))
-                            ) : (
-                              <tr>
-                                <td colSpan="3" style={{ textAlign: 'center', color: '#728590', padding: '0.75rem' }}>
-                                  No departmental data available.
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
 
-                    <div>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#243E4C', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
-                        Year Level Distribution
-                      </div>
-                      <div className="rep-table-wrap">
-                        <table className="rep-table">
-                          <thead>
-                            <tr>
-                              <th>Year Level</th>
-                              <th style={{ textAlign: 'center' }}>Count</th>
-                              <th style={{ textAlign: 'right' }}>Share</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {reportData.yearLevelBreakdown && reportData.yearLevelBreakdown.length > 0 ? (
-                              reportData.yearLevelBreakdown.map((yl, idx) => (
-                                <tr key={yl.yearLevel || idx}>
-                                  <td><strong>{yl.yearLevel}</strong></td>
-                                  <td style={{ textAlign: 'center', fontWeight: 700 }}>{yl.count}</td>
-                                  <td style={{ textAlign: 'right', fontWeight: 700, color: '#0284C7' }}>{yl.percentage}%</td>
+                  {reportData.departmentBreakdown && reportData.departmentBreakdown.length > 0 ? (
+                    reportData.departmentBreakdown.map((dept, dIdx) => {
+                      const isHighStress = (dept.avgEnergyScore || 0) >= 7.5;
+                      const isModStress = (dept.avgEnergyScore || 0) >= 5.0;
+                      const badgeClass = isHighStress ? 'distress' : isModStress ? 'mod' : 'calm';
+                      return (
+                        <div className="rep-dept-card" key={dept.department || dIdx}>
+                          <div className="rep-dept-header">
+                            <div className="rep-dept-title">
+                              <span className="rep-dept-name">{dept.department}</span>
+                              <span className="rep-dept-meta">
+                                {dept.expressionCount || dept.count} expressions • {dept.uniqueStudents || 0} students ({dept.percentage}%)
+                              </span>
+                            </div>
+                            <div className={`rep-dept-energy-badge ${badgeClass}`}>
+                              <i className="fas fa-bolt"></i>
+                              <span>Avg Energy: {dept.avgEnergyScore} / 10</span>
+                              <span>• {dept.climateStatus}</span>
+                            </div>
+                          </div>
+
+                          <div className="rep-table-wrap">
+                            <table className="rep-table" style={{ fontSize: '0.7rem' }}>
+                              <thead>
+                                <tr>
+                                  <th style={{ width: '22%' }}>Reported Mood</th>
+                                  <th style={{ textAlign: 'center', width: '15%' }}>Frequency</th>
+                                  <th style={{ width: '25%' }}>Program Share (%)</th>
+                                  <th style={{ textAlign: 'center', width: '18%' }}>Mood Avg Energy</th>
+                                  <th style={{ width: '20%' }}>Clinical Intensity</th>
                                 </tr>
-                              ))
-                            ) : (
-                              <tr>
-                                <td colSpan="3" style={{ textAlign: 'center', color: '#728590', padding: '0.75rem' }}>
-                                  No year-level data available.
-                                </td>
+                              </thead>
+                              <tbody>
+                                {dept.emotionBreakdown && dept.emotionBreakdown.length > 0 ? (
+                                  dept.emotionBreakdown.map((em, eIdx) => {
+                                    const color = EMOTION_COLORS[em.emotion] || '#728590';
+                                    const riskColor = em.avgEnergy >= 8 ? '#DC2626' : em.avgEnergy >= 5 ? '#D97706' : '#166534';
+                                    return (
+                                      <tr key={em.emotion || eIdx}>
+                                        <td>
+                                          <span
+                                            style={{
+                                              display: 'inline-block',
+                                              width: '8px',
+                                              height: '8px',
+                                              borderRadius: '2px',
+                                              background: color,
+                                              marginRight: '6px'
+                                            }}
+                                          ></span>
+                                          <strong>{em.emotion}</strong>
+                                        </td>
+                                        <td style={{ textAlign: 'center', fontWeight: 700 }}>{em.count}</td>
+                                        <td>
+                                          <div className="rep-mini-bar">
+                                            <div className="rep-track">
+                                              <div className="rep-fill" style={{ width: `${Math.max(em.percentage, 4)}%`, background: color }}></div>
+                                            </div>
+                                            <span style={{ fontSize: '0.68rem', fontWeight: 700, width: '38px', textAlign: 'right' }}>
+                                              {em.percentage}%
+                                            </span>
+                                          </div>
+                                        </td>
+                                        <td style={{ textAlign: 'center', fontWeight: 700, color: riskColor }}>
+                                          {em.avgEnergy} <span style={{ fontSize: '0.62rem', color: '#728590' }}>/ 10</span>
+                                        </td>
+                                        <td style={{ fontSize: '0.68rem', fontWeight: 600, color: riskColor }}>
+                                          {em.intensityLevel || (em.avgEnergy >= 8 ? 'High Tension' : em.avgEnergy >= 5 ? 'Moderate' : 'Low / Stable')}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })
+                                ) : (
+                                  <tr>
+                                    <td colSpan="5" style={{ textAlign: 'center', color: '#728590', padding: '0.5rem' }}>
+                                      No mood expressions categorized for this department.
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div style={{ textAlign: 'center', color: '#728590', padding: '1rem', background: '#F8FAFB', borderRadius: '0.5rem' }}>
+                      No departmental activity logged for this reporting period.
+                    </div>
+                  )}
+
+                  {/* Academic Year Level Breakdown */}
+                  <div style={{ marginTop: '0.85rem' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#243E4C', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+                      Academic Year Level Distribution
+                    </div>
+                    <div className="rep-table-wrap">
+                      <table className="rep-table">
+                        <thead>
+                          <tr>
+                            <th>Academic Year Cohort</th>
+                            <th style={{ textAlign: 'center' }}>Total Expressions</th>
+                            <th style={{ textAlign: 'right' }}>Campus Share (%)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {reportData.yearLevelBreakdown && reportData.yearLevelBreakdown.length > 0 ? (
+                            reportData.yearLevelBreakdown.map((yl, idx) => (
+                              <tr key={yl.yearLevel || idx}>
+                                <td><strong>{yl.yearLevel}</strong></td>
+                                <td style={{ textAlign: 'center', fontWeight: 700 }}>{yl.count}</td>
+                                <td style={{ textAlign: 'right', fontWeight: 700, color: '#0284C7' }}>{yl.percentage}%</td>
                               </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan="3" style={{ textAlign: 'center', color: '#728590', padding: '0.75rem' }}>
+                                No year-level data available.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 </section>
@@ -1385,69 +1444,98 @@ export default function ProDashboard() {
                       <i className="fas fa-triangle-exclamation" style={{ color: '#DC2626' }}></i> IV. Crisis Sentinel Interceptions & Risk Audit Log
                     </div>
                     <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#51646E', textTransform: 'none' }}>
-                      Reviewed: <span style={{ color: '#166534' }}>{reportData.crisisReviewedCount}</span> | Pending: <span style={{ color: '#DC2626' }}>{reportData.crisisPendingCount}</span>
+                      Needs Action: <span style={{ color: '#DC2626' }}>{reportData.crisisPendingCount || 0}</span> |{' '}
+                      In Casework: <span style={{ color: '#D97706' }}>{reportData.crisisInProgressCount || 0}</span> |{' '}
+                      Resolved: <span style={{ color: '#166534' }}>{reportData.crisisResolvedCount || 0}</span>
+                      {(reportData.crisisEscalatedCount > 0) && (
+                        <span> | Escalated: <span style={{ color: '#7C3AED' }}>{reportData.crisisEscalatedCount}</span></span>
+                      )}
                     </div>
                   </div>
                   <div className="rep-table-wrap">
                     <table className="rep-table">
                       <thead>
                         <tr>
-                          <th>Ref ID</th>
-                          <th>Source</th>
-                          <th>Student Pseudonym</th>
+                          <th>Alert ID</th>
+                          <th>Sentinel Source</th>
+                          <th>Student & Program</th>
                           <th>Severity</th>
-                          <th>Detected Keywords / Snippet</th>
-                          <th style={{ textAlign: 'center' }}>Energy</th>
+                          <th>Clinical Risk Trigger</th>
+                          <th style={{ textAlign: 'center' }}>Energy & Mood</th>
                           <th style={{ textAlign: 'center' }}>Triage Status</th>
-                          <th>Reviewer</th>
+                          <th>Action Officer / Outreach</th>
                         </tr>
                       </thead>
                       <tbody>
                         {reportData.crisisIncidents && reportData.crisisIncidents.length > 0 ? (
                           reportData.crisisIncidents.map((c, idx) => {
                             const sevClass = (c.severity || 'moderate').toLowerCase();
-                            const isRev = c.reviewed;
+                            const triage = (c.triageStatus || (c.reviewed ? 'RESOLVED' : 'ACTIVE')).toUpperCase();
+                            const triageBadgeClass =
+                              triage === 'ACTIVE'
+                                ? 'pending'
+                                : triage === 'ACKNOWLEDGED'
+                                ? 'in-progress'
+                                : triage === 'ESCALATED'
+                                ? 'escalated'
+                                : 'reviewed';
+                            const triageIcon =
+                              triage === 'ACTIVE'
+                                ? 'fa-triangle-exclamation'
+                                : triage === 'ACKNOWLEDGED'
+                                ? 'fa-user-clock'
+                                : triage === 'ESCALATED'
+                                ? 'fa-arrow-up-right-from-square'
+                                : 'fa-check';
+
                             return (
-                              <tr key={c.incidentId || idx}>
-                                <td style={{ fontFamily: 'monospace', fontSize: '0.68rem', color: '#51646E' }}>
-                                  {(c.incidentId || '').substring(0, 18)}…
+                              <tr key={c.alertId || c.incidentId || idx}>
+                                <td style={{ fontFamily: 'monospace', fontSize: '0.68rem', color: '#51646E', fontWeight: 600 }}>
+                                  {c.alertId || (c.incidentId ? (c.incidentId.length > 14 ? c.incidentId.substring(0, 14) + '…' : c.incidentId) : `ALT-${idx + 1}`)}
                                 </td>
                                 <td style={{ fontSize: '0.68rem', fontWeight: 600 }}>
-                                  {c.source === 'RANT_POST' ? (
-                                    <>
-                                      <i className="fas fa-comment-dots"></i> Rant
-                                    </>
-                                  ) : (
-                                    <>
-                                      <i className="fas fa-comments"></i> Chat
-                                    </>
+                                  {c.alertTypeLabel || (c.source === 'RANT_POST' ? 'Rant Trigger' : 'Chat Flag')}
+                                </td>
+                                <td>
+                                  <div style={{ fontWeight: 700, color: '#182A34' }}>{c.pseudonym}</div>
+                                  {c.department && c.department !== 'General / Unspecified' && (
+                                    <div style={{ fontSize: '0.64rem', color: '#0284C7', fontWeight: 600 }}>{c.department}</div>
                                   )}
                                 </td>
-                                <td style={{ fontWeight: 700, color: '#182A34' }}>{c.pseudonym}</td>
                                 <td>
                                   <span className={`rep-badge ${sevClass}`}>{c.severity}</span>
                                 </td>
-                                <td style={{ fontSize: '0.7rem', maxWidth: '220px', wordBreak: 'break-word' }}>
-                                  <div style={{ fontWeight: 600, color: '#182A34' }}>{c.summary}</div>
+                                <td style={{ fontSize: '0.7rem', maxWidth: '240px', wordBreak: 'break-word' }}>
+                                  <div style={{ fontWeight: 600, color: '#182A34' }}>
+                                    {c.triggerCategory || c.summary}
+                                  </div>
                                   {c.flaggedKeywords && (
                                     <div style={{ fontSize: '0.64rem', color: '#DC2626', marginTop: '2px' }}>
-                                      Trigger: {c.flaggedKeywords}
+                                      Keywords: {c.flaggedKeywords}
                                     </div>
                                   )}
                                 </td>
-                                <td style={{ textAlign: 'center', fontWeight: 700, color: '#DC2626' }}>{c.energyScore}</td>
-                                <td style={{ textAlign: 'center' }}>
-                                  {isRev ? (
-                                    <span className="rep-badge reviewed">
-                                      <i className="fas fa-check"></i> Reviewed
-                                    </span>
-                                  ) : (
-                                    <span className="rep-badge pending">
-                                      <i className="fas fa-triangle-exclamation"></i> Pending
-                                    </span>
+                                <td style={{ textAlign: 'center', fontSize: '0.68rem' }}>
+                                  <span style={{ fontWeight: 700, color: '#DC2626' }}>Lvl {c.energyScore}</span>
+                                  {c.emotionTag && (
+                                    <div style={{ color: '#51646E', fontSize: '0.64rem' }}>{c.emotionTag}</div>
                                   )}
                                 </td>
-                                <td style={{ fontSize: '0.68rem', color: '#51646E' }}>{c.reviewedBy || 'N/A'}</td>
+                                <td style={{ textAlign: 'center' }}>
+                                  <span className={`rep-badge ${triageBadgeClass}`}>
+                                    <i className={`fas ${triageIcon}`}></i> {c.triageStatusLabel || (triage === 'ACTIVE' ? 'Needs Action' : triage === 'ACKNOWLEDGED' ? 'In Casework' : triage)}
+                                  </span>
+                                </td>
+                                <td style={{ fontSize: '0.68rem', color: '#51646E' }}>
+                                  <div style={{ fontWeight: 600, color: '#182A34' }}>
+                                    {c.assignedOfficer || c.reviewedBy || 'Pending Assignment'}
+                                  </div>
+                                  {c.outreachStatus && c.outreachStatus !== 'NONE' && (
+                                    <div style={{ fontSize: '0.63rem', color: '#0284C7' }}>
+                                      Outreach: {c.outreachStatus}
+                                    </div>
+                                  )}
+                                </td>
                               </tr>
                             );
                           })

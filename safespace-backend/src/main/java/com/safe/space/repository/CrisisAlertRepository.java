@@ -78,6 +78,8 @@ public interface CrisisAlertRepository extends JpaRepository<CrisisAlert, Long> 
 
        // ── Time-based ──
 
+       List<CrisisAlert> findByCreatedAtBetweenOrderByCreatedAtDesc(LocalDateTime start, LocalDateTime end);
+
        @Query("SELECT COUNT(a) FROM CrisisAlert a WHERE a.createdAt >= :since")
        long countSince(@Param("since") LocalDateTime since);
 
