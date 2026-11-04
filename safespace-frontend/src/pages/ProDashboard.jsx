@@ -846,6 +846,7 @@ export default function ProDashboard() {
       isMountedRef.current = false;
       clearInterval(refreshTimer);
       clearInterval(agoTimer);
+      document.body.style.overflow = '';
     };
   }, [loadDashboard]);
 
@@ -904,7 +905,15 @@ export default function ProDashboard() {
   };
 
   const handlePrint = () => {
+    // Temporarily clear body overflow lock so print preview spools correctly across pages
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'visible';
     window.print();
+    setTimeout(() => {
+      if (reportModalOpen) {
+        document.body.style.overflow = prevOverflow || 'hidden';
+      }
+    }, 500);
   };
 
   // Calculations for overview stats

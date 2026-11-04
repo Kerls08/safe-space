@@ -2083,8 +2083,8 @@
 }
 
 /* ============================================
-   @media print Rules for Browser Printing & PDF
-/* Report Modal Responsive (Screen Only) */
+   Report Modal Responsive (Screen Only)
+   ============================================ */
 @media screen and (max-width: 768px) {
   .report-modal-overlay {
     padding: max(0.5rem, var(--sal)) max(0.5rem, var(--sar)) calc(0.5rem + var(--sab)) max(0.5rem, var(--sal));
@@ -2161,82 +2161,161 @@
   }
 }
 
+/* ============================================
+   @media print Rules for Institutional Reporting & PDF Export
+   ============================================ */
 @media print {
   @page {
     size: A4 portrait;
-    margin: 10mm 12mm 12mm 12mm;
+    margin: 12mm 12mm 12mm 12mm;
   }
 
-  /* Hide everything on the webpage except printableReport */
-  body * {
-    visibility: hidden;
+  /* Reset document root & body for clean multi-page printing */
+  html,
+  body {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: #FFFFFF !important;
+    color: #182A34 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 9.5pt;
+    line-height: 1.35;
   }
 
-  #printableReport,
-  #printableReport * {
-    visibility: visible;
+  /* Reset application shell wrappers so they do not clip or constrain printing */
+  #root,
+  .app-container,
+  .app-main-content,
+  .dash-layout {
+    display: block !important;
+    position: static !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
   }
 
-  #printableReport {
-    position: absolute;
-    left: 0;
-    top: 0;
+  /* Hide screen-only dashboard navigation, banners, bottom navs, and controls */
+  .navbar,
+  .system-banner,
+  .student-bottom-nav,
+  .pro-bottom-nav,
+  .maint-bottom-nav,
+  .dash-container,
+  .report-modal-header,
+  .report-loading,
+  .report-error,
+  .no-print,
+  .dash-actions,
+  .dash-header,
+  .stats-row,
+  .dash-grid,
+  .dash-bottom {
+    display: none !important;
+  }
+
+  /* Transform the modal overlay into a seamless document flow container */
+  .report-modal-overlay {
+    position: static !important;
+    inset: auto !important;
+    display: block !important;
+    overflow: visible !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    z-index: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  .report-modal-container {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    background: #FFFFFF !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  .report-modal-body {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    background: #FFFFFF !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  /* Printable document canvas */
+  #printableReport,
+  .printable-document {
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #FFFFFF !important;
     box-shadow: none !important;
     border: none !important;
-    color: #000000 !important;
-    font-size: 10.5pt;
+    border-radius: 0 !important;
+    color: #182A34 !important;
+    font-size: 9.5pt;
+    line-height: 1.35;
   }
 
-  /* Exclude non-print controls */
-  .no-print,
-  .report-modal-header,
-  .navbar,
-  .dash-layout,
-  .dash-actions,
-  .dash-header,
-  .stats-row,
-  .dash-grid,
-  .dash-bottom,
-  .report-loading,
-  .report-error {
-    display: none !important;
-  }
-
-  .report-modal-overlay {
-    position: static !important;
-    background: transparent !important;
-    padding: 0 !important;
-    display: block !important;
-    overflow: visible !important;
-  }
-
-  .report-modal-container {
-    box-shadow: none !important;
-    border: none !important;
-    background: transparent !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-  }
-
-  .report-modal-body {
-    background: transparent !important;
-    padding: 0 !important;
-  }
-
-  /* Page break rules */
-  .rep-section {
+  /* Page break rules for clinical situationer */
+  .rep-header {
     page-break-inside: avoid;
     break-inside: avoid;
+    margin-bottom: 1rem !important;
+  }
+
+  .rep-title-banner {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .rep-compliance-notice {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    border: 1px solid #728590 !important;
+    background: #F8FAFC !important;
+    color: #182A34 !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .rep-section {
+    page-break-inside: auto;
+    break-inside: auto;
     margin-bottom: 1.25rem !important;
   }
 
-  .rep-header {
-    page-break-inside: avoid;
+  .rep-section-header {
+    page-break-after: avoid;
+    break-after: avoid;
     break-inside: avoid;
   }
 
@@ -2245,9 +2324,30 @@
     break-inside: avoid;
   }
 
-  .rep-table-wrap {
+  .rep-dept-card {
     page-break-inside: avoid;
     break-inside: avoid;
+    margin-bottom: 0.85rem !important;
+  }
+
+  .rep-table-wrap {
+    page-break-inside: auto;
+    break-inside: auto;
+    overflow: visible !important;
+  }
+
+  .rep-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  .rep-table thead {
+    display: table-header-group !important;
+  }
+
+  .rep-table tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   .rep-signatures {
@@ -2256,13 +2356,13 @@
     margin-top: 1.5rem !important;
   }
 
-  .rep-compliance-notice {
-    border: 1px solid #728590 !important;
-    background: #F8FAFC !important;
-    color: #182A34 !important;
+  .rep-footer-doc {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-top: 1rem !important;
   }
 
-  /* Force exact color printing */
+  /* Force exact color printing for bars, pills, and indicators */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
