@@ -305,11 +305,14 @@ public class DashboardService {
                     String em = entry.getKey();
                     List<Post> group = entry.getValue();
                     double avgE = group.stream().mapToInt(Post::getEnergyScore).average().orElse(0.0);
+                    double roundedAvgE = Math.round(avgE * 10.0) / 10.0;
+                    String clinicalIntensity = mapAffectiveIntensity(em, roundedAvgE);
                     return MonthlyReportResponse.EmotionStat.builder()
                             .emotion(em)
                             .count(group.size())
                             .percentage(totalPosts > 0 ? Math.round((group.size() * 1000.0) / totalPosts) / 10.0 : 0.0)
-                            .avgEnergy(Math.round(avgE * 10.0) / 10.0)
+                            .avgEnergy(roundedAvgE)
+                            .intensityLevel(clinicalIntensity)
                             .build();
                 })
                 .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
@@ -375,15 +378,7 @@ public class DashboardService {
                                 long emCount = emPosts.size();
                                 double emPct = deptTotal > 0 ? Math.round((emCount * 1000.0) / deptTotal) / 10.0 : 0.0;
                                 double emAvgE = Math.round(emPosts.stream().mapToInt(Post::getEnergyScore).average().orElse(0.0) * 10.0) / 10.0;
-
-                                String intensity;
-                                if (emAvgE >= 8.0) {
-                                    intensity = "High Tension";
-                                } else if (emAvgE >= 5.0) {
-                                    intensity = "Moderate";
-                                } else {
-                                    intensity = "Low / Stable";
-                                }
+                                String intensity = mapAffectiveIntensity(em, emAvgE);
 
                                 return MonthlyReportResponse.DepartmentEmotionStat.builder()
                                         .emotion(em)
@@ -433,17 +428,27 @@ public class DashboardService {
                 : 0.0;
 
         List<MonthlyReportResponse.SupportDialogueItem> dialogueItems = chats.stream()
-                .map(c -> MonthlyReportResponse.SupportDialogueItem.builder()
-                        .sessionId(c.getSessionId())
-                        .studentPseudonym(c.getStudentPseudonym())
-                        .professionalName(c.getProfessionalName() != null ? c.getProfessionalName() : "Awaiting Counselor")
-                        .status(c.getStatus())
-                        .topic(truncate(c.getTopic(), 100))
-                        .emotionTag(c.getEmotionTag())
-                        .messageCount(c.getMessageCount())
-                        .crisisFlag(c.isCrisisFlag())
-                        .createdAt(c.getCreatedAt())
-                        .build())
+                .map(c -> {
+                    String pName = c.getProfessionalName() != null && !c.getProfessionalName().isBlank()
+                            ? c.getProfessionalName()
+                            : "Awaiting Counselor";
+                    String pPos = null;
+                    if (c.getProfessionalName() != null && !c.getProfessionalName().isBlank()) {
+                        pPos = resolveProfessionalPosition(c.getProfessionalName(), userMap);
+                    }
+                    return MonthlyReportResponse.SupportDialogueItem.builder()
+                            .sessionId(c.getSessionId())
+                            .studentPseudonym(c.getStudentPseudonym())
+                            .professionalName(pName)
+                            .professionalPosition(pPos)
+                            .status(c.getStatus())
+                            .topic(truncate(c.getTopic(), 100))
+                            .emotionTag(c.getEmotionTag())
+                            .messageCount(c.getMessageCount())
+                            .crisisFlag(c.isCrisisFlag())
+                            .createdAt(c.getCreatedAt())
+                            .build();
+                })
                 .collect(Collectors.toList());
 
         // 5. Calm-Down Kits
@@ -498,11 +503,30 @@ public class DashboardService {
             };
 
             boolean isReviewed = !"ACTIVE".equalsIgnoreCase(triage);
-            String officer = alert.getResolvedBy() != null && !alert.getResolvedBy().isBlank()
+            String rawOfficerUName = alert.getResolvedBy() != null && !alert.getResolvedBy().isBlank()
                     ? alert.getResolvedBy()
                     : (alert.getAcknowledgedBy() != null && !alert.getAcknowledgedBy().isBlank()
                     ? alert.getAcknowledgedBy()
-                    : "Pending Assignment");
+                    : null);
+
+            String officerName;
+            String officerPosition = null;
+
+            if (rawOfficerUName != null && !rawOfficerUName.isBlank()) {
+                if (userMap.containsKey(rawOfficerUName)) {
+                    User u = userMap.get(rawOfficerUName);
+                    officerName = (u.getFullName() != null && !u.getFullName().isBlank())
+                            ? u.getFullName()
+                            : u.getUsername();
+                    officerPosition = resolveProfessionalPosition(officerName, userMap);
+                } else {
+                    officerName = rawOfficerUName;
+                    officerPosition = resolveProfessionalPosition(rawOfficerUName, userMap);
+                }
+            } else {
+                officerName = "Unassigned (Pending Triage)";
+                officerPosition = null;
+            }
 
             String sourceLabel = switch (alert.getAlertType() != null ? alert.getAlertType() : "") {
                 case "CRISIS_POST" -> "Rant Board Trigger";
@@ -514,18 +538,7 @@ public class DashboardService {
                 default -> alert.getAlertType() != null ? alert.getAlertType() : "Sentinel Alert";
             };
 
-            // Categorical clinical trigger domain
-            String triggerCategory;
-            if (alert.getFlaggedKeywords() != null && !alert.getFlaggedKeywords().isBlank()) {
-                triggerCategory = "Trigger Keywords: " + alert.getFlaggedKeywords();
-            } else if ("HIGH_ENERGY_POST".equalsIgnoreCase(alert.getAlertType()) || (alert.getEnergyScore() != null && alert.getEnergyScore() >= 8)) {
-                triggerCategory = "Acute Tension Spike (Energy Level " + (alert.getEnergyScore() != null ? alert.getEnergyScore() : "8+") + "/10)";
-            } else if (alert.getTitle() != null && !alert.getTitle().isBlank()) {
-                triggerCategory = alert.getTitle();
-            } else {
-                triggerCategory = "Elevated Psychological Risk Indicator";
-            }
-
+            ClinicalTriggerInfo triggerInfo = parseClinicalTrigger(alert);
             String dept = alert.getPseudonym() != null ? pseudonymDeptMap.getOrDefault(alert.getPseudonym(), "General / Unspecified") : "General / Unspecified";
 
             crisisItems.add(MonthlyReportResponse.CrisisIncidentItem.builder()
@@ -539,14 +552,15 @@ public class DashboardService {
                     .severity(alert.getSeverity() != null ? alert.getSeverity().toUpperCase() : "MODERATE")
                     .triageStatus(triage)
                     .triageStatusLabel(triageLabel)
-                    .triggerCategory(triggerCategory)
-                    .summary(truncate(alert.getTitle() != null ? alert.getTitle() : triggerCategory, 120))
-                    .flaggedKeywords(alert.getFlaggedKeywords())
+                    .triggerCategory(triggerInfo.domainHeadline())
+                    .summary(triggerInfo.domainHeadline())
+                    .flaggedKeywords(triggerInfo.cleanTerms())
                     .emotionTag(alert.getEmotionTag())
                     .energyScore(alert.getEnergyScore() != null ? alert.getEnergyScore() : 8)
                     .reviewed(isReviewed)
-                    .reviewedBy(officer)
-                    .assignedOfficer(officer)
+                    .reviewedBy(officerName)
+                    .assignedOfficer(officerName)
+                    .assignedOfficerPosition(officerPosition)
                     .outreachStatus(alert.getOutreachStatus() != null ? alert.getOutreachStatus() : "NONE")
                     .resolutionSummary(alert.getResolutionNotes() != null ? truncate(alert.getResolutionNotes(), 160) : null)
                     .timestamp(alert.getCreatedAt())
@@ -711,5 +725,183 @@ public class DashboardService {
     private String truncate(String s, int len) {
         if (s == null) return "";
         return s.length() > len ? s.substring(0, len) + "…" : s;
+    }
+
+    private record ClinicalTriggerInfo(String domainHeadline, String cleanTerms) {}
+
+    /**
+     * Translates raw sentinel tags and internal dictionary brackets into clean, professional clinical descriptors.
+     * Strips technical tags like [crisis/tagalog/explicit] and deduplicates phrases.
+     */
+    private ClinicalTriggerInfo parseClinicalTrigger(CrisisAlert alert) {
+        String raw = alert.getFlaggedKeywords();
+        String alertType = alert.getAlertType() != null ? alert.getAlertType() : "";
+        int energy = alert.getEnergyScore() != null ? alert.getEnergyScore() : 8;
+
+        if (raw != null && !raw.isBlank()) {
+            Set<String> cleanPhrases = new LinkedHashSet<>();
+            String lower = raw.toLowerCase();
+            boolean isExplicit = lower.contains("/explicit") ||
+                    lower.contains("mamatay") ||
+                    lower.contains("suicide") ||
+                    lower.contains("kill myself") ||
+                    lower.contains("end my life") ||
+                    lower.contains("pakamatay");
+            boolean isSelfHarm = lower.contains("/selfharm") ||
+                    lower.contains("laslas") ||
+                    lower.contains("cut myself") ||
+                    lower.contains("overdose");
+
+            String[] items = raw.split(";");
+            for (String item : items) {
+                String phrase = item.trim();
+                if (phrase.contains("]")) {
+                    phrase = phrase.substring(phrase.indexOf("]") + 1).trim();
+                }
+                phrase = phrase.replaceAll("^\"|\"$", "").trim();
+                if (!phrase.isBlank()) {
+                    cleanPhrases.add(phrase);
+                }
+            }
+
+            String clinicalHeadline;
+            if (isExplicit) {
+                clinicalHeadline = "Acute Suicidal Ideation / Crisis Sentinel";
+            } else if (isSelfHarm) {
+                clinicalHeadline = "Self-Harm & Physical Injury Risk";
+            } else {
+                clinicalHeadline = "Severe Emotional Distress & Hopelessness";
+            }
+
+            String cleanKeywordsStr = cleanPhrases.isEmpty()
+                    ? null
+                    : cleanPhrases.stream().map(p -> "\"" + p + "\"").collect(Collectors.joining(", "));
+
+            return new ClinicalTriggerInfo(clinicalHeadline, cleanKeywordsStr);
+        }
+
+        if ("HIGH_ENERGY_POST".equalsIgnoreCase(alertType) || energy >= 8) {
+            return new ClinicalTriggerInfo(
+                    "Acute Tension & Agitation Spike",
+                    "Elevated Energy Level: " + energy + " / 10"
+            );
+        }
+
+        if ("CRISIS_CHAT".equalsIgnoreCase(alertType)) {
+            return new ClinicalTriggerInfo(
+                    "Urgent Counseling Intervention Request",
+                    "Distress indicators flagged during dialogue"
+            );
+        }
+
+        if ("REPEAT_CRISIS".equalsIgnoreCase(alertType)) {
+            return new ClinicalTriggerInfo(
+                    "Recurrent Psychological Distress Pattern",
+                    "Repeated high-tension triggers within monitoring cycle"
+            );
+        }
+
+        if ("ENERGY_SPIKE".equalsIgnoreCase(alertType)) {
+            return new ClinicalTriggerInfo(
+                    "Sudden Emotional Energy Spike",
+                    "Significant deviation from baseline emotional state"
+            );
+        }
+
+        String fallback = alert.getTitle() != null && !alert.getTitle().isBlank()
+                ? alert.getTitle()
+                : "Elevated Psychological Risk Indicator";
+
+        return new ClinicalTriggerInfo(fallback, null);
+    }
+
+    /**
+     * Maps an emotional state and energy level to its ethical, clinically sound affect classification
+     * based on Russell's Circumplex Model of Affect (Valence x Arousal).
+     */
+    private String mapAffectiveIntensity(String emotion, double avgEnergy) {
+        if (emotion == null) return "Baseline Emotional State";
+        String em = emotion.trim().toLowerCase();
+
+        // 1. Positive Valence (Adaptive Well-Being / Vitality)
+        if ("happy".equals(em)) {
+            if (avgEnergy >= 7.5) return "High Vitality / Exuberant";
+            if (avgEnergy >= 4.0) return "Contentment / Well-Being";
+            return "Serene / Restful Mood";
+        }
+        if ("relieved".equals(em)) {
+            if (avgEnergy >= 7.5) return "Active Unburdening";
+            if (avgEnergy >= 4.0) return "Calm Relief / De-escalation";
+            return "Restorative Peace";
+        }
+
+        // 2. Negative Valence — High Arousal (Tension / Agitation / Hyperarousal)
+        if ("anxious".equals(em)) {
+            if (avgEnergy >= 7.5) return "Acute Anxiety / Hyperarousal";
+            if (avgEnergy >= 4.0) return "Moderate Academic Strain";
+            return "Mild Situational Unease";
+        }
+        if ("angry".equals(em)) {
+            if (avgEnergy >= 7.5) return "Acute Agitation / High Tension";
+            if (avgEnergy >= 4.0) return "Heightened Irritation";
+            return "Simmering Frustration";
+        }
+        if ("frustrated".equals(em)) {
+            if (avgEnergy >= 7.5) return "Severe Impasse / High Friction";
+            if (avgEnergy >= 4.0) return "Moderate Friction / Strain";
+            return "Weary Dissatisfaction";
+        }
+
+        // 3. Negative Valence — Low Arousal (Depressive / Deactivation / Withdrawal)
+        if ("sad".equals(em)) {
+            if (avgEnergy >= 7.5) return "Agitated Dysphoria / Distress";
+            if (avgEnergy >= 4.0) return "Situational Melancholy";
+            return "Depressive Lethargy / Withdrawal";
+        }
+        if ("lonely".equals(em)) {
+            if (avgEnergy >= 7.5) return "Acute Distress / Alienation";
+            if (avgEnergy >= 4.0) return "Emotional Disconnection";
+            return "Severe Social Withdrawal";
+        }
+
+        // 4. Neutral / Ambient State
+        if ("neutral".equals(em)) {
+            if (avgEnergy >= 7.5) return "High Activation / Alert Focus";
+            if (avgEnergy >= 4.0) return "Equilibrium / Stable Baseline";
+            return "Low Arousal / Fatigued Baseline";
+        }
+
+        // Fallback for custom or unspecified emotion
+        if (avgEnergy >= 7.5) return "Elevated Tension";
+        if (avgEnergy >= 4.0) return "Moderate Baseline";
+        return "Low Arousal";
+    }
+
+    /**
+     * Resolves the professional clinical position (Psychometrician vs. Psychologist)
+     * based on user metadata or credentials in compliance with institutional staffing.
+     */
+    private String resolveProfessionalPosition(String nameOrUsername, Map<String, User> userMap) {
+        if (nameOrUsername == null || nameOrUsername.isBlank() || nameOrUsername.equalsIgnoreCase("Pending Assignment") || nameOrUsername.equalsIgnoreCase("Unassigned")) {
+            return null;
+        }
+
+        // 1. Check user map for stored profile metadata
+        if (userMap != null && userMap.containsKey(nameOrUsername)) {
+            User u = userMap.get(nameOrUsername);
+            String combined = ((u.getFullName() != null ? u.getFullName() : "") + " " +
+                    (u.getDepartment() != null ? u.getDepartment() : "")).toLowerCase();
+            if (combined.contains("psychologist") || combined.contains("rpsy")) {
+                return "Psychologist";
+            }
+            return "Psychometrician";
+        }
+
+        // 2. Fallback pattern matching on string
+        String lower = nameOrUsername.toLowerCase();
+        if (lower.contains("psychologist") || lower.contains("rpsy")) {
+            return "Psychologist";
+        }
+        return "Psychometrician";
     }
 }

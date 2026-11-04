@@ -36,6 +36,114 @@ const TIER_COLORS = {
   'crisis': '#7f1d1d'
 };
 
+export function formatClinicalTerms(raw) {
+  if (!raw || typeof raw !== 'string') return '';
+  // Clean internal parser tags like [crisis/tagalog/explicit] and deduplicate
+  const cleanedParts = Array.from(
+    new Set(
+      raw
+        .split(/[;,]/)
+        .map((s) => s.replace(/\[.*?\]/g, '').replace(/^"|"$/g, '').trim())
+        .filter(Boolean)
+    )
+  );
+  if (cleanedParts.length === 0) {
+    return raw.replace(/\[.*?\]/g, '').trim();
+  }
+  return cleanedParts.map((t) => (t.startsWith('"') ? t : `"${t}"`)).join(', ');
+}
+
+export function getClinicalAffectDescriptor(emotion, avgEnergy, backendLabel) {
+  if (backendLabel && typeof backendLabel === 'string' && backendLabel.trim()) {
+    const text = backendLabel.trim();
+    if (
+      text.includes('Vitality') ||
+      text.includes('Exuberant') ||
+      text.includes('Contentment') ||
+      text.includes('Well-Being') ||
+      text.includes('Serene') ||
+      text.includes('Relief') ||
+      text.includes('Peace')
+    ) {
+      return { label: text, color: '#059669' }; // Emerald / Positive Adaptive
+    }
+    if (text.includes('Lethargy') || text.includes('Withdrawal') || text.includes('Alienation')) {
+      return { label: text, color: '#7C3AED' }; // Purple / Depressive Deactivation
+    }
+    if (
+      text.includes('Acute') ||
+      text.includes('Hyperarousal') ||
+      text.includes('Distress') ||
+      text.includes('High Tension') ||
+      text.includes('Dysphoria')
+    ) {
+      return { label: text, color: '#DC2626' }; // Red / Acute Tension or Distress
+    }
+    if (
+      text.includes('Strain') ||
+      text.includes('Friction') ||
+      text.includes('Melancholy') ||
+      text.includes('Irritation') ||
+      text.includes('Moderate')
+    ) {
+      return { label: text, color: '#D97706' }; // Amber / Moderate Strain
+    }
+    if (text.includes('Alert') || text.includes('Activation')) {
+      return { label: text, color: '#0284C7' }; // Blue-Slate / Alert Focus
+    }
+    return { label: text, color: '#475569' };
+  }
+
+  // Fallback based on Valence x Arousal
+  const em = (emotion || '').toLowerCase().trim();
+  const val = parseFloat(avgEnergy) || 0;
+
+  if (em === 'happy') {
+    if (val >= 7.5) return { label: 'High Vitality / Exuberant', color: '#059669' };
+    if (val >= 4.0) return { label: 'Contentment / Well-Being', color: '#059669' };
+    return { label: 'Serene / Restful Mood', color: '#0D9488' };
+  }
+  if (em === 'relieved') {
+    if (val >= 7.5) return { label: 'Active Unburdening', color: '#059669' };
+    if (val >= 4.0) return { label: 'Calm Relief / De-escalation', color: '#059669' };
+    return { label: 'Restorative Peace', color: '#0D9488' };
+  }
+  if (em === 'anxious') {
+    if (val >= 7.5) return { label: 'Acute Anxiety / Hyperarousal', color: '#DC2626' };
+    if (val >= 4.0) return { label: 'Moderate Academic Strain', color: '#D97706' };
+    return { label: 'Mild Situational Unease', color: '#64748B' };
+  }
+  if (em === 'angry') {
+    if (val >= 7.5) return { label: 'Acute Agitation / High Tension', color: '#DC2626' };
+    if (val >= 4.0) return { label: 'Heightened Irritation', color: '#D97706' };
+    return { label: 'Simmering Frustration', color: '#64748B' };
+  }
+  if (em === 'frustrated') {
+    if (val >= 7.5) return { label: 'Severe Impasse / High Friction', color: '#DC2626' };
+    if (val >= 4.0) return { label: 'Moderate Friction / Strain', color: '#D97706' };
+    return { label: 'Weary Dissatisfaction', color: '#64748B' };
+  }
+  if (em === 'sad') {
+    if (val >= 7.5) return { label: 'Agitated Dysphoria / Distress', color: '#DC2626' };
+    if (val >= 4.0) return { label: 'Situational Melancholy', color: '#2563EB' };
+    return { label: 'Depressive Lethargy / Withdrawal', color: '#7C3AED' };
+  }
+  if (em === 'lonely') {
+    if (val >= 7.5) return { label: 'Acute Distress / Alienation', color: '#DC2626' };
+    if (val >= 4.0) return { label: 'Emotional Disconnection', color: '#2563EB' };
+    return { label: 'Severe Social Withdrawal', color: '#7C3AED' };
+  }
+  if (em === 'neutral') {
+    if (val >= 7.5) return { label: 'High Activation / Alert Focus', color: '#0284C7' };
+    if (val >= 4.0) return { label: 'Equilibrium / Stable Baseline', color: '#475569' };
+    return { label: 'Low Arousal / Fatigued Baseline', color: '#94A3B8' };
+  }
+
+  if (val >= 7.5) return { label: 'Elevated Tension', color: '#DC2626' };
+  if (val >= 4.0) return { label: 'Moderate Baseline', color: '#D97706' };
+  return { label: 'Low Arousal', color: '#475569' };
+}
+
 function SvgDonutChart({ emotions = [], total = 0 }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
@@ -1269,8 +1377,7 @@ export default function ProDashboard() {
                         {reportData.emotionBreakdown && reportData.emotionBreakdown.length > 0 ? (
                           reportData.emotionBreakdown.map((em, idx) => {
                             const color = EMOTION_COLORS[em.emotion] || '#728590';
-                            const riskLabel = em.avgEnergy >= 8 ? 'High Tension' : em.avgEnergy >= 5 ? 'Moderate' : 'Low / Stable';
-                            const riskColor = em.avgEnergy >= 8 ? '#DC2626' : em.avgEnergy >= 5 ? '#D97706' : '#166534';
+                            const affect = getClinicalAffectDescriptor(em.emotion, em.avgEnergy, em.intensityLevel);
                             return (
                               <tr key={em.emotion || idx}>
                                 <td style={{ fontWeight: 700, textAlign: 'center', width: '40px' }}>{idx + 1}</td>
@@ -1287,8 +1394,8 @@ export default function ProDashboard() {
                                     <span style={{ fontSize: '0.7rem', fontWeight: 700, width: '42px', textAlign: 'right' }}>{em.percentage}%</span>
                                   </div>
                                 </td>
-                                <td style={{ textAlign: 'center', fontWeight: 700, color: riskColor }}>{em.avgEnergy}</td>
-                                <td style={{ fontSize: '0.7rem', color: riskColor, fontWeight: 600 }}>{riskLabel}</td>
+                                <td style={{ textAlign: 'center', fontWeight: 700, color: affect.color }}>{em.avgEnergy}</td>
+                                <td style={{ fontSize: '0.7rem', color: affect.color, fontWeight: 700 }}>{affect.label}</td>
                               </tr>
                             );
                           })
@@ -1346,7 +1453,7 @@ export default function ProDashboard() {
                                 {dept.emotionBreakdown && dept.emotionBreakdown.length > 0 ? (
                                   dept.emotionBreakdown.map((em, eIdx) => {
                                     const color = EMOTION_COLORS[em.emotion] || '#728590';
-                                    const riskColor = em.avgEnergy >= 8 ? '#DC2626' : em.avgEnergy >= 5 ? '#D97706' : '#166534';
+                                    const affect = getClinicalAffectDescriptor(em.emotion, em.avgEnergy, em.intensityLevel);
                                     return (
                                       <tr key={em.emotion || eIdx}>
                                         <td>
@@ -1373,11 +1480,11 @@ export default function ProDashboard() {
                                             </span>
                                           </div>
                                         </td>
-                                        <td style={{ textAlign: 'center', fontWeight: 700, color: riskColor }}>
+                                        <td style={{ textAlign: 'center', fontWeight: 700, color: affect.color }}>
                                           {em.avgEnergy} <span style={{ fontSize: '0.62rem', color: '#728590' }}>/ 10</span>
                                         </td>
-                                        <td style={{ fontSize: '0.68rem', fontWeight: 600, color: riskColor }}>
-                                          {em.intensityLevel || (em.avgEnergy >= 8 ? 'High Tension' : em.avgEnergy >= 5 ? 'Moderate' : 'Low / Stable')}
+                                        <td style={{ fontSize: '0.68rem', fontWeight: 700, color: affect.color }}>
+                                          {affect.label}
                                         </td>
                                       </tr>
                                     );
@@ -1506,12 +1613,13 @@ export default function ProDashboard() {
                                   <span className={`rep-badge ${sevClass}`}>{c.severity}</span>
                                 </td>
                                 <td style={{ fontSize: '0.7rem', maxWidth: '240px', wordBreak: 'break-word' }}>
-                                  <div style={{ fontWeight: 600, color: '#182A34' }}>
-                                    {c.triggerCategory || c.summary}
+                                  <div style={{ fontWeight: 700, color: '#182A34', lineHeight: 1.35 }}>
+                                    {c.triggerCategory || c.summary || 'Clinical Risk Trigger'}
                                   </div>
                                   {c.flaggedKeywords && (
-                                    <div style={{ fontSize: '0.64rem', color: '#DC2626', marginTop: '2px' }}>
-                                      Keywords: {c.flaggedKeywords}
+                                    <div style={{ fontSize: '0.64rem', color: '#DC2626', marginTop: '3px', lineHeight: 1.35 }}>
+                                      <span style={{ fontWeight: 600, color: '#51646E' }}>Detected Terms: </span>
+                                      {formatClinicalTerms(c.flaggedKeywords)}
                                     </div>
                                   )}
                                 </td>
@@ -1527,11 +1635,17 @@ export default function ProDashboard() {
                                   </span>
                                 </td>
                                 <td style={{ fontSize: '0.68rem', color: '#51646E' }}>
-                                  <div style={{ fontWeight: 600, color: '#182A34' }}>
-                                    {c.assignedOfficer || c.reviewedBy || 'Pending Assignment'}
+                                  <div style={{ fontWeight: 700, color: '#182A34' }}>
+                                    {c.assignedOfficer || c.reviewedBy || 'Unassigned (Pending Triage)'}
                                   </div>
+                                  {c.assignedOfficerPosition && (
+                                    <div style={{ fontSize: '0.63rem', color: '#0284C7', fontWeight: 600, marginTop: '2px' }}>
+                                      <i className="fas fa-id-badge" style={{ fontSize: '0.58rem', marginRight: '3px' }}></i>
+                                      {c.assignedOfficerPosition}
+                                    </div>
+                                  )}
                                   {c.outreachStatus && c.outreachStatus !== 'NONE' && (
-                                    <div style={{ fontSize: '0.63rem', color: '#0284C7' }}>
+                                    <div style={{ fontSize: '0.62rem', color: '#166534', marginTop: '2px', fontWeight: 500 }}>
                                       Outreach: {c.outreachStatus}
                                     </div>
                                   )}
@@ -1580,7 +1694,15 @@ export default function ProDashboard() {
                                 {(dlg.sessionId || '').substring(0, 16)}…
                               </td>
                               <td style={{ fontWeight: 700 }}>{dlg.studentPseudonym}</td>
-                              <td style={{ color: '#0284C7', fontWeight: 600 }}>{dlg.professionalName}</td>
+                              <td style={{ fontSize: '0.7rem' }}>
+                                <div style={{ color: '#0284C7', fontWeight: 700 }}>{dlg.professionalName}</div>
+                                {dlg.professionalPosition && (
+                                  <div style={{ fontSize: '0.63rem', color: '#51646E', fontWeight: 600 }}>
+                                    <i className="fas fa-id-badge" style={{ fontSize: '0.58rem', marginRight: '3px' }}></i>
+                                    {dlg.professionalPosition}
+                                  </div>
+                                )}
+                              </td>
                               <td style={{ fontSize: '0.7rem' }}>{dlg.topic || 'General psychological support'}</td>
                               <td style={{ textAlign: 'center' }}>
                                 <span className={`rep-badge ${dlg.status === 'ACTIVE' ? 'high' : dlg.status === 'CLOSED' ? 'reviewed' : 'moderate'}`}>

@@ -89,6 +89,7 @@ public class MonthlyReportResponse {
         private long count;
         private double percentage;
         private double avgEnergy;
+        private String intensityLevel;
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -142,6 +143,7 @@ public class MonthlyReportResponse {
         private boolean reviewed;
         private String reviewedBy;
         private String assignedOfficer;
+        private String assignedOfficerPosition;
         private String outreachStatus;
         private String resolutionSummary;
         private LocalDateTime timestamp;
@@ -153,6 +155,7 @@ public class MonthlyReportResponse {
         private String sessionId;
         private String studentPseudonym;
         private String professionalName;
+        private String professionalPosition;
         private String status;
         private String topic;
         private String emotionTag;
