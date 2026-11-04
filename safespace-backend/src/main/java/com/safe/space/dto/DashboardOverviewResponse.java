@@ -60,6 +60,15 @@ public class DashboardOverviewResponse {
         private String emotion;
         private long count;
         private double avgEnergy;
+        private long uniqueStudentCount;
+        private List<StudentItem> students;
+    }
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class StudentItem {
+        private String pseudonym;
+        private long postCount;
+        private double avgEnergy;
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder

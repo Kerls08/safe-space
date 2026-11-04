@@ -144,12 +144,53 @@ export function getClinicalAffectDescriptor(emotion, avgEnergy, backendLabel) {
   return { label: 'Low Arousal', color: '#475569' };
 }
 
+export function formatTrendDateWord(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const parts = String(dateStr).split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const d = new Date(year, month, day);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+    }
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  } catch (e) {
+    return dateStr;
+  }
+}
+
+export function formatFullDateWord(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const parts = String(dateStr).split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const d = new Date(year, month, day);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+      }
+    }
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  } catch (e) {
+    return dateStr;
+  }
+}
+
 function SvgDonutChart({ emotions = [], total = 0 }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
+  const [selectedEmotion, setSelectedEmotion] = useState(null);
 
   const validTotal = total > 0 ? total : emotions.reduce((acc, e) => acc + (e.count || 0), 0);
-  const size = 220;
-  const strokeWidth = 26;
+  const size = 200;
+  const strokeWidth = 24;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
@@ -178,6 +219,11 @@ function SvgDonutChart({ emotions = [], total = 0 }) {
   });
 
   const dominant = slices.length > 0 ? slices[0] : null;
+  const selectedSlice = selectedEmotion ? slices.find((s) => s.emotion === selectedEmotion) : null;
+
+  const handleToggleEmotion = (emotionName) => {
+    setSelectedEmotion((prev) => (prev === emotionName ? null : emotionName));
+  };
 
   return (
     <div className="svg-donut-wrap">
@@ -191,35 +237,53 @@ function SvgDonutChart({ emotions = [], total = 0 }) {
             stroke="#E1E8EB"
             strokeWidth={strokeWidth}
           />
-          {slices.map((s) => (
-            <circle
-              key={s.emotion}
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              fill="none"
-              stroke={s.color}
-              strokeWidth={hoveredIdx === s.idx ? strokeWidth + 4 : strokeWidth}
-              strokeDasharray={s.strokeDasharray}
-              strokeDashoffset={s.strokeDashoffset}
-              strokeLinecap="round"
-              className="donut-slice"
-              transform={`rotate(-90 ${size / 2} ${size / 2})`}
-              onMouseEnter={() => setHoveredIdx(s.idx)}
-              onMouseLeave={() => setHoveredIdx(null)}
-            />
-          ))}
+          {slices.map((s) => {
+            const isHovered = hoveredIdx === s.idx;
+            const isSelected = selectedEmotion === s.emotion;
+            return (
+              <circle
+                key={s.emotion}
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                fill="none"
+                stroke={s.color}
+                strokeWidth={isHovered || isSelected ? strokeWidth + 5 : strokeWidth}
+                strokeDasharray={s.strokeDasharray}
+                strokeDashoffset={s.strokeDashoffset}
+                strokeLinecap="round"
+                className={`donut-slice ${isSelected ? 'is-selected' : ''}`}
+                style={{ cursor: 'pointer', transition: 'stroke-width 0.2s ease, opacity 0.2s ease' }}
+                transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                onMouseEnter={() => setHoveredIdx(s.idx)}
+                onMouseLeave={() => setHoveredIdx(null)}
+                onClick={() => handleToggleEmotion(s.emotion)}
+              />
+            );
+          })}
         </svg>
         <div className="donut-center-text">
           <div className="donut-center-val">
-            {hoveredIdx !== null ? slices[hoveredIdx]?.count : validTotal}
+            {hoveredIdx !== null
+              ? slices[hoveredIdx]?.count
+              : selectedSlice
+              ? selectedSlice.count
+              : validTotal}
           </div>
           <div className="donut-center-label">
-            {hoveredIdx !== null ? slices[hoveredIdx]?.emotion : 'Total Expressions'}
+            {hoveredIdx !== null
+              ? slices[hoveredIdx]?.emotion
+              : selectedSlice
+              ? selectedSlice.emotion
+              : 'Total Expressions'}
           </div>
           {hoveredIdx !== null ? (
             <div className="donut-center-sub" style={{ color: slices[hoveredIdx]?.color }}>
               {slices[hoveredIdx]?.pct}% • {slices[hoveredIdx]?.band.label}
+            </div>
+          ) : selectedSlice ? (
+            <div className="donut-center-sub" style={{ color: selectedSlice.color }}>
+              {selectedSlice.uniqueStudentCount || selectedSlice.students?.length || 0} students ({selectedSlice.pct}%)
             </div>
           ) : dominant ? (
             <div className="donut-center-sub">
@@ -233,30 +297,239 @@ function SvgDonutChart({ emotions = [], total = 0 }) {
         {slices.length === 0 ? (
           <div className="donut-empty-legend">No emotion reflections logged yet</div>
         ) : (
-          slices.map((s) => (
-            <div
-              key={s.emotion}
-              className={`donut-legend-item ${hoveredIdx === s.idx ? 'is-active' : ''}`}
-              onMouseEnter={() => setHoveredIdx(s.idx)}
-              onMouseLeave={() => setHoveredIdx(null)}
-            >
-              <div className="donut-legend-left">
-                <span className="donut-color-dot" style={{ background: s.color }}></span>
-                <span className="donut-emotion-name">{s.emotion}</span>
-              </div>
-              <div className="donut-legend-right">
-                <span className="donut-count">{s.count}</span>
-                <span className="donut-pct">{s.pct}%</span>
-                <span
-                  className="donut-band-tag"
-                  style={{ background: s.band.bg, color: s.band.color, borderColor: s.band.border }}
+          slices.map((s) => {
+            const isSelected = selectedEmotion === s.emotion;
+            const studentsList = s.students || [];
+            const studentCount = s.uniqueStudentCount !== undefined && s.uniqueStudentCount !== null
+              ? s.uniqueStudentCount
+              : studentsList.length;
+
+            return (
+              <div
+                key={s.emotion}
+                className={`donut-legend-item-card ${isSelected ? 'is-expanded' : ''}`}
+              >
+                <div
+                  className={`donut-legend-item ${hoveredIdx === s.idx ? 'is-active' : ''} ${isSelected ? 'is-active' : ''}`}
+                  onMouseEnter={() => setHoveredIdx(s.idx)}
+                  onMouseLeave={() => setHoveredIdx(null)}
+                  onClick={() => handleToggleEmotion(s.emotion)}
+                  title="Click mood to inspect participating students (per student, non-redundant)"
                 >
-                  {s.avgEnergy ? (Number.isInteger(s.avgEnergy) ? s.avgEnergy : s.avgEnergy.toFixed(1)) : 'N/A'}/10
-                </span>
+                  <div className="donut-legend-left">
+                    <span className="donut-color-dot" style={{ background: s.color }}></span>
+                    <span className="donut-emotion-name">{s.emotion}</span>
+                  </div>
+                  <div className="donut-legend-right">
+                    <span className="donut-students-pill" title="Distinct students">
+                      <i className="fas fa-user-graduate"></i> {studentCount} {studentCount === 1 ? 'student' : 'students'}
+                    </span>
+                    <span className="donut-count" title="Total expressions">
+                      {s.count} {s.count === 1 ? 'post' : 'posts'}
+                    </span>
+                    <span className="donut-pct">{s.pct}%</span>
+                    <span
+                      className="donut-band-tag"
+                      style={{ background: s.band.bg, color: s.band.color, borderColor: s.band.border }}
+                    >
+                      {s.avgEnergy ? (Number.isInteger(s.avgEnergy) ? s.avgEnergy : s.avgEnergy.toFixed(1)) : 'N/A'}/10
+                    </span>
+                    <span className="donut-chevron-indicator">
+                      <i className={`fas fa-chevron-${isSelected ? 'up' : 'down'}`}></i>
+                    </span>
+                  </div>
+                </div>
+
+                {isSelected && (
+                  <div className="donut-student-tray">
+                    <div className="donut-student-tray-header">
+                      <span className="tray-title">
+                        <i className="fas fa-users-viewfinder"></i> Students logged as <strong>{s.emotion}</strong>:
+                      </span>
+                      <span className="tray-badge">
+                        {studentsList.length} unique {studentsList.length === 1 ? 'student' : 'students'}
+                      </span>
+                    </div>
+
+                    {studentsList.length === 0 ? (
+                      <div className="tray-empty-state">
+                        <i className="fas fa-circle-info"></i> No individual student records mapped for this mood.
+                      </div>
+                    ) : (
+                      <div className="donut-student-chips-grid">
+                        {studentsList.map((st) => {
+                          const stBand = getClinicalBand(st.avgEnergy || s.avgEnergy || 5);
+                          return (
+                            <div key={st.pseudonym} className="donut-student-chip">
+                              <span className="chip-avatar-dot" style={{ background: s.color }}>
+                                <i className="fas fa-shield-cat"></i>
+                              </span>
+                              <span className="chip-pseudonym">@{st.pseudonym}</span>
+                              <span className="chip-posts-badge">
+                                {st.postCount} {st.postCount === 1 ? 'expression' : 'expressions'}
+                              </span>
+                              <span
+                                className="chip-intensity-badge"
+                                style={{ background: stBand.bg, color: stBand.color, borderColor: stBand.border }}
+                                title={`Average intensity for ${s.emotion}: ${st.avgEnergy}/10 (${stBand.label})`}
+                              >
+                                {st.avgEnergy ? (Number.isInteger(st.avgEnergy) ? st.avgEnergy : st.avgEnergy.toFixed(1)) : 'N/A'}/10
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
-          ))
+            );
+          })
         )}
+      </div>
+    </div>
+  );
+}
+
+function DateStudentsModal({ datePoint, onClose }) {
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+
+  if (!datePoint) return null;
+
+  const students = datePoint.students || [];
+  const filtered = search.trim()
+    ? students.filter((s) => s.pseudonym?.toLowerCase().includes(search.toLowerCase()))
+    : students;
+
+  const dateWord = formatFullDateWord(datePoint.date);
+  const totalStudents = datePoint.uniqueStudentCount !== undefined && datePoint.uniqueStudentCount !== null
+    ? datePoint.uniqueStudentCount
+    : students.length;
+
+  return (
+    <div className="date-students-modal-overlay" onClick={onClose}>
+      <div className="date-students-modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="date-students-modal-header">
+          <div className="modal-title-wrap">
+            <div className="modal-title-badge">
+              <i className="fas fa-calendar-day"></i>
+            </div>
+            <div>
+              <h3>Daily Student Telemetry</h3>
+              <p className="modal-subtitle">{dateWord}</p>
+            </div>
+          </div>
+          <button className="modal-close-btn" onClick={onClose} aria-label="Close modal">
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div className="date-students-stats-strip">
+          <div className="strip-metric">
+            <span className="metric-label">Active Students</span>
+            <span className="metric-val">{totalStudents}</span>
+          </div>
+          <div className="strip-metric">
+            <span className="metric-label">Total Expressions</span>
+            <span className="metric-val">{datePoint.postCount}</span>
+          </div>
+          <div className="strip-metric">
+            <span className="metric-label">Affective Intensity</span>
+            <span className="metric-val" style={{ color: datePoint.band?.color }}>
+              {datePoint.avgEnergy ? (Number.isInteger(datePoint.avgEnergy) ? datePoint.avgEnergy : datePoint.avgEnergy.toFixed(1)) : 'N/A'}/10
+            </span>
+          </div>
+          <div className="strip-metric">
+            <span className="metric-label">Clinical Tier</span>
+            <span
+              className="metric-tier-pill"
+              style={{ background: datePoint.band?.bg, color: datePoint.band?.color, borderColor: datePoint.band?.border }}
+            >
+              {datePoint.band?.label}
+            </span>
+          </div>
+        </div>
+
+        {students.length > 4 && (
+          <div className="date-students-search-wrap">
+            <i className="fas fa-magnifying-glass search-icon"></i>
+            <input
+              type="text"
+              placeholder="Filter student pseudonyms..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="date-students-search-input"
+            />
+            {search && (
+              <button className="search-clear-btn" onClick={() => setSearch('')}>
+                <i className="fas fa-times-circle"></i>
+              </button>
+            )}
+          </div>
+        )}
+
+        <div className="date-students-list-container">
+          {filtered.length === 0 ? (
+            <div className="date-students-empty">
+              <i className="fas fa-user-slash"></i>
+              <p>{students.length === 0 ? 'No student expressions recorded for this day.' : 'No matching pseudonym found.'}</p>
+            </div>
+          ) : (
+            <div className="date-students-grid">
+              {filtered.map((st) => {
+                const stBand = getClinicalBand(st.avgEnergy || datePoint.avgEnergy || 5);
+                return (
+                  <div key={st.pseudonym} className="student-roster-card">
+                    <div className="roster-card-left">
+                      <div className="roster-avatar" style={{ background: stBand.bg, color: stBand.color }}>
+                        <i className="fas fa-user-shield"></i>
+                      </div>
+                      <div className="roster-meta">
+                        <span className="roster-pseudonym">@{st.pseudonym}</span>
+                        <span className="roster-posts">
+                          <i className="fas fa-comment-dots"></i> {st.postCount} {st.postCount === 1 ? 'expression' : 'expressions'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="roster-card-right">
+                      <span
+                        className="roster-score-pill"
+                        style={{ background: stBand.bg, color: stBand.color, borderColor: stBand.border }}
+                      >
+                        {st.avgEnergy ? (Number.isInteger(st.avgEnergy) ? st.avgEnergy : st.avgEnergy.toFixed(1)) : 'N/A'}/10
+                      </span>
+                      <span className="roster-tier-name" style={{ color: stBand.color }}>
+                        {stBand.label}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="date-students-modal-footer">
+          <span className="compliance-hint">
+            <i className="fas fa-shield-halved"></i> Strictly de-identified student data under RA 10173 & RA 11036 (Non-redundant: one record per student).
+          </span>
+          <button className="footer-done-btn" onClick={onClose}>
+            Done
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -264,6 +537,7 @@ function SvgDonutChart({ emotions = [], total = 0 }) {
 
 function SvgLineTrendChart({ snapshots = [] }) {
   const [hoveredPoint, setHoveredPoint] = useState(null);
+  const [selectedPointForModal, setSelectedPointForModal] = useState(null);
   const svgRef = useRef(null);
 
   if (!snapshots || snapshots.length === 0) {
@@ -363,6 +637,12 @@ function SvgLineTrendChart({ snapshots = [] }) {
     setHoveredPoint(null);
   };
 
+  const handleChartClick = () => {
+    if (hoveredPoint) {
+      setSelectedPointForModal(hoveredPoint);
+    }
+  };
+
   return (
     <div className="svg-trend-wrap">
       <div className="trend-chart-container">
@@ -371,10 +651,12 @@ function SvgLineTrendChart({ snapshots = [] }) {
           viewBox={`0 0 ${width} ${height}`}
           className="trend-svg"
           preserveAspectRatio="xMidYMid meet"
+          style={{ cursor: 'pointer' }}
           onMouseMove={handlePointerMove}
           onMouseLeave={handlePointerLeave}
           onTouchMove={handlePointerMove}
           onTouchEnd={handlePointerLeave}
+          onClick={handleChartClick}
         >
           <defs>
             <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
@@ -460,6 +742,10 @@ function SvgLineTrendChart({ snapshots = [] }) {
 
           {points.map((p, idx) => {
             const isHovered = hoveredPoint?.date === p.date;
+            const studentCount = p.uniqueStudentCount !== undefined && p.uniqueStudentCount !== null
+              ? p.uniqueStudentCount
+              : (p.students ? p.students.length : null);
+
             return (
               <g key={idx} style={{ pointerEvents: 'none' }}>
                 {isHovered && (
@@ -484,22 +770,24 @@ function SvgLineTrendChart({ snapshots = [] }) {
                 <text
                   x={p.x}
                   y={height - 12}
-                  fontSize="10"
+                  fontSize="9.5"
                   textAnchor="middle"
                   fill={isHovered ? '#243E4C' : '#728590'}
                   fontWeight={isHovered ? '700' : '600'}
                 >
-                  {p.date ? p.date.substring(5) : ''}
+                  {formatTrendDateWord(p.date)}
                 </text>
                 <text
                   x={p.x}
                   y={height - 2}
-                  fontSize="8.5"
+                  fontSize="8"
                   textAnchor="middle"
                   fill={isHovered ? '#243E4C' : '#728590'}
-                  fontWeight={isHovered ? '600' : '400'}
+                  fontWeight={isHovered ? '600' : '500'}
                 >
-                  {p.postCount} posts
+                  {studentCount !== null
+                    ? `${studentCount} ${studentCount === 1 ? 'student' : 'students'}`
+                    : `${p.postCount} posts`}
                 </text>
               </g>
             );
@@ -511,13 +799,18 @@ function SvgLineTrendChart({ snapshots = [] }) {
           const isNearTop = hoveredPoint.y < 65;
           let translateX = '-50%';
           let arrowLeft = '50%';
-          if (leftPct < 18) {
-            translateX = '-15%';
+          if (leftPct < 22) {
+            translateX = '-12%';
             arrowLeft = '18%';
-          } else if (leftPct > 82) {
-            translateX = '-85%';
+          } else if (leftPct > 78) {
+            translateX = '-88%';
             arrowLeft = '82%';
           }
+
+          const studentsList = hoveredPoint.students || [];
+          const studentCount = hoveredPoint.uniqueStudentCount !== undefined && hoveredPoint.uniqueStudentCount !== null
+            ? hoveredPoint.uniqueStudentCount
+            : studentsList.length;
 
           return (
             <div
@@ -528,17 +821,54 @@ function SvgLineTrendChart({ snapshots = [] }) {
                 transform: isNearTop
                   ? `translate(${translateX}, 16px)`
                   : `translate(${translateX}, calc(-100% - 16px))`,
-                '--arrow-left': arrowLeft
+                '--arrow-left': arrowLeft,
+                cursor: 'pointer',
+                pointerEvents: 'auto'
               }}
+              onClick={() => setSelectedPointForModal(hoveredPoint)}
+              title="Click to view full student telemetry"
             >
-              <div className="tooltip-date">{hoveredPoint.date}</div>
+              <div className="tooltip-date-header">
+                <i className="fas fa-calendar-day"></i>
+                <span>{formatFullDateWord(hoveredPoint.date)}</span>
+              </div>
               <div className="tooltip-score">
-                <strong>{hoveredPoint.avgEnergy ? hoveredPoint.avgEnergy.toFixed(1) : 'N/A'} / 10</strong>
+                <strong>{hoveredPoint.avgEnergy ? (Number.isInteger(hoveredPoint.avgEnergy) ? hoveredPoint.avgEnergy : hoveredPoint.avgEnergy.toFixed(1)) : 'N/A'} / 10</strong>
                 <span className="tooltip-band" style={{ color: hoveredPoint.band.color }}>
                   {hoveredPoint.band.label}
                 </span>
               </div>
-              <div className="tooltip-volume">{hoveredPoint.postCount} student expressions</div>
+              <div className="tooltip-volume">
+                <span className="tooltip-students-count">
+                  <i className="fas fa-user-graduate"></i> {studentCount} {studentCount === 1 ? 'student' : 'students'}
+                </span>
+                <span className="tooltip-sep">•</span>
+                <span>{hoveredPoint.postCount} {hoveredPoint.postCount === 1 ? 'expression' : 'expressions'}</span>
+              </div>
+
+              {studentsList.length > 0 && (
+                <div className="tooltip-pseudonyms-box">
+                  <div className="tooltip-pseudo-title">
+                    <span>Participating Students:</span>
+                  </div>
+                  <div className="tooltip-pseudo-tags">
+                    {studentsList.slice(0, 4).map((st) => (
+                      <span key={st.pseudonym} className="tooltip-pseudo-tag">
+                        @{st.pseudonym}
+                      </span>
+                    ))}
+                    {studentsList.length > 4 && (
+                      <span className="tooltip-pseudo-more">
+                        +{studentsList.length - 4} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="tooltip-click-cta">
+                <i className="fas fa-arrow-pointer"></i> Click point to inspect student roster
+              </div>
             </div>
           );
         })()}
@@ -554,6 +884,13 @@ function SvgLineTrendChart({ snapshots = [] }) {
           <span>Acute Threshold (≥ 8.0)</span>
         </div>
       </div>
+
+      {selectedPointForModal && (
+        <DateStudentsModal
+          datePoint={selectedPointForModal}
+          onClose={() => setSelectedPointForModal(null)}
+        />
+      )}
     </div>
   );
 }

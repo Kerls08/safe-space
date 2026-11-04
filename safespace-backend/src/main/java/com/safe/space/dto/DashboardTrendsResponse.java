@@ -28,6 +28,15 @@ public class DashboardTrendsResponse {
         private double avgEnergy;
         private long replyCount;
         private long kitPrescriptions;
+        private long uniqueStudentCount;
+        private List<StudentItem> students;
+    }
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class StudentItem {
+        private String pseudonym;
+        private long postCount;
+        private double avgEnergy;
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder

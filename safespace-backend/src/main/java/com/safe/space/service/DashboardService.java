@@ -82,12 +82,34 @@ public class DashboardService {
 
         // Emotion breakdown
         List<Object[]> emotionRows = postRepository.findAverageEnergyByEmotion();
+        List<Object[]> studentEmotionRows = postRepository.findStudentStatsByEmotion();
+
+        Map<String, List<DashboardOverviewResponse.StudentItem>> studentsByEmotion = new HashMap<>();
+        for (Object[] r : studentEmotionRows) {
+            String emotion = (String) r[0];
+            String pseudo = (String) r[1];
+            long postCount = ((Number) r[2]).longValue();
+            double avgE = Math.round(((Number) r[3]).doubleValue() * 10.0) / 10.0;
+            studentsByEmotion.computeIfAbsent(emotion, k -> new ArrayList<>())
+                    .add(DashboardOverviewResponse.StudentItem.builder()
+                            .pseudonym(pseudo)
+                            .postCount(postCount)
+                            .avgEnergy(avgE)
+                            .build());
+        }
+
         List<DashboardOverviewResponse.EmotionStat> emotionStats = emotionRows.stream()
-                .map(r -> DashboardOverviewResponse.EmotionStat.builder()
-                        .emotion((String) r[0])
-                        .avgEnergy(((Number) r[1]).doubleValue())
-                        .count(((Number) r[2]).longValue())
-                        .build())
+                .map(r -> {
+                    String emotion = (String) r[0];
+                    List<DashboardOverviewResponse.StudentItem> students = studentsByEmotion.getOrDefault(emotion, Collections.emptyList());
+                    return DashboardOverviewResponse.EmotionStat.builder()
+                            .emotion(emotion)
+                            .avgEnergy(Math.round(((Number) r[1]).doubleValue() * 10.0) / 10.0)
+                            .count(((Number) r[2]).longValue())
+                            .uniqueStudentCount(students.size())
+                            .students(students)
+                            .build();
+                })
                 .collect(Collectors.toList());
 
         // Auto-Reply
@@ -209,6 +231,7 @@ public class DashboardService {
         List<Object[]> dailyEnergy = postRepository.findDailyEnergyTrends(since);
         List<Object[]> dailyReplies = autoReplyLogRepository.countDailyReplies(since);
         List<Object[]> dailyKits = calmDownSessionRepository.countDailySessions(since);
+        List<Object[]> dailyStudentRows = postRepository.findDailyStudentStats(since);
 
         // Index reply and kit counts by date string for merging
         Map<String, Long> replyByDate = new HashMap<>();
@@ -216,15 +239,32 @@ public class DashboardService {
         Map<String, Long> kitByDate = new HashMap<>();
         for (Object[] r : dailyKits) kitByDate.put(r[0].toString(), ((Number) r[1]).longValue());
 
+        Map<String, List<DashboardTrendsResponse.StudentItem>> studentsByDate = new HashMap<>();
+        for (Object[] r : dailyStudentRows) {
+            String date = r[0].toString();
+            String pseudo = (String) r[1];
+            long postCount = ((Number) r[2]).longValue();
+            double avgE = Math.round(((Number) r[3]).doubleValue() * 10.0) / 10.0;
+            studentsByDate.computeIfAbsent(date, k -> new ArrayList<>())
+                    .add(DashboardTrendsResponse.StudentItem.builder()
+                            .pseudonym(pseudo)
+                            .postCount(postCount)
+                            .avgEnergy(avgE)
+                            .build());
+        }
+
         List<DashboardTrendsResponse.DailySnapshot> snapshots = new ArrayList<>();
         for (Object[] row : dailyEnergy) {
             String date = row[0].toString();
+            List<DashboardTrendsResponse.StudentItem> students = studentsByDate.getOrDefault(date, Collections.emptyList());
             snapshots.add(DashboardTrendsResponse.DailySnapshot.builder()
                     .date(date)
                     .postCount(((Number) row[2]).longValue())
                     .avgEnergy(Math.round(((Number) row[1]).doubleValue() * 10.0) / 10.0)
                     .replyCount(replyByDate.getOrDefault(date, 0L))
                     .kitPrescriptions(kitByDate.getOrDefault(date, 0L))
+                    .uniqueStudentCount(students.size())
+                    .students(students)
                     .build());
         }
 

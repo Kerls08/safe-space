@@ -96,4 +96,21 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     /** Count by emotion tag. */
     @Query("SELECT p.emotionTag, COUNT(p) FROM Post p GROUP BY p.emotionTag")
     List<Object[]> countByEmotionTag();
+
+    /** Distinct student stats per emotion tag. */
+    @Query("SELECT p.emotionTag, p.pseudonym, COUNT(p), AVG(p.energyScore) " +
+           "FROM Post p " +
+           "WHERE p.pseudonym IS NOT NULL AND TRIM(p.pseudonym) != '' " +
+           "AND p.emotionTag IS NOT NULL AND TRIM(p.emotionTag) != '' " +
+           "GROUP BY p.emotionTag, p.pseudonym " +
+           "ORDER BY p.emotionTag ASC, COUNT(p) DESC")
+    List<Object[]> findStudentStatsByEmotion();
+
+    /** Distinct student stats per date for longitudinal trends. */
+    @Query("SELECT CAST(p.createdAt AS DATE), p.pseudonym, COUNT(p), AVG(p.energyScore) " +
+           "FROM Post p " +
+           "WHERE p.createdAt >= :since AND p.pseudonym IS NOT NULL AND TRIM(p.pseudonym) != '' " +
+           "GROUP BY CAST(p.createdAt AS DATE), p.pseudonym " +
+           "ORDER BY CAST(p.createdAt AS DATE) ASC, COUNT(p) DESC")
+    List<Object[]> findDailyStudentStats(@Param("since") LocalDateTime since);
 }
