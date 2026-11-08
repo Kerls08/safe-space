@@ -422,9 +422,35 @@
 .alert-tag.status-escalated { color: #7C3AED; font-weight: 600; }
 .alert-tag.status-declined { color: #C2410C; font-weight: 600; }
 .alert-tag.status-invited { color: #0284C7; font-weight: 600; }
+.alert-tag.status-chat-waiting { color: #D97706; font-weight: 600; }
 .alert-tag.status-chat-active { color: #1D4ED8; font-weight: 600; }
 .alert-tag.status-concluded { color: #0D9488; font-weight: 600; }
 .alert-tag.archived-tag { color: #728590; font-weight: 500; }
+
+/* Dedicated Waiting in Chat Queue Callout Banner */
+.alert-waiting-chat-callout {
+  margin-top: 0.65rem;
+  padding: 0.55rem 0.85rem;
+  background: #F8FAFC;
+  border: 1px solid #E1E8EB;
+  border-left: 3px solid #D97706;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #51646E;
+}
+
+.alert-waiting-chat-callout .waiting-chat-callout-text strong {
+  display: block;
+  font-size: 0.82rem;
+  color: #92400E;
+  margin-bottom: 0.15rem;
+}
+
+.alert-waiting-chat-callout .waiting-chat-callout-text span {
+  font-size: 0.75rem;
+  color: #51646E;
+}
 
 /*  Dedicated Outreach Declined Callout Banner  */
 .alert-declined-callout {

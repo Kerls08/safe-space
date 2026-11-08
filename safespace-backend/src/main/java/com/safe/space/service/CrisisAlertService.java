@@ -273,9 +273,20 @@ public class CrisisAlertService {
      */
     @Transactional
     public CrisisAlert alertCrisisChat(String sessionId, String pseudonym,
-            String topic, String emotionTag, Integer energyScore) {
-        if (alertExists(sessionId, "CHAT"))
-            return null;
+            String triggerContent, String emotionTag, Integer energyScore) {
+        List<CrisisAlert> existingAlerts = alertRepository.findByReferenceIdAndReferenceType(sessionId, "CHAT");
+        if (!existingAlerts.isEmpty()) {
+            CrisisAlert existing = existingAlerts.get(0);
+            if ("ACTIVE".equals(existing.getStatus()) || "ACKNOWLEDGED".equals(existing.getStatus())) {
+                if (triggerContent != null && !triggerContent.isBlank()) {
+                    existing.setMessage("Student pseudonym: " + pseudonym + ". Flagged in Chat: \"" + truncate(triggerContent, 300) + "\"");
+                    if (energyScore != null) existing.setEnergyScore(energyScore);
+                    if (emotionTag != null) existing.setEmotionTag(emotionTag);
+                    return alertRepository.save(existing);
+                }
+                return existing;
+            }
+        }
 
         CrisisAlert alert = CrisisAlert.builder()
                 .alertId(generateAlertId())
@@ -284,8 +295,10 @@ public class CrisisAlertService {
                 .status("ACTIVE")
                 .referenceId(sessionId)
                 .referenceType("CHAT")
+                .chatSessionId(sessionId)
+                .outreachStatus("WAITING")
                 .title("Crisis chat session initiated")
-                .message("Student pseudonym: " + pseudonym + ". Topic: " + truncate(topic, 300))
+                .message("Student pseudonym: " + pseudonym + ". Flagged in Chat: \"" + truncate(triggerContent, 300) + "\"")
                 .pseudonym(pseudonym)
                 .emotionTag(emotionTag)
                 .energyScore(energyScore)
@@ -887,7 +900,20 @@ public class CrisisAlertService {
         }
 
         // Check if student already has an open session (WAITING, INVITED, or ACTIVE)
-        List<ChatSession> openSessions = sessionRepository.findOpenSessionsForStudent(studentUserId, alert.getPseudonym());
+        List<ChatSession> openSessions = new ArrayList<>(sessionRepository.findOpenSessionsForStudent(studentUserId, alert.getPseudonym()));
+
+        if (openSessions.isEmpty()) {
+            String directSessionId = alert.getChatSessionId() != null && !alert.getChatSessionId().isBlank()
+                    ? alert.getChatSessionId()
+                    : ("CHAT".equalsIgnoreCase(alert.getReferenceType()) ? alert.getReferenceId() : null);
+            if (directSessionId != null) {
+                sessionRepository.findBySessionId(directSessionId).ifPresent(s -> {
+                    if (!"CLOSED".equals(s.getStatus()) && !s.isDeletedByStudent()) {
+                        openSessions.add(s);
+                    }
+                });
+            }
+        }
 
         if (!openSessions.isEmpty()) {
             ChatSession existing = openSessions.get(0);
@@ -1144,6 +1170,9 @@ public class CrisisAlertService {
         if (a.getChatSessionId() != null && !a.getChatSessionId().isBlank()) {
             sess = sessionRepository.findBySessionId(a.getChatSessionId()).orElse(null);
         }
+        if (sess == null && "CHAT".equalsIgnoreCase(a.getReferenceType()) && a.getReferenceId() != null) {
+            sess = sessionRepository.findBySessionId(a.getReferenceId()).orElse(null);
+        }
         if (sess == null && a.getPseudonym() != null && !a.getPseudonym().isBlank()) {
             List<com.safe.space.model.ChatSession> pSessions = sessionRepository.findByStudentPseudonymOrderByCreatedAtDesc(a.getPseudonym());
             if (!pSessions.isEmpty()) {
@@ -1160,10 +1189,16 @@ public class CrisisAlertService {
                 } else {
                     outreachStatus = "ACTIVE";
                 }
+            } else if ("WAITING".equals(sessStatus)) {
+                outreachStatus = "WAITING";
             } else if ("DECLINED".equals(sessStatus)) {
                 outreachStatus = "DECLINED";
             } else if ("INVITED".equals(sessStatus)) {
                 outreachStatus = "INVITED";
+            }
+        } else if ("CRISIS_CHAT".equalsIgnoreCase(a.getAlertType()) || "CHAT".equalsIgnoreCase(a.getReferenceType())) {
+            if ("NONE".equals(outreachStatus)) {
+                outreachStatus = "WAITING";
             }
         }
         map.put("outreachStatus", outreachStatus);

@@ -102,19 +102,21 @@ export default function CrisisAlerts() {
         if (!s) return null;
         if (s.deletedByStudent) return 'CONCLUDED';
         if (s.status === 'ACTIVE') return 'ACTIVE';
+        if (s.status === 'WAITING') return 'WAITING';
         if (s.status === 'DECLINED') return 'DECLINED';
         if (s.status === 'CLOSED') return 'CONCLUDED';
         if (s.status === 'INVITED') return 'INVITED';
         return null;
       };
 
-      if (a.chatSessionId && sessionsMap[a.chatSessionId]) {
-        const res = matchSession(sessionsMap[a.chatSessionId]);
+      const targetSessionId = a.chatSessionId || (a.referenceType === 'CHAT' ? a.referenceId : null);
+      if (targetSessionId && sessionsMap[targetSessionId]) {
+        const res = matchSession(sessionsMap[targetSessionId]);
         if (res) return res;
       }
 
       if (a.outreachStatus && a.outreachStatus !== 'NONE') {
-        if (a.outreachStatus === 'CONCLUDED' || a.outreachStatus === 'ACTIVE') {
+        if (a.outreachStatus === 'CONCLUDED' || a.outreachStatus === 'ACTIVE' || a.outreachStatus === 'WAITING') {
           return a.outreachStatus;
         }
       }
@@ -125,6 +127,7 @@ export default function CrisisAlerts() {
       }
 
       if (a.outreachStatus && a.outreachStatus !== 'NONE') return a.outreachStatus;
+      if (a.alertType === 'CRISIS_CHAT' || a.referenceType === 'CHAT') return 'WAITING';
       return 'NONE';
     },
     [sessionsMap]
@@ -150,19 +153,23 @@ export default function CrisisAlerts() {
       entry.count += 1;
       const eff = getEffectiveOutreachStatus(a);
       const isAck = !!a.acknowledgedBy || a.status === 'ACKNOWLEDGED';
+      const resolvedSessionId = a.chatSessionId || (a.referenceType === 'CHAT' ? a.referenceId : null);
       if (eff === 'ACTIVE' && isAck) {
         entry.outreachStatus = 'ACTIVE';
-        entry.chatSessionId = a.chatSessionId || entry.chatSessionId;
-      } else if (eff === 'CONCLUDED' && entry.outreachStatus !== 'ACTIVE') {
+        entry.chatSessionId = resolvedSessionId || entry.chatSessionId;
+      } else if (eff === 'WAITING') {
+        entry.outreachStatus = 'WAITING';
+        entry.chatSessionId = resolvedSessionId || entry.chatSessionId;
+      } else if (eff === 'CONCLUDED' && entry.outreachStatus !== 'ACTIVE' && entry.outreachStatus !== 'WAITING') {
         entry.outreachStatus = 'CONCLUDED';
-        entry.chatSessionId = a.chatSessionId || entry.chatSessionId;
-      } else if (eff === 'DECLINED' && entry.outreachStatus !== 'ACTIVE' && entry.outreachStatus !== 'CONCLUDED') {
+        entry.chatSessionId = resolvedSessionId || entry.chatSessionId;
+      } else if (eff === 'DECLINED' && entry.outreachStatus !== 'ACTIVE' && entry.outreachStatus !== 'CONCLUDED' && entry.outreachStatus !== 'WAITING') {
         // DECLINED overrides INVITED to accurately reflect student's decision
         entry.outreachStatus = 'DECLINED';
-        entry.chatSessionId = a.chatSessionId || entry.chatSessionId;
-      } else if (eff === 'INVITED' && entry.outreachStatus !== 'ACTIVE' && entry.outreachStatus !== 'CONCLUDED' && entry.outreachStatus !== 'DECLINED') {
+        entry.chatSessionId = resolvedSessionId || entry.chatSessionId;
+      } else if (eff === 'INVITED' && entry.outreachStatus !== 'ACTIVE' && entry.outreachStatus !== 'CONCLUDED' && entry.outreachStatus !== 'DECLINED' && entry.outreachStatus !== 'WAITING') {
         entry.outreachStatus = 'INVITED';
-        entry.chatSessionId = a.chatSessionId || entry.chatSessionId;
+        entry.chatSessionId = resolvedSessionId || entry.chatSessionId;
       }
       if (a.acknowledgedBy && !entry.assignedBy) {
         entry.assignedBy = a.acknowledgedBy;
@@ -177,6 +184,11 @@ export default function CrisisAlerts() {
     (a) => {
       let st = getEffectiveOutreachStatus(a);
 
+      const isChatSource = a.alertType === 'CRISIS_CHAT' || a.referenceType === 'CHAT';
+      if (st === 'WAITING' || (isChatSource && (st === 'NONE' || !st))) {
+        return 'WAITING';
+      }
+
       // Clinical Triage Guard: An alert sitting unassigned in Needs Action cannot be in active counseling
       const isUnassigned = (a.status === 'ACTIVE' || !a.acknowledgedBy) && !a.resolvedBy;
       if (isUnassigned && st === 'ACTIVE') {
@@ -185,6 +197,9 @@ export default function CrisisAlerts() {
 
       if ((st === 'NONE' || st === 'INVITED') && a.pseudonym && studentStateMap[a.pseudonym]) {
         const sState = studentStateMap[a.pseudonym];
+        if (sState.outreachStatus === 'WAITING') {
+          return 'WAITING';
+        }
         if (sState.outreachStatus === 'CONCLUDED') {
           return 'CONCLUDED';
         }
@@ -823,10 +838,18 @@ export default function CrisisAlerts() {
       );
     }
     const outreachStatus = getCaseOutreachStatus(a);
+    const isChatSource = a.alertType === 'CRISIS_CHAT' || a.referenceType === 'CHAT';
     if (outreachStatus === 'DECLINED') {
       return (
         <span className="alert-tag status-declined">
           Outreach Declined (Venting Only)
+        </span>
+      );
+    }
+    if (outreachStatus === 'WAITING' || (isChatSource && activeTab === 'needsAction' && a.status === 'ACTIVE')) {
+      return (
+        <span className="alert-tag status-chat-waiting" title="Student is currently in the Anonymous Chat queue waiting for a counselor">
+          Waiting in Chat Queue
         </span>
       );
     }
@@ -877,7 +900,9 @@ export default function CrisisAlerts() {
     // Cross-tab student state lookup
     const studentState = a.pseudonym ? studentStateMap[a.pseudonym] : null;
     const outreachStatus = getCaseOutreachStatus(a);
-    const targetChatSessionId = a.chatSessionId || (studentState ? studentState.chatSessionId : null);
+    const targetChatSessionId = a.chatSessionId || (a.referenceType === 'CHAT' ? a.referenceId : null) || (studentState ? studentState.chatSessionId : null);
+    const isChatSource = a.alertType === 'CRISIS_CHAT' || a.referenceType === 'CHAT';
+    const isChatWaiting = isChatSource && (outreachStatus === 'WAITING' || outreachStatus === 'NONE');
 
     // Latest alert in the thread/group (for accurate recent activity timestamp)
     const latestAlert = allAlerts.reduce((latest, curr) => {
@@ -1096,6 +1121,15 @@ export default function CrisisAlerts() {
           {/* Active Callouts: Only display when case is active (not resolved/archived) */}
           {a.status !== 'RESOLVED' && a.status !== 'ARCHIVED' && (
             <>
+              {isChatWaiting && (
+                <div className="alert-waiting-chat-callout">
+                  <div className="waiting-chat-callout-text">
+                    <strong>Live Student in Anonymous Chat Queue</strong>
+                    <span>This student requested an anonymous consultation and sent a crisis-flagged message. Click "Accept Chat" to enter their room.</span>
+                  </div>
+                </div>
+              )}
+
               {outreachStatus === 'DECLINED' && (
                 <div className="alert-declined-callout">
                   <div className="declined-callout-text">
@@ -1226,7 +1260,68 @@ export default function CrisisAlerts() {
                   )}
                 </button>
               </>
-            ) : outreachStatus === 'ACTIVE' || outreachStatus === 'INVITED' ? (
+            ) : outreachStatus === 'WAITING' || isChatWaiting ? (
+              <>
+                {canResolve && (
+                  <button
+                    type="button"
+                    className="btn-alert resolve"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openResolveModal(targetAlertId, 'resolve', a.pseudonym);
+                    }}
+                  >
+                    <i className="fas fa-check"></i> Resolve{totalCount > 1 ? ` Case (${totalCount})` : ''}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn-alert chat"
+                  disabled={initiatingAlertId === targetAlertId}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleInitiateChat(targetAlertId);
+                  }}
+                  title="Accept consultation and join student waiting in anonymous chat"
+                >
+                  {initiatingAlertId === targetAlertId ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin"></i> Joining Chat...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-comments"></i> Accept Chat
+                    </>
+                  )}
+                </button>
+              </>
+            ) : outreachStatus === 'ACTIVE' ? (
+              <>
+                <button
+                  type="button"
+                  className="btn-alert chat"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(targetChatSessionId ? `/anon-chat?session=${targetChatSessionId}` : '/anon-chat');
+                  }}
+                  title="Open active chat consultation"
+                >
+                  <i className="fas fa-comments"></i> Open Chat
+                </button>
+                {canResolve && (
+                  <button
+                    type="button"
+                    className="btn-alert resolve"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openResolveModal(targetAlertId, 'resolve', a.pseudonym);
+                    }}
+                  >
+                    <i className="fas fa-check"></i> Resolve{totalCount > 1 ? ` Case (${totalCount})` : ''}
+                  </button>
+                )}
+              </>
+            ) : outreachStatus === 'INVITED' ? (
               <>
                 <button
                   type="button"
@@ -1236,20 +1331,17 @@ export default function CrisisAlerts() {
                     navigate(targetChatSessionId ? `/anon-chat?session=${targetChatSessionId}` : '/anon-chat');
                   }}
                 >
-                  <i className="fas fa-comments"></i>{' '}
-                  {outreachStatus === 'ACTIVE' ? 'Open Chat' : 'Monitor Session'}
+                  <i className="fas fa-comments"></i> Monitor Session
                 </button>
-                {outreachStatus === 'INVITED' && (
-                  <button
-                    type="button"
-                    className="btn-alert"
-                    style={{ background: '#F4F7F7', color: '#728590', borderColor: '#E1E8EB', cursor: 'not-allowed' }}
-                    disabled
-                    title="Outreach invitation is currently pending student response"
-                  >
-                    <i className="fas fa-hourglass-half"></i> Invite Pending
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className="btn-alert"
+                  style={{ background: '#F4F7F7', color: '#728590', borderColor: '#E1E8EB', cursor: 'not-allowed' }}
+                  disabled
+                  title="Outreach invitation is currently pending student response"
+                >
+                  <i className="fas fa-hourglass-half"></i> Invite Pending
+                </button>
                 {canResolve && (
                   <button
                     type="button"

@@ -868,13 +868,15 @@ public class AnonymousChatService {
         sessionRepository.save(session);
 
         // If crisis was detected in the message, escalate the session
-        if (fallback.crisisDetected() && !session.isCrisisFlag()) {
-            session.setCrisisFlag(true);
-            sessionRepository.save(session);
+        if (fallback.crisisDetected()) {
+            if (!session.isCrisisFlag()) {
+                session.setCrisisFlag(true);
+                sessionRepository.save(session);
+            }
             triggerCrisisChatAlert(
                     session.getSessionId(),
                     session.getStudentPseudonym(),
-                    session.getTopic(),
+                    messageContent != null && !messageContent.isBlank() ? messageContent : session.getTopic(),
                     session.getEmotionTag(),
                     session.getEnergyScore());
             log.warn("Crisis escalation via fallback: sessionId={}", session.getSessionId());
