@@ -25,6 +25,7 @@ public class AuthDTOs {
         private String role;
         private boolean forcePasswordChange;
         private String message;
+        private String profilePicture;
     }
 
     // ── Password Change ──
@@ -139,6 +140,7 @@ public class AuthDTOs {
         private boolean passwordChanged;
         private String createdAt;
         private String lastLoginAt;
+        private String profilePicture;
     }
 
     // ── Admin: Stats ──
@@ -163,6 +165,7 @@ public class AuthDTOs {
         private String phoneNumber;
         private String department;
         private String yearLevel;
+        private String profilePicture;
     }
 
     // ── Forgot Password / Account Recovery DTOs ──

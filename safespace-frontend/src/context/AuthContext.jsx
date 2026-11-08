@@ -4,6 +4,7 @@ import {
   getUsername, 
   getRole, 
   getFullName, 
+  getProfilePicture,
   saveSession, 
   clearSessionStorage, 
   authApi,
@@ -34,6 +35,7 @@ export function AuthProvider({ children }) {
   const [username, setUsername] = useState(() => getUsername());
   const [role, setRole] = useState(() => getRole());
   const [fullName, setFullName] = useState(() => getFullName());
+  const [profilePicture, setProfilePicture] = useState(() => getProfilePicture());
   const [accessDeniedOpen, setAccessDeniedOpen] = useState(false);
   const [badges, setBadges] = useState({
     'anon-chat': 0,
@@ -44,6 +46,17 @@ export function AuthProvider({ children }) {
   });
 
   const isAuthenticated = Boolean(token && role);
+
+  const updateProfilePicture = useCallback((pic) => {
+    setProfilePicture(pic || null);
+    if (pic) {
+      sessionStorage.setItem('ss_profilePicture', pic);
+      localStorage.setItem('ss_profilePicture', pic);
+    } else {
+      sessionStorage.removeItem('ss_profilePicture');
+      localStorage.removeItem('ss_profilePicture');
+    }
+  }, []);
 
   const logout = useCallback(async () => {
     const curToken = token;
@@ -57,6 +70,7 @@ export function AuthProvider({ children }) {
     setUsername(null);
     setRole(null);
     setFullName(null);
+    setProfilePicture(null);
     clearSessionStorage();
   }, [token, username, role]);
 
@@ -66,7 +80,10 @@ export function AuthProvider({ children }) {
     setUsername(data.username);
     setRole(data.role);
     setFullName(data.fullName);
-  }, []);
+    if (data.profilePicture !== undefined) {
+      updateProfilePicture(data.profilePicture);
+    }
+  }, [updateProfilePicture]);
 
   // Check token validity on boot
   useEffect(() => {
@@ -104,6 +121,8 @@ export function AuthProvider({ children }) {
     username,
     role,
     fullName,
+    profilePicture,
+    updateProfilePicture,
     isAuthenticated,
     badgeInfo,
     badges,

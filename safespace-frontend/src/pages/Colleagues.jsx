@@ -292,11 +292,9 @@ export default function Colleagues() {
         {/* Cohesive Page Header */}
         <div className="colleagues-page-header">
           <div className="colleagues-header-info">
-            <h1>
-              <i className="fas fa-user-doctor"></i> Campus Counseling Team &amp; Colleagues
-            </h1>
+            <h1>Campus Counseling Team</h1>
             <p className="colleagues-header-desc">
-              Collaborate and manage verified campus professionals (Psychometricians and Psychologists) authorized to assist and observe students.
+              Manage and collaborate with verified campus mental health professionals (Psychometricians and Psychologists).
             </p>
           </div>
           <div className="colleagues-header-actions">
@@ -329,68 +327,41 @@ export default function Colleagues() {
 
         {/* Stat Cards Row */}
         <div className="colleagues-stats-row">
-          {/* Total Professionals */}
           <div
             className={`stat-card interactive ${currentFilter === 'ALL' ? 'active-filter' : ''}`}
             id="cardTotal"
             onClick={() => setCurrentFilter('ALL')}
           >
-            <div className="stat-card-icon">
-              <i className="fas fa-users"></i>
-            </div>
-            <div className="stat-card-value" id="statTotalColleagues">
+            <div className="colleague-stat-num" id="statTotalColleagues">
               {total}
             </div>
-            <div className="stat-card-label">Total Campus Professionals</div>
-            <div className="stat-card-sub neutral">
-              <i className="fas fa-shield-halved"></i> Verified Staff
-            </div>
+            <div className="colleague-stat-title">Total Staff</div>
           </div>
 
-          {/* Psychometricians */}
           <div
-            className={`stat-card purple interactive ${
+            className={`stat-card interactive ${
               currentFilter === 'PSYCHOMETRICIAN' ? 'active-filter' : ''
             }`}
             id="cardPsychometrician"
             onClick={() => setCurrentFilter('PSYCHOMETRICIAN')}
           >
-            <div className="stat-card-icon">
-              <i className="fas fa-chart-line"></i>
-            </div>
-            <div className="stat-card-value" id="statPsychometricians">
+            <div className="colleague-stat-num" id="statPsychometricians">
               {psychometricians}
             </div>
-            <div className="stat-card-label">Psychometricians</div>
-            <div
-              className="stat-card-sub"
-              style={{ background: '#ede9fe', color: '#7c3aed', border: '1px solid #ddd6fe' }}
-            >
-              <i className="fas fa-square-poll-vertical"></i> Mental Health Metrics
-            </div>
+            <div className="colleague-stat-title">Psychometricians</div>
           </div>
 
-          {/* Psychologists */}
           <div
-            className={`stat-card amber interactive ${
+            className={`stat-card interactive ${
               currentFilter === 'PSYCHOLOGIST' ? 'active-filter' : ''
             }`}
             id="cardPsychologist"
             onClick={() => setCurrentFilter('PSYCHOLOGIST')}
           >
-            <div className="stat-card-icon">
-              <i className="fas fa-brain"></i>
-            </div>
-            <div className="stat-card-value" id="statPsychologists">
+            <div className="colleague-stat-num" id="statPsychologists">
               {psychologists}
             </div>
-            <div className="stat-card-label">Psychologists</div>
-            <div
-              className="stat-card-sub"
-              style={{ background: '#fffbeb', color: '#d97706', border: '1px solid #fde68a' }}
-            >
-              <i className="fas fa-stethoscope"></i> Clinical Assessment
-            </div>
+            <div className="colleague-stat-title">Psychologists</div>
           </div>
         </div>
 
@@ -423,7 +394,7 @@ export default function Colleagues() {
               id="filterBtnAll"
               onClick={() => setCurrentFilter('ALL')}
             >
-              All Roles <span className="filter-count" id="countAll">{total}</span>
+              All Roles ({total})
             </button>
             <button
               className={`directory-filter-btn ${
@@ -432,10 +403,7 @@ export default function Colleagues() {
               id="filterBtnPsychometrician"
               onClick={() => setCurrentFilter('PSYCHOMETRICIAN')}
             >
-              Psychometricians{' '}
-              <span className="filter-count" id="countPsychometrician">
-                {psychometricians}
-              </span>
+              Psychometricians ({psychometricians})
             </button>
             <button
               className={`directory-filter-btn ${
@@ -444,10 +412,7 @@ export default function Colleagues() {
               id="filterBtnPsychologist"
               onClick={() => setCurrentFilter('PSYCHOLOGIST')}
             >
-              Psychologists{' '}
-              <span className="filter-count" id="countPsychologist">
-                {psychologists}
-              </span>
+              Psychologists ({psychologists})
             </button>
           </div>
         </div>
@@ -486,19 +451,13 @@ export default function Colleagues() {
             >
               <div
                 style={{
-                  width: '3.5rem',
-                  height: '3.5rem',
-                  borderRadius: '50%',
-                  background: '#fee2e2',
-                  color: '#dc2626',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.5rem',
-                  marginBottom: '1rem'
+                  fontSize: '2rem',
+                  color: '#DC2626',
+                  marginBottom: '0.75rem',
+                  background: 'transparent'
                 }}
               >
-                <i className="fas fa-triangle-exclamation"></i>
+                <i className="fas fa-triangle-exclamation" style={{ background: 'transparent' }}></i>
               </div>
               <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#243E4C', margin: '0 0 0.4rem 0' }}>
                 Could not load colleagues directory
@@ -523,19 +482,13 @@ export default function Colleagues() {
             >
               <div
                 style={{
-                  width: '3.5rem',
-                  height: '3.5rem',
-                  borderRadius: '50%',
-                  background: '#F4F7F7',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.5rem',
-                  color: '#243E4C',
-                  marginBottom: '1rem'
+                  fontSize: '2rem',
+                  color: '#7E9F9D',
+                  marginBottom: '0.75rem',
+                  background: 'transparent'
                 }}
               >
-                <i className="fas fa-user-doctor"></i>
+                <i className="fas fa-users-slash" style={{ background: 'transparent' }}></i>
               </div>
               <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#243E4C', margin: '0 0 0.4rem 0' }}>
                 No Colleagues Found
@@ -579,85 +532,71 @@ export default function Colleagues() {
                   <div key={c.username || c.institutionalId} className="colleague-card">
                     <div>
                       <div className="colleague-card-header">
-                        <div className={`colleague-avatar ${isSelf ? 'self' : ''}`}>{initials}</div>
+                        {c.profilePicture ? (
+                          <img
+                            src={c.profilePicture}
+                            alt={c.fullName}
+                            className={`colleague-avatar ${isSelf ? 'self' : ''}`}
+                            style={{ objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <div className={`colleague-avatar ${isSelf ? 'self' : ''}`}>{initials}</div>
+                        )}
                         <div className="colleague-meta">
                           <div className="colleague-name-row">
                             <span className="colleague-name">{c.fullName}</span>
-                            {isSelf && (
-                              <span className="colleague-you-pill">
-                                <i className="fas fa-user-check"></i> You
-                              </span>
-                            )}
+                            {isSelf && <span className="colleague-self-tag">(You)</span>}
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.3rem' }}>
-                            {(c.role === 'SUPER_ADMIN' || c.role === 'ADMIN') && (
-                              <span className="colleague-admin-badge" style={{ marginRight: '0.35rem' }}>
-                                Lead Psychometrician
-                              </span>
-                            )}
-                            {cat === 'PSYCHOLOGIST' ? (
-                              <span className="colleague-role-badge psychologist">
-                                <i className="fas fa-brain"></i> Psychologist
-                              </span>
-                            ) : (
-                              <span className="colleague-role-badge psychometrician">
-                                <i className="fas fa-chart-line"></i> Psychometrician
-                              </span>
-                            )}
+                          <div className="colleague-role-title">
+                            {c.role === 'SUPER_ADMIN' || c.role === 'ADMIN'
+                              ? 'Lead Psychometrician'
+                              : cat === 'PSYCHOLOGIST'
+                              ? 'Psychologist'
+                              : 'Psychometrician'}
                           </div>
                         </div>
                       </div>
 
                       {/* Information Details */}
-                      <div className="colleague-details-box">
-                        <div className="colleague-detail-row">
-                          <i className="fas fa-id-badge colleague-detail-icon" title="Staff ID"></i>
-                          <div className="colleague-detail-content">
-                            <span style={{ color: '#728590', fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.1rem' }}>
-                              Staff ID
-                            </span>
-                            <span className="staff-id-pill">{staffId}</span>
+                      <div className="colleague-details-list">
+                        <div className="colleague-detail-item">
+                          <span className="colleague-detail-label">Staff ID</span>
+                          <div className="colleague-detail-value">
+                            <span>{staffId}</span>
                             <button
+                              type="button"
                               className="btn-copy-id"
                               onClick={() => copyText(staffId)}
                               title="Copy Staff ID"
+                              aria-label="Copy Staff ID"
                             >
-                              <i className="fas fa-copy"></i>
+                              <i className="fas fa-copy" aria-hidden="true"></i>
                             </button>
                           </div>
                         </div>
 
-                        <div className="colleague-detail-row">
-                          <i className="fas fa-envelope colleague-detail-icon" title="Work Email"></i>
-                          <div className="colleague-detail-content">
-                            <span style={{ color: '#728590', fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.1rem' }}>
-                              Work Email
-                            </span>
+                        <div className="colleague-detail-item">
+                          <span className="colleague-detail-label">Work Email</span>
+                          <div className="colleague-detail-value">
                             {c.email ? (
                               <a href={`mailto:${c.email}`}>{c.email}</a>
                             ) : (
-                              <span style={{ color: '#94a3b8' }}>No email on file</span>
+                              <span className="colleague-empty-text">No email on file</span>
                             )}
                           </div>
                         </div>
 
-                        <div className="colleague-detail-row">
-                          <i className="fas fa-building colleague-detail-icon" title="Department / Office"></i>
-                          <div className="colleague-detail-content">
-                            <span style={{ color: '#728590', fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.1rem' }}>
-                              Department / Office
-                            </span>
-                            <strong style={{ color: '#243E4C' }}>{deptText}</strong>
+                        <div className="colleague-detail-item">
+                          <span className="colleague-detail-label">Department / Office</span>
+                          <div className="colleague-detail-value">
+                            <span>{deptText}</span>
                           </div>
                         </div>
 
                         {c.phoneNumber && (
-                          <div className="colleague-detail-row">
-                            <i className="fas fa-phone colleague-detail-icon" title="Contact Number"></i>
-                            <div className="colleague-detail-content">
-                              <span style={{ color: '#728590', fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.1rem' }}>
-                                Contact
-                              </span>
+                          <div className="colleague-detail-item">
+                            <span className="colleague-detail-label">Contact</span>
+                            <div className="colleague-detail-value">
                               <a href={`tel:${c.phoneNumber}`}>{c.phoneNumber}</a>
                             </div>
                           </div>
@@ -668,30 +607,18 @@ export default function Colleagues() {
                     {/* Card Footer */}
                     <div className="colleague-footer">
                       <div className="colleague-status">
-                        <span
-                          className="colleague-status-dot"
-                          style={{
-                            background:
-                              c.role === 'SUPER_ADMIN' || c.role === 'ADMIN' ? '#7C3AED' : undefined,
-                            boxShadow:
-                              c.role === 'SUPER_ADMIN' || c.role === 'ADMIN'
-                                ? '0 0 6px rgba(124,58,237,0.4)'
-                                : undefined
-                          }}
-                        ></span>
-                        <span>
-                          {c.role === 'SUPER_ADMIN' || c.role === 'ADMIN'
-                            ? 'Lead Psychometrician'
-                            : 'Active & Authorized'}
-                        </span>
+                        <span className="colleague-status-dot"></span>
+                        <span>Active</span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      <div className="colleague-actions-group">
                         {isSuperAdminViewer && !isSelf && c.role !== 'SUPER_ADMIN' && c.role !== 'ADMIN' ? (
                           <button
+                            type="button"
                             className="btn-transfer-admin"
                             onClick={() => openTransferAdminModal(c.username, c.fullName)}
                           >
-                            <i className="fas fa-shield-halved"></i> Transfer Lead Role
+                            <i className="fas fa-arrow-right-arrow-left" aria-hidden="true"></i>
+                            <span>Transfer Lead</span>
                           </button>
                         ) : isSuperAdminViewer &&
                           !isSelf &&
@@ -699,16 +626,18 @@ export default function Colleagues() {
                           c.username !== 'admin' &&
                           c.username !== 'psychometrician' ? (
                           <button
+                            type="button"
                             className="btn-transfer-admin"
-                            style={{ background: '#F4F7F7', borderColor: '#E1E8EB', color: '#51646E' }}
                             onClick={() => revokeAdminColleague(c.username, c.fullName)}
                           >
-                            <i className="fas fa-user-minus"></i> Demote
+                            <i className="fas fa-user-minus" aria-hidden="true"></i>
+                            <span>Demote</span>
                           </button>
                         ) : null}
 
                         {isSuperAdminViewer && (
                           <button
+                            type="button"
                             className="btn-resend-welcome"
                             id={`resendBtn_${staffId}`}
                             disabled={resendingId === staffId}
@@ -718,8 +647,9 @@ export default function Colleagues() {
                               className={`fas ${
                                 resendingId === staffId ? 'fa-spinner fa-spin' : 'fa-paper-plane'
                               }`}
-                            ></i>{' '}
-                            {resendingId === staffId ? 'Sending...' : 'Resend Email'}
+                              aria-hidden="true"
+                            ></i>
+                            <span>{resendingId === staffId ? 'Sending...' : 'Resend Email'}</span>
                           </button>
                         )}
                       </div>
@@ -870,19 +800,13 @@ export default function Colleagues() {
                   >
                     <div
                       style={{
-                        width: '3.5rem',
-                        height: '3.5rem',
-                        borderRadius: '50%',
-                        background: '#DCFCE7',
-                        color: '#15803d',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '1.6rem',
-                        marginBottom: '0.75rem'
+                        fontSize: '2rem',
+                        color: '#16A34A',
+                        background: 'transparent',
+                        marginBottom: '0.5rem'
                       }}
                     >
-                      <i className="fas fa-circle-check"></i>
+                      <i className="fas fa-circle-check" style={{ background: 'transparent' }}></i>
                     </div>
                     <h4 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#166534', margin: '0 0 0.4rem 0' }}>
                       {registerResult.role === 'SUPER_ADMIN' || registerResult.role === 'ADMIN'

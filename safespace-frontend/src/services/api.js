@@ -27,6 +27,7 @@ export const getToken = () => sessionStorage.getItem('ss_token') || localStorage
 export const getUsername = () => sessionStorage.getItem('ss_username') || localStorage.getItem('ss_username');
 export const getRole = () => sessionStorage.getItem('ss_role') || localStorage.getItem('ss_role');
 export const getFullName = () => sessionStorage.getItem('ss_fullName') || localStorage.getItem('ss_fullName');
+export const getProfilePicture = () => sessionStorage.getItem('ss_profilePicture') || localStorage.getItem('ss_profilePicture');
 
 export function authHeaders() {
   const token = getToken();
@@ -70,7 +71,7 @@ export async function authFetch(url, options = {}) {
   return res;
 }
 
-export function saveSession({ token, username, role, fullName }) {
+export function saveSession({ token, username, role, fullName, profilePicture }) {
   if (token) {
     sessionStorage.setItem('ss_token', token);
     localStorage.setItem('ss_token', token);
@@ -87,6 +88,15 @@ export function saveSession({ token, username, role, fullName }) {
     sessionStorage.setItem('ss_fullName', fullName);
     localStorage.setItem('ss_fullName', fullName);
   }
+  if (profilePicture !== undefined) {
+    if (profilePicture) {
+      sessionStorage.setItem('ss_profilePicture', profilePicture);
+      localStorage.setItem('ss_profilePicture', profilePicture);
+    } else {
+      sessionStorage.removeItem('ss_profilePicture');
+      localStorage.removeItem('ss_profilePicture');
+    }
+  }
 }
 
 export function clearSessionStorage() {
@@ -94,12 +104,14 @@ export function clearSessionStorage() {
   localStorage.removeItem('ss_username');
   localStorage.removeItem('ss_role');
   localStorage.removeItem('ss_fullName');
+  localStorage.removeItem('ss_profilePicture');
   localStorage.removeItem('safespace_pseudonyms');
   localStorage.removeItem('safespace_pseudonym');
   sessionStorage.removeItem('ss_token');
   sessionStorage.removeItem('ss_username');
   sessionStorage.removeItem('ss_role');
   sessionStorage.removeItem('ss_fullName');
+  sessionStorage.removeItem('ss_profilePicture');
 }
 
 /*  Auth API Calls  */
@@ -559,6 +571,25 @@ export const profileApi = {
     });
     const result = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(result.error || 'Failed to update profile');
+    return result;
+  },
+
+  async updateAvatar(profilePicture) {
+    const res = await authFetch(`${API_BASE}/auth/me/avatar`, {
+      method: 'PUT',
+      body: JSON.stringify({ profilePicture })
+    });
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(result.error || 'Failed to update profile picture');
+    return result;
+  },
+
+  async deleteAvatar() {
+    const res = await authFetch(`${API_BASE}/auth/me/avatar`, {
+      method: 'DELETE'
+    });
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(result.error || 'Failed to remove profile picture');
     return result;
   }
 };

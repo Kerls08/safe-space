@@ -31,7 +31,8 @@ function playNotificationSound() {
 }
 
 export default function Navbar() {
-  const { role, fullName, username, logout, badges, updateBadge } = useAuth();
+  const { role, fullName, username, profilePicture, logout, badges, updateBadge } = useAuth();
+  const isProfessional = role === 'PROFESSIONAL' || role === 'SUPER_ADMIN';
   const location = useLocation();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -294,14 +295,22 @@ export default function Navbar() {
                 setDropdownOpen((prev) => !prev);
               }}
             >
-              <div className="navbar-user-avatar">{getInitials(fullName)}</div>
+              {isProfessional && profilePicture ? (
+                <img src={profilePicture} alt={fullName || 'User'} className="navbar-user-avatar" style={{ objectFit: 'cover' }} />
+              ) : (
+                <div className="navbar-user-avatar">{getInitials(fullName)}</div>
+              )}
               <span className="navbar-user-name">{fullName || ''}</span>
               <i className="fas fa-chevron-down navbar-user-chevron"></i>
             </button>
 
             <div className={`navbar-dropdown-panel ${dropdownOpen ? 'open' : ''}`}>
               <div className="dropdown-user-header">
-                <div className="dropdown-avatar">{getInitials(fullName)}</div>
+                {isProfessional && profilePicture ? (
+                  <img src={profilePicture} alt={fullName || 'User'} className="dropdown-avatar" style={{ objectFit: 'cover' }} />
+                ) : (
+                  <div className="dropdown-avatar">{getInitials(fullName)}</div>
+                )}
                 <div className="dropdown-user-info">
                   <span className="dropdown-user-fullname">{fullName || ''}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>

@@ -391,6 +391,7 @@ public class CredentialController {
         response.put("passwordChanged", user.isPasswordChanged());
         response.put("createdAt", user.getCreatedAt() != null ? user.getCreatedAt().toString() : null);
         response.put("lastLoginAt", user.getLastLoginAt() != null ? user.getLastLoginAt().toString() : null);
+        response.put("profilePicture", user.getProfilePicture());
         response.put("features", RbacPermissions.getFeaturesForRole(user.getRole()));
         response.put("accessiblePages", RbacPermissions.getAccessiblePages(user.getRole()));
         response.put("permissions", RbacPermissions.ROLE_PERMISSIONS.getOrDefault(user.getRole(), List.of()));
@@ -413,6 +414,58 @@ public class CredentialController {
         }
 
         UserProfileResponse updated = credentialService.updateProfile(user.getUsername(), profileRequest);
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * Update profile picture for the authenticated professional.
+     * Restricted strictly to Mental Health Professionals (PROFESSIONAL / SUPER_ADMIN).
+     */
+    @PutMapping("/me/avatar")
+    public ResponseEntity<?> updateAvatar(
+            HttpServletRequest request,
+            @RequestBody Map<String, String> body) {
+
+        User user = (User) request.getAttribute("auth.user");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        if (!"PROFESSIONAL".equalsIgnoreCase(user.getRole()) && !"SUPER_ADMIN".equalsIgnoreCase(user.getRole())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Profile pictures are restricted to Mental Health Professionals."));
+        }
+
+        String photo = body.get("profilePicture");
+        if (photo == null || photo.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Profile picture data is required."));
+        }
+
+        if (photo.length() > 2_000_000) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Profile picture exceeds maximum allowed size."));
+        }
+
+        UserProfileResponse updated = credentialService.updateAvatar(user.getUsername(), photo);
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * Remove profile picture for the authenticated professional.
+     * Restricted strictly to Mental Health Professionals (PROFESSIONAL / SUPER_ADMIN).
+     */
+    @DeleteMapping("/me/avatar")
+    public ResponseEntity<?> deleteAvatar(HttpServletRequest request) {
+        User user = (User) request.getAttribute("auth.user");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        if (!"PROFESSIONAL".equalsIgnoreCase(user.getRole()) && !"SUPER_ADMIN".equalsIgnoreCase(user.getRole())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Profile pictures are restricted to Mental Health Professionals."));
+        }
+
+        UserProfileResponse updated = credentialService.deleteAvatar(user.getUsername());
         return ResponseEntity.ok(updated);
     }
 

@@ -277,6 +277,10 @@ body {
   flex-shrink: 0;
   box-shadow: 0 2px 8px rgba(36, 62, 76, 0.18);
 }
+img.navbar-user-avatar,
+img.dropdown-avatar {
+  object-fit: cover;
+}
 
 .navbar-user-name {
   font-size: 0.82rem;

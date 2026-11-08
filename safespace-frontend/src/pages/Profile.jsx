@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth, getInitials } from '../context/AuthContext';
 import { profileApi, authApi, getToken } from '../services/api';
 import '../styles/auth.css';
@@ -33,7 +33,7 @@ function formatDateTime(dateStr) {
 }
 
 export default function Profile() {
-  const { role, username: authUsername, fullName: authFullName, token } = useAuth();
+  const { role, username: authUsername, fullName: authFullName, token, updateProfilePicture } = useAuth();
   const isProfessional = role === 'PROFESSIONAL' || role === 'SUPER_ADMIN';
 
   // Profile data & original data for reset
@@ -42,6 +42,10 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState('');
 
+  // Profile picture upload state
+  const fileInputRef = useRef(null);
+  const [photoLoading, setPhotoLoading] = useState(false);
+
   // Form fields
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -49,7 +53,6 @@ export default function Profile() {
   const [yearLevel, setYearLevel] = useState('');
   const [fieldUsername, setFieldUsername] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-
 
   // Change Password Modal
   const [pwModalOpen, setPwModalOpen] = useState(false);
@@ -80,17 +83,99 @@ export default function Profile() {
       setDepartment(data.department || '');
       setYearLevel(data.yearLevel || '');
       setFieldUsername(data.username || authUsername || '');
+      if (data.profilePicture !== undefined) {
+        updateProfilePicture(data.profilePicture);
+      }
     } catch (err) {
       console.error('Profile load error:', err);
       showToast('Failed to load profile.');
     } finally {
       setLoading(false);
     }
-  }, [authUsername]);
+  }, [authUsername, updateProfilePicture]);
 
   useEffect(() => {
     loadProfile();
   }, [loadProfile]);
+
+  // Profile Picture Handlers (Professionals Only)
+  const handlePhotoSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset input value so selecting the same file triggers change
+    e.target.value = '';
+
+    if (!file.type.match(/^image\/(jpeg|png|webp)$/i)) {
+      showToast('Please select a JPG, PNG, or WebP image.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image file size must be less than 5 MB.');
+      return;
+    }
+
+    setPhotoLoading(true);
+    const reader = new FileReader();
+    reader.onload = (readerEvent) => {
+      const img = new Image();
+      img.onload = async () => {
+        try {
+          // Crop and resize to square 320x320 centered
+          const canvas = document.createElement('canvas');
+          const size = 320;
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+
+          const minDim = Math.min(img.width, img.height);
+          const sx = (img.width - minDim) / 2;
+          const sy = (img.height - minDim) / 2;
+
+          ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+          const base64Data = canvas.toDataURL('image/jpeg', 0.85);
+
+          const updated = await profileApi.updateAvatar(base64Data);
+          const newPhoto = updated.profilePicture || base64Data;
+          setProfileData((prev) => (prev ? { ...prev, profilePicture: newPhoto } : prev));
+          updateProfilePicture(newPhoto);
+          showToast('Profile photo updated.');
+        } catch (err) {
+          console.error('Failed to update avatar:', err);
+          showToast(err.message || 'Failed to update photo.');
+        } finally {
+          setPhotoLoading(false);
+        }
+      };
+      img.onerror = () => {
+        setPhotoLoading(false);
+        showToast('Failed to process image file.');
+      };
+      img.src = readerEvent.target.result;
+    };
+    reader.onerror = () => {
+      setPhotoLoading(false);
+      showToast('Failed to read image file.');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!profileData?.profilePicture) return;
+    setPhotoLoading(true);
+    try {
+      await profileApi.deleteAvatar();
+      setProfileData((prev) => (prev ? { ...prev, profilePicture: null } : prev));
+      updateProfilePicture(null);
+      showToast('Profile photo removed.');
+    } catch (err) {
+      console.error('Failed to remove photo:', err);
+      showToast(err.message || 'Failed to remove photo.');
+    } finally {
+      setPhotoLoading(false);
+    }
+  };
 
   // Handle Save
   const handleSave = async (e) => {
@@ -260,10 +345,11 @@ export default function Profile() {
 
   return (
     <div className="profile-layout">
-      {/* Toast */}
+      {/* Toast Notification */}
       {toast && (
-        <div className="profile-toast">
-          <i className="fas fa-check-circle"></i> {toast}
+        <div className="profile-toast" role="status" aria-live="polite">
+          <i className="fas fa-check" aria-hidden="true"></i>
+          <span>{toast}</span>
         </div>
       )}
 
@@ -272,9 +358,17 @@ export default function Profile() {
         <div
           className="profile-avatar"
           id="profileAvatar"
-          style={isProfessional ? { background: 'linear-gradient(135deg, #7E9F9D, #243E4C)' } : {}}
+          style={isProfessional && !profileData?.profilePicture ? { background: 'linear-gradient(135deg, #7E9F9D, #243E4C)' } : {}}
         >
-          {initials}
+          {isProfessional && profileData?.profilePicture ? (
+            <img
+              src={profileData.profilePicture}
+              alt={fullName || 'Profile'}
+              className="profile-avatar-img"
+            />
+          ) : (
+            initials
+          )}
         </div>
         <div className="profile-header-name" id="profileName">
           {fullName || authFullName || authUsername || 'Unknown'}
@@ -286,6 +380,38 @@ export default function Profile() {
         <div className="profile-header-id" id="profileHeaderId">
           {profileData?.institutionalId || ''}
         </div>
+        {isProfessional && (
+          <div className="profile-avatar-actions">
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handlePhotoSelect}
+              style={{ display: 'none' }}
+              aria-label="Upload profile photo"
+            />
+            <button
+              type="button"
+              className="profile-avatar-action-btn"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={photoLoading}
+            >
+              <i className="fas fa-camera" aria-hidden="true"></i>
+              <span>{photoLoading ? 'Processing...' : profileData?.profilePicture ? 'Change photo' : 'Upload photo'}</span>
+            </button>
+            {profileData?.profilePicture && !photoLoading && (
+              <button
+                type="button"
+                className="profile-avatar-action-btn remove"
+                onClick={handleRemovePhoto}
+                disabled={photoLoading}
+              >
+                <i className="fas fa-trash-can" aria-hidden="true"></i>
+                <span>Remove photo</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Content */}

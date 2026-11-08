@@ -100,4 +100,8 @@ public class User {
     /** Persistent active session token (survives dev server restarts). */
     @Column(length = 100)
     private String sessionToken;
+
+    /** Optional profile picture for professionals (Base64 data URL or image path). */
+    @Column(columnDefinition = "TEXT")
+    private String profilePicture;
 }

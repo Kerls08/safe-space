@@ -188,6 +188,7 @@ public class CredentialService {
                 .message(user.isForcePasswordChange()
                         ? "Login successful. Please change your password."
                         : "Login successful.")
+                .profilePicture(user.getProfilePicture())
                 .build();
     }
 
@@ -869,6 +870,13 @@ public class CredentialService {
             user.setPhoneNumber(phone.isEmpty() ? null : phone);
         }
 
+        // Profile picture (strictly for Mental Health Professionals)
+        if (request.getProfilePicture() != null) {
+            if ("PROFESSIONAL".equalsIgnoreCase(user.getRole()) || "SUPER_ADMIN".equalsIgnoreCase(user.getRole())) {
+                user.setProfilePicture(request.getProfilePicture().isBlank() ? null : request.getProfilePicture());
+            }
+        }
+
         userRepository.save(user);
 
         // If username changed, re-map active tokens so the user stays logged in
@@ -1135,6 +1143,36 @@ public class CredentialService {
         return base.toString() + salt.toString();
     }
 
+    @Transactional
+    public UserProfileResponse updateAvatar(String username, String avatarData) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("User not found: " + username));
+
+        if (!"PROFESSIONAL".equalsIgnoreCase(user.getRole()) && !"SUPER_ADMIN".equalsIgnoreCase(user.getRole())) {
+            throw new IllegalArgumentException("Profile pictures are restricted to Mental Health Professionals.");
+        }
+
+        user.setProfilePicture(avatarData);
+        User saved = userRepository.save(user);
+        log.info("Profile picture updated for professional: {}", username);
+        return toProfile(saved);
+    }
+
+    @Transactional
+    public UserProfileResponse deleteAvatar(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("User not found: " + username));
+
+        if (!"PROFESSIONAL".equalsIgnoreCase(user.getRole()) && !"SUPER_ADMIN".equalsIgnoreCase(user.getRole())) {
+            throw new IllegalArgumentException("Profile pictures are restricted to Mental Health Professionals.");
+        }
+
+        user.setProfilePicture(null);
+        User saved = userRepository.save(user);
+        log.info("Profile picture removed for professional: {}", username);
+        return toProfile(saved);
+    }
+
     private UserProfileResponse toProfile(User u) {
         return UserProfileResponse.builder()
                 .id(u.getId())
@@ -1150,6 +1188,7 @@ public class CredentialService {
                 .passwordChanged(u.isPasswordChanged())
                 .createdAt(u.getCreatedAt() != null ? u.getCreatedAt().toString() : null)
                 .lastLoginAt(u.getLastLoginAt() != null ? u.getLastLoginAt().toString() : null)
+                .profilePicture(u.getProfilePicture())
                 .build();
     }
 }

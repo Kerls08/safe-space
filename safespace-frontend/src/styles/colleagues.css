@@ -92,7 +92,7 @@
     .colleagues-stats-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 1.15rem;
+      gap: 1.25rem;
       margin-bottom: 1.75rem;
     }
     @media (max-width: 900px) {
@@ -101,26 +101,51 @@
       }
     }
 
-    .stat-card.interactive {
+    .colleagues-stats-row .stat-card {
+      background: #FFFFFF;
+      border: 1.5px solid #E1E8EB;
+      border-radius: 0.85rem;
+      padding: 1.25rem 1.4rem;
       cursor: pointer;
       user-select: none;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
-    .stat-card.interactive:hover {
-      box-shadow: 0 4px 14px rgba(36, 62, 76, 0.06);
+    .colleagues-stats-row .stat-card:hover {
       border-color: #7E9F9D;
+      box-shadow: 0 4px 12px rgba(36, 62, 76, 0.05);
     }
-    .stat-card.interactive.active-filter {
+    .colleagues-stats-row .stat-card.active-filter {
       border-color: #243E4C;
-      box-shadow: 0 0 0 2px #243E4C, 0 6px 20px rgba(36, 62, 76, 0.1);
+      box-shadow: 0 0 0 1.5px #243E4C;
       background: #FFFFFF;
+    }
+
+    .colleague-stat-num {
+      font-size: 2.1rem;
+      font-weight: 800;
+      color: #243E4C;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.4rem;
+      background: transparent;
+    }
+    .colleague-stat-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #51646E;
+      background: transparent;
     }
 
     /* Directory Toolbar */
     .directory-toolbar {
       background: #FFFFFF;
       border: 1.5px solid #E1E8EB;
-      border-radius: 1rem;
+      border-radius: 0.85rem;
       padding: 0.85rem 1.25rem;
       margin-bottom: 1.75rem;
       display: flex;
@@ -128,7 +153,6 @@
       align-items: center;
       gap: 1.25rem;
       flex-wrap: wrap;
-      box-shadow: 0 2px 8px rgba(36, 62, 76, 0.04);
     }
     .directory-search {
       position: relative;
@@ -143,11 +167,12 @@
       color: #728590;
       font-size: 0.92rem;
       pointer-events: none;
+      background: transparent !important;
     }
     .directory-search input {
       width: 100%;
       padding: 0.65rem 2.6rem 0.65rem 2.75rem;
-      border-radius: 0.75rem;
+      border-radius: 0.65rem;
       border: 1.5px solid #E1E8EB;
       background: #F4F7F7;
       font-size: 0.86rem;
@@ -167,71 +192,53 @@
       right: 0.85rem;
       top: 50%;
       transform: translateY(-50%);
-      background: #EBF2F3;
+      background: transparent;
       border: none;
-      color: #51646E;
+      color: #728590;
       width: 1.5rem;
       height: 1.5rem;
-      border-radius: 50%;
       display: none;
       align-items: center;
       justify-content: center;
-      font-size: 0.75rem;
+      font-size: 0.85rem;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: color 0.15s ease;
     }
     .clear-search-btn:hover {
-      background: #243E4C;
-      color: #FFFFFF;
+      color: #243E4C;
     }
 
     .directory-filters {
       display: flex;
-      gap: 0.45rem;
+      gap: 0.5rem;
       flex-wrap: wrap;
     }
     .directory-filter-btn {
-      background: #F4F7F7;
-      border: 1.5px solid #E1E8EB;
+      background: transparent;
+      border: 1px solid #D6E0E2;
       color: #51646E;
       font-size: 0.82rem;
-      font-weight: 600;
-      min-height: 40px;
-      padding: 0.5rem 0.9rem;
-      border-radius: 0.75rem;
+      font-weight: 500;
+      min-height: 38px;
+      padding: 0.45rem 0.95rem;
+      border-radius: 6px;
       cursor: pointer;
-      transition: all 0.18s ease;
+      transition: all 0.15s ease;
       font-family: var(--font-sans);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.45rem;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
     }
     .directory-filter-btn:hover {
-      background: #F4F7F7;
-      border-color: #7E9F9D;
+      border-color: #243E4C;
       color: #243E4C;
     }
     .directory-filter-btn.active {
       background: #243E4C;
       color: #FFFFFF;
       border-color: #243E4C;
-      box-shadow: 0 2px 8px rgba(36, 62, 76, 0.15);
-    }
-    .filter-count {
-      font-size: 0.72rem;
-      font-weight: 700;
-      padding: 0.15rem 0.45rem;
-      border-radius: 999px;
-      background: #EBF2F3;
-      color: #243E4C;
-      line-height: 1;
-    }
-    .directory-filter-btn.active .filter-count {
-      background: rgba(255, 255, 255, 0.22);
-      color: #FFFFFF;
     }
 
     /* Colleagues Grid */
@@ -285,6 +292,10 @@
       box-shadow: 0 4px 10px rgba(36, 62, 76, 0.15);
       letter-spacing: 0.5px;
     }
+    img.colleague-avatar {
+      object-fit: cover;
+      border: 1.5px solid rgba(126, 159, 157, 0.35);
+    }
     .colleague-avatar.self {
       box-shadow: 0 0 0 2.5px #FFFFFF, 0 0 0 4.5px #7E9F9D;
     }
@@ -305,110 +316,87 @@
       color: #243E4C;
       line-height: 1.3;
       word-break: break-word;
+      background: transparent;
     }
-    .colleague-you-pill {
-      font-size: 0.68rem;
-      font-weight: 700;
-      color: #243E4C;
-      background: #EBF2F3;
-      border: 1px solid #7E9F9D;
-      padding: 0.15rem 0.5rem;
-      border-radius: 999px;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      line-height: 1.2;
+    .colleague-self-tag {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #728590;
+      margin-left: 0.35rem;
+      background: transparent;
     }
-
-    .colleague-role-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.25rem 0.75rem;
-      border-radius: 999px;
-      font-size: 0.76rem;
-      font-weight: 700;
-      letter-spacing: 0.2px;
-    }
-    .colleague-role-badge.psychometrician {
-      background: #F3E8FF;
-      color: #7E22CE;
-      border: 1px solid #E9D5FF;
-    }
-    .colleague-role-badge.psychologist {
-      background: #FEF3C7;
-      color: #B45309;
-      border: 1px solid #FDE68A;
+    .colleague-role-title {
+      font-size: 0.84rem;
+      font-weight: 500;
+      color: #51646E;
+      margin-top: 0.15rem;
+      background: transparent;
     }
 
-    /* Colleague Details Card Box */
-    .colleague-details-box {
-      background: #F4F7F7;
-      border: 1px solid #E1E8EB;
-      border-radius: 0.85rem;
-      padding: 0.85rem 1rem;
-      margin-bottom: 1.25rem;
+    /* Colleague Details List */
+    .colleague-details-list {
       display: flex;
       flex-direction: column;
-      gap: 0.6rem;
-    }
-    .colleague-detail-row {
-      display: flex;
-      align-items: flex-start;
       gap: 0.75rem;
-      font-size: 0.83rem;
-      line-height: 1.45;
-      color: #51646E;
+      padding: 0.9rem 0;
+      border-top: 1px solid #EEF2F4;
+      border-bottom: 1px solid #EEF2F4;
+      margin: 1rem 0;
+      background: transparent;
     }
-    .colleague-detail-icon {
-      width: 1.1rem;
+    .colleague-detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      background: transparent;
+    }
+    .colleague-detail-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
       color: #728590;
-      font-size: 0.85rem;
-      margin-top: 0.15rem;
-      flex-shrink: 0;
-      text-align: center;
+      background: transparent;
     }
-    .colleague-detail-content {
-      flex: 1;
-      min-width: 0;
+    .colleague-detail-value {
+      font-size: 0.86rem;
+      font-weight: 500;
+      color: #243E4C;
+      display: flex;
+      align-items: center;
+      line-height: 1.4;
       word-break: break-word;
-      white-space: normal; /* CRITICAL FIX: allow natural multi-line wrapping so department names are never sliced mid-word! */
+      background: transparent;
     }
-    .colleague-detail-content strong {
+    .colleague-detail-value a {
       color: #243E4C;
-      font-weight: 700;
-    }
-    .colleague-detail-content a {
-      color: #0369A1;
       text-decoration: none;
-      transition: color 0.15s ease;
+      background: transparent;
     }
-    .colleague-detail-content a:hover {
+    .colleague-detail-value a:hover {
       text-decoration: underline;
-      color: #0284C7;
     }
-
-    /* Quick Copy Staff ID Pill */
-    .staff-id-pill {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-weight: 700;
+    .colleague-empty-text {
+      color: #94A3B8;
+      font-style: italic;
       font-size: 0.82rem;
-      color: #243E4C;
+      background: transparent;
     }
     .btn-copy-id {
-      background: transparent;
+      background: transparent !important;
       border: none;
       color: #728590;
       cursor: pointer;
-      padding: 0.1rem 0.35rem;
-      margin-left: 0.35rem;
-      border-radius: 0.25rem;
-      font-size: 0.75rem;
-      transition: all 0.15s ease;
+      padding: 0;
+      margin-left: 0.45rem;
+      font-size: 0.8rem;
+      transition: color 0.15s ease;
     }
     .btn-copy-id:hover {
       color: #243E4C;
-      background: #EBF2F3;
+    }
+    .btn-copy-id i {
+      background: transparent !important;
     }
 
     /* Colleague Card Footer */
@@ -416,68 +404,78 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-top: 0.9rem;
-      border-top: 1px solid #F4F7F7;
+      padding-top: 0.5rem;
       gap: 0.75rem;
       margin-top: auto;
+      flex-wrap: wrap;
+      background: transparent;
     }
     .colleague-status {
       display: inline-flex;
       align-items: center;
       gap: 0.45rem;
-      font-size: 0.76rem;
-      font-weight: 700;
-      color: #15803d;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #51646E;
+      background: transparent;
     }
     .colleague-status-dot {
-      width: 8px;
-      height: 8px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
-      background: #22c55e;
-      box-shadow: 0 0 0 2.5px rgba(34, 197, 94, 0.25);
-      animation: pulse-live 2.5s ease-in-out infinite;
+      background: #16A34A;
+      display: inline-block;
+    }
+    .colleague-actions-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      background: transparent;
     }
 
+    .btn-transfer-admin,
     .btn-resend-welcome {
-      background: #F4F7F7;
-      border: 1.5px solid #E1E8EB;
+      background: transparent !important;
+      border: 1px solid #D6E0E2;
       color: #243E4C;
       font-size: 0.78rem;
-      font-weight: 700;
-      min-height: 44px;
-      padding: 0.5rem 0.95rem;
-      border-radius: 0.65rem;
+      font-weight: 500;
+      min-height: 34px;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.45rem;
-      transition: all 0.18s ease;
+      gap: 0.4rem;
+      transition: all 0.15s ease;
       font-family: var(--font-sans);
       user-select: none;
       -webkit-tap-highlight-color: transparent;
     }
-    .btn-resend-welcome:hover {
-      background: #243E4C;
-      color: #FFFFFF;
-      border-color: #243E4C;
+    .btn-transfer-admin i,
+    .btn-resend-welcome i {
+      background: transparent !important;
+      color: inherit;
+      font-size: 0.8rem;
     }
+    .btn-transfer-admin:hover,
+    .btn-resend-welcome:hover {
+      background: #F4F7F7 !important;
+      border-color: #243E4C;
+      color: #243E4C;
+    }
+    .btn-transfer-admin:active,
     .btn-resend-welcome:active {
       transform: scale(0.98);
     }
-    .btn-resend-welcome i {
-      color: #0284C7;
-      transition: color 0.18s ease;
-    }
-    .btn-resend-welcome:hover i {
-      color: #7E9F9D;
-    }
 
-    /* Quick Add Invitation Card (Gracefully fills space when 1 colleague exists) */
+    /* Quick Add Invitation Card */
     .colleague-add-card {
-      border: 2px dashed #7E9F9D;
-      border-radius: 1.15rem;
-      background: rgba(255, 255, 255, 0.7);
+      border: 2px dashed #D6E0E2;
+      border-radius: 0.85rem;
+      background: #FFFFFF;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -489,31 +487,23 @@
     }
     .colleague-add-card:hover {
       border-color: #243E4C;
-      background: #FFFFFF;
-      box-shadow: 0 6px 18px rgba(36, 62, 76, 0.06);
+      box-shadow: 0 4px 14px rgba(36, 62, 76, 0.05);
     }
     .colleague-add-icon {
-      width: 3.5rem;
-      height: 3.5rem;
-      border-radius: 50%;
-      background: #EBF2F3;
-      color: #243E4C;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.35rem;
-      margin-bottom: 1rem;
-      transition: transform 0.2s ease;
+      font-size: 1.85rem;
+      color: #7E9F9D;
+      margin-bottom: 0.75rem;
+      background: transparent !important;
     }
-    .colleague-add-card:hover .colleague-add-icon {
-      background: #243E4C;
-      color: #FFFFFF;
+    .colleague-add-icon i {
+      background: transparent !important;
     }
     .colleague-add-card h4 {
       font-size: 1.05rem;
-      font-weight: 800;
+      font-weight: 700;
       color: #243E4C;
       margin: 0 0 0.4rem 0;
+      background: transparent;
     }
     .colleague-add-card p {
       font-size: 0.84rem;
@@ -521,46 +511,7 @@
       margin: 0 0 1.25rem 0;
       max-width: 280px;
       line-height: 1.45;
-    }
-
-    /* Transfer Admin Button & Admin Badges */
-    .btn-transfer-admin {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.35rem;
-      min-height: 44px;
-      padding: 0.5rem 0.85rem;
-      border-radius: 0.55rem;
-      border: 1.5px solid #DDD6FE;
-      background: #F5F3FF;
-      color: #6D28D9;
-      font-size: 0.76rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .btn-transfer-admin:hover {
-      background: #EDE9FE;
-      border-color: #C4B5FD;
-      color: #5B21B6;
-    }
-    .btn-transfer-admin:active {
-      transform: scale(0.98);
-    }
-    .colleague-admin-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      padding: 0.25rem 0.55rem;
-      border-radius: 999px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      background: #EDE9FE;
-      color: #5B21B6;
-      border: 1px solid #DDD6FE;
+      background: transparent;
     }
 
     /* Toast Notification */
