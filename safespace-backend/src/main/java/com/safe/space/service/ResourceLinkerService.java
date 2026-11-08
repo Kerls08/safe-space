@@ -70,6 +70,9 @@ public class ResourceLinkerService {
         if (resource.getCategory() != null) {
             resource.setCategory(resource.getCategory().toUpperCase());
         }
+        if (resource.getLink() != null) {
+            resource.setLink(normalizeLink(resource.getLink(), resource.getCategory()));
+        }
         WellnessResource saved = repo.save(resource);
         log.info("Resource created: id={} title='{}' by={}", saved.getId(), saved.getTitle(), createdBy);
         return saved;
@@ -82,8 +85,11 @@ public class ResourceLinkerService {
 
         if (updated.getTitle() != null) existing.setTitle(updated.getTitle());
         if (updated.getDescription() != null) existing.setDescription(updated.getDescription());
-        if (updated.getLink() != null) existing.setLink(updated.getLink());
         if (updated.getCategory() != null) existing.setCategory(updated.getCategory().toUpperCase());
+        if (updated.getLink() != null) {
+            String cat = updated.getCategory() != null ? updated.getCategory() : existing.getCategory();
+            existing.setLink(normalizeLink(updated.getLink(), cat));
+        }
         if (updated.getEmotionTags() != null) existing.setEmotionTags(updated.getEmotionTags());
         if (updated.getIcon() != null) existing.setIcon(updated.getIcon());
 
@@ -95,6 +101,34 @@ public class ResourceLinkerService {
         WellnessResource saved = repo.save(existing);
         log.info("Resource updated: id={} title='{}'", saved.getId(), saved.getTitle());
         return saved;
+    }
+
+    /**
+     * Sanitizes and normalizes resource links to ensure they are actionable:
+     * - Auto-prefixes tel: for phone/hotline numbers
+     * - Auto-prefixes sms: for shortcodes
+     * - Auto-prefixes https:// for domain URLs
+     */
+    public static String normalizeLink(String rawLink, String category) {
+        if (rawLink == null || rawLink.isBlank() || "#".equals(rawLink.trim())) {
+            return "#";
+        }
+        String trimmed = rawLink.trim();
+        if (trimmed.toLowerCase().matches("^(tel:|sms:|mailto:|https?://).*")) {
+            return trimmed;
+        }
+        String digitsOnly = trimmed.replaceAll("[\\s\\-\\(\\)\\.]", "");
+        boolean isHotline = "HOTLINE".equalsIgnoreCase(category) || digitsOnly.matches("^\\+?[0-9]{3,15}$");
+        if (isHotline && digitsOnly.length() >= 3) {
+            return "tel:" + digitsOnly;
+        }
+        if ("CHAT_SERVICE".equalsIgnoreCase(category) && digitsOnly.matches("^[0-9]{4,8}$")) {
+            return "sms:" + digitsOnly;
+        }
+        if (trimmed.toLowerCase().matches("^([a-z0-9-]+\\.)+[a-z]{2,}(/.*)?$")) {
+            return "https://" + trimmed;
+        }
+        return trimmed;
     }
 
     /** Soft-delete: deactivate a resource */
@@ -213,13 +247,13 @@ public class ResourceLinkerService {
 
             // ── Campus Services ──
             buildResource("USTP Counseling Center", "Free, confidential counseling for enrolled students. Walk-in or by appointment.",
-                "https://www.ustp.edu.ph/guidance", "CAMPUS", null, 0, 10, false, 10, "fas fa-building-columns"),
+                "https://www.ustp.edu.ph", "CAMPUS", null, 0, 10, false, 10, "fas fa-building-columns"),
 
             buildResource("Campus Health Clinic", "Medical and mental health consultations on campus.",
-                "https://www.ustp.edu.ph/health", "CAMPUS", null, 0, 10, false, 11, "fas fa-hospital"),
+                "https://www.ustp.edu.ph", "CAMPUS", null, 0, 10, false, 11, "fas fa-hospital"),
 
             buildResource("Office of Student Affairs", "Student welfare, concerns, and accommodation requests.",
-                "https://www.ustp.edu.ph/osa", "CAMPUS", null, 0, 10, false, 12, "fas fa-university"),
+                "https://www.ustp.edu.ph", "CAMPUS", null, 0, 10, false, 12, "fas fa-university"),
 
             // ── Self-Help Articles — REMOVED ──
             // Articles excluded per psychometrician ethics review:
