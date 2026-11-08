@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { chatApi } from '../services/api';
+import { renderTextWithClickableHotlines } from '../utils/resourceUtils';
 import '../styles/chat.css';
 
 function generateRandomPseudonym() {
@@ -1428,7 +1429,7 @@ export default function AnonChat() {
                           <span className="system-notice-time">{formatTime(m.sentAt || m.timestamp)}</span>
                         </div>
                         <div className="system-notice-body">
-                          {m.content}
+                          {renderTextWithClickableHotlines(m.content)}
                         </div>
                       </div>
                     </div>
@@ -2018,10 +2019,22 @@ export default function AnonChat() {
                 Your feelings and thoughts are always safe and welcome on SafeSpace. If you ever feel ready to talk to someone, our Anonymous Chat is always here for you.
               </p>
               <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '0.85rem 1rem', fontSize: '0.82rem', color: '#182A34' }}>
-                <div style={{ fontWeight: 700, marginBottom: '0.4rem', color: '#182A34' }}>24/7 Emergency Support Hotlines:</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', lineHeight: 1.5, color: '#51646E' }}>
-                  <div><strong style={{ color: '#182A34' }}>NCMH Crisis Hotline:</strong> 1553 (Toll-free landline) / 0917-899-8727</div>
-                  <div><strong style={{ color: '#182A34' }}>Hopeline Philippines:</strong> (02) 804-4635 / 0917-558-4673</div>
+                <div style={{ fontWeight: 700, marginBottom: '0.45rem', color: '#182A34' }}>24/7 Emergency Support Hotlines:</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', lineHeight: 1.5, color: '#51646E' }}>
+                  <div>
+                    <strong style={{ color: '#182A34' }}>NCMH Crisis Hotline:</strong>{' '}
+                    <a href="tel:1553" style={{ color: '#0369A1', textDecoration: 'underline', fontWeight: 600 }}>1553</a> (Toll-free landline) /{' '}
+                    <a href="tel:09178998727" style={{ color: '#0369A1', textDecoration: 'underline', fontWeight: 600 }}>0917-899-8727</a>
+                  </div>
+                  <div>
+                    <strong style={{ color: '#182A34' }}>Hopeline Philippines:</strong>{' '}
+                    <a href="tel:028040673" style={{ color: '#0369A1', textDecoration: 'underline', fontWeight: 600 }}>(02) 804-4635</a> /{' '}
+                    <a href="tel:09175584673" style={{ color: '#0369A1', textDecoration: 'underline', fontWeight: 600 }}>0917-558-4673</a>
+                  </div>
+                  <div>
+                    <strong style={{ color: '#182A34' }}>Emergency Services:</strong>{' '}
+                    <a href="tel:911" style={{ color: '#0369A1', textDecoration: 'underline', fontWeight: 600 }}>911</a>
+                  </div>
                 </div>
               </div>
             </div>

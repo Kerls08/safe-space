@@ -615,7 +615,7 @@ export default function Register() {
                     <i className="fas fa-triangle-exclamation"></i>
                     <div>
                       <strong>Life-Threatening Emergency Notice:</strong> If you or someone you know is experiencing severe immediate distress or life-threatening harm, please contact national emergency services immediately:
-                      <br /><strong>National Crisis Hotline: 1553 (Toll-Free) or 0966-351-4518</strong>.
+                      <br /><strong>National Crisis Hotline: <a href="tel:1553" style={{ color: '#0369A1', textDecoration: 'underline' }}>1553</a> (Toll-Free) or <a href="tel:09663514518" style={{ color: '#0369A1', textDecoration: 'underline' }}>0966-351-4518</a></strong>.
                     </div>
                   </div>
                 </div>

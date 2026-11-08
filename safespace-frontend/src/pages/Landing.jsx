@@ -732,7 +732,11 @@ export default function Landing() {
       <footer className="landing-footer">
         <div className="footer-crisis-bar">
           <i className="fas fa-phone-volume"></i>
-          <span><strong>In Immediate Crisis?</strong> National Mental Health Crisis Hotline: <strong>1553</strong> (Toll-Free) or <strong>0966-351-4518</strong></span>
+          <span>
+            <strong>In Immediate Crisis?</strong> National Mental Health Crisis Hotline:{' '}
+            <a href="tel:1553" style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 700 }}>1553</a> (Toll-Free) or{' '}
+            <a href="tel:09663514518" style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 700 }}>0966-351-4518</a>
+          </span>
         </div>
         <p style={{ marginTop: '1.25rem' }}>SafeSpace • Dedicated to Student Well-Being, Psychological Safety & Dignity</p>
         <p style={{ marginTop: '0.4rem', fontSize: '0.75rem', color: '#8CA4A2' }}>

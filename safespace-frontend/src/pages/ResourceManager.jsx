@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { resourceManagerApi } from '../services/api';
+import { getLinkAttributes, resolveResourceLink } from '../utils/resourceUtils';
 import '../styles/resources.css';
 
 const CAT_LABELS = {
@@ -113,10 +114,12 @@ export default function ResourceManager() {
       return;
     }
 
+    const sanitizedLink = resolveResourceLink(link, formData.category);
+
     const payload = {
       title,
       description: formData.description.trim(),
-      link,
+      link: sanitizedLink,
       category: formData.category,
       icon: formData.icon.trim() || null,
       emotionTags: formData.emotionTags.trim() || null,
@@ -169,8 +172,9 @@ export default function ResourceManager() {
 
   // Card component
   const renderCard = (r) => {
-    const isTel = (r.link || '').startsWith('tel:');
-    const isSms = (r.link || '').startsWith('sms:');
+    const linkAttrs = getLinkAttributes(r.link, r.category);
+    const isTel = linkAttrs.isTel;
+    const isSms = linkAttrs.isSms;
     const linkIcon = isTel
       ? 'fa-phone'
       : isSms
@@ -208,7 +212,16 @@ export default function ResourceManager() {
         </div>
 
         <div className="res-card-meta">
-          <a className="res-card-link" href={r.link} target="_blank" rel="noopener noreferrer" title={r.link}>
+          <a
+            className="res-card-link"
+            href={linkAttrs.href}
+            target={linkAttrs.target}
+            rel={linkAttrs.rel}
+            title={linkAttrs.href}
+            onClick={(e) => {
+              if (!linkAttrs.href || linkAttrs.href === '#') e.preventDefault();
+            }}
+          >
             <i className={`fas ${linkIcon}`}></i>
             <span>{linkDisplay}</span>
           </a>

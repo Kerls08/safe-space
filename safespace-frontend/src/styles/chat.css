@@ -2615,5 +2615,28 @@ body.has-student-bottom-nav .chat-layout {
   font-size: 1rem;
 }
 
+/* Interactive crisis and web links in chat notices */
+.chat-hotline-link {
+  color: #0369A1;
+  text-decoration: underline;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+
+.chat-hotline-link:hover {
+  color: #0284C7;
+  text-decoration: underline;
+}
+
+.chat-interactive-link {
+  color: #0369A1;
+  text-decoration: underline;
+  word-break: break-all;
+}
+
+.chat-interactive-link:hover {
+  color: #0284C7;
+}
+
 
 

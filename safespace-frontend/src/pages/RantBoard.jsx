@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { postsApi } from '../services/api';
+import { getLinkAttributes } from '../utils/resourceUtils';
 import '../styles/rant.css';
 
 const EMOTIONS = [
@@ -178,8 +179,7 @@ function getCategoryLabel(cat) {
 }
 
 function renderResourceCard(r, key) {
-  const isTel = (r.link || '').startsWith('tel:');
-  const isSms = (r.link || '').startsWith('sms:');
+  const { href, target, rel, isTel, isSms } = getLinkAttributes(r.link, r.category);
   const defaultIcon = isTel
     ? 'fas fa-phone'
     : isSms
@@ -190,22 +190,16 @@ function renderResourceCard(r, key) {
   const iconClass = r.icon || defaultIcon;
   const catLabel = getCategoryLabel(r.category);
   const isUrgent = !!r.crisisOnly;
-  const linkHref = r.link || '#';
-  const isExternal =
-    linkHref.startsWith('http') ||
-    linkHref.startsWith('tel:') ||
-    linkHref.startsWith('mailto:') ||
-    linkHref.startsWith('sms:');
 
   return (
     <a
       key={key !== undefined ? key : r.id || r.title}
       className={`resource-card ${isUrgent ? 'urgent' : ''}`}
-      href={linkHref}
-      target={isExternal ? '_blank' : undefined}
-      rel={isExternal ? 'noopener noreferrer' : undefined}
+      href={href}
+      target={target}
+      rel={rel}
       onClick={(e) => {
-        if (!r.link || r.link === '#') {
+        if (!href || href === '#') {
           e.preventDefault();
         }
       }}
@@ -221,7 +215,7 @@ function renderResourceCard(r, key) {
         {r.description && <div className="resource-card-desc">{r.description}</div>}
         <span className="resource-card-cat">{catLabel}</span>
       </div>
-      <i className="fas fa-arrow-up-right-from-square resource-card-arrow"></i>
+      <i className={`fas ${isTel ? 'fa-phone' : isSms ? 'fa-comment' : 'fa-arrow-up-right-from-square'} resource-card-arrow`}></i>
     </a>
   );
 }
@@ -753,12 +747,24 @@ export default function RantBoard() {
                     </button>
                   </div>
                   <div className="crisis-banner-resources">
-                    {crisisResources.slice(0, 4).map((r, i) => (
-                      <a key={i} className="crisis-banner-link" href={r.link || '#'} target="_blank" rel="noopener noreferrer">
-                        <i className={r.icon || 'fas fa-phone-volume'}></i>
-                        <span>{r.title}</span>
-                      </a>
-                    ))}
+                    {crisisResources.slice(0, 4).map((r, i) => {
+                      const { href, target, rel, isTel } = getLinkAttributes(r.link, r.category);
+                      return (
+                        <a
+                          key={i}
+                          className="crisis-banner-link"
+                          href={href}
+                          target={target}
+                          rel={rel}
+                          onClick={(e) => {
+                            if (!href || href === '#') e.preventDefault();
+                          }}
+                        >
+                          <i className={r.icon || (isTel ? 'fas fa-phone' : 'fas fa-arrow-up-right-from-square')}></i>
+                          <span>{r.title}</span>
+                        </a>
+                      );
+                    })}
                   </div>
                 </div>
               )}
