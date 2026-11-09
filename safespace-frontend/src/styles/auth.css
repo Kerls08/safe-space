@@ -204,6 +204,12 @@
   box-sizing: border-box;
 }
 
+.auth-form select.form-input,
+select.form-input {
+  padding-right: 2.25rem;
+  cursor: pointer;
+}
+
 .auth-form .form-input:focus,
 .form-input:focus {
   border-color: #7E9F9D;

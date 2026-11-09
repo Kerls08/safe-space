@@ -91,11 +91,16 @@
     /* Stat Cards Row */
     .colleagues-stats-row {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 1.25rem;
       margin-bottom: 1.75rem;
     }
-    @media (max-width: 900px) {
+    @media (max-width: 1024px) {
+      .colleagues-stats-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 640px) {
       .colleagues-stats-row {
         grid-template-columns: 1fr;
       }

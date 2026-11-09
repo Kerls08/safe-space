@@ -1195,7 +1195,7 @@ export default function SystemMaintenance({ initialTab }) {
           style={{ display: 'flex' }}
           onClick={() => setRegisterModalOpen(false)}
         >
-          <div className="cred-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="cred-modal" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
             <div className="cred-modal-header">
               <h3><i className="fas fa-user-plus"></i> Create User Account</h3>
               <button
@@ -1218,12 +1218,13 @@ export default function SystemMaintenance({ initialTab }) {
                     </label>
                     <select
                       className="form-input"
+                      style={{ fontSize: '0.84rem' }}
                       value={regForm.role}
                       onChange={(e) => setRegForm({ ...regForm, role: e.target.value })}
                     >
                       <option value="STUDENT">Student (University Student)</option>
-                      <option value="PROFESSIONAL">Staff Professional (Psychologist / Psychometrician)</option>
-                      <option value="SUPER_ADMIN">Guidance Center Head (Lead Psychometrician)</option>
+                      <option value="PROFESSIONAL">Staff Professional (Guidance Counselor / Psychologist / Psychometrician)</option>
+                      <option value="SUPER_ADMIN">Guidance Center Head (Lead Guidance Counselor / Lead Psychometrician)</option>
                       <option value="MAINTENANCE">System Maintenance Engineer</option>
                     </select>
                   </div>

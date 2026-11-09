@@ -16,9 +16,20 @@ function getInitials(name) {
 }
 
 function getColleagueCategory(c) {
-  const text = ((c.department || '') + ' ' + (c.fullName || '')).toLowerCase();
-  if (text.includes('psychologist') || text.includes('rpsy')) return 'PSYCHOLOGIST';
-  return 'PSYCHOMETRICIAN';
+  const dept = (c.department || '').toLowerCase();
+  const name = (c.fullName || '').toLowerCase();
+  const text = `${dept} ${name}`;
+
+  if (text.includes('psychologist') || text.includes('rpsy')) {
+    return 'PSYCHOLOGIST';
+  }
+  if (text.includes('guidance counselor') || text.includes('counselor') || text.includes('rgc')) {
+    return 'COUNSELOR';
+  }
+  if (text.includes('psychometrician') || text.includes('rpm')) {
+    return 'PSYCHOMETRICIAN';
+  }
+  return 'COUNSELOR';
 }
 
 export default function Colleagues() {
@@ -40,7 +51,7 @@ export default function Colleagues() {
   const [regForm, setRegForm] = useState({
     accountRole: 'PROFESSIONAL',
     name: '',
-    title: 'Psychometrician',
+    title: 'Guidance Counselor',
     instId: '',
     email: '',
     dept: 'Guidance & Counseling Center',
@@ -111,11 +122,13 @@ export default function Colleagues() {
 
   // Metrics
   const total = allColleagues.length;
+  let counselors = 0;
   let psychometricians = 0;
   let psychologists = 0;
   allColleagues.forEach((c) => {
     const cat = getColleagueCategory(c);
-    if (cat === 'PSYCHOLOGIST') psychologists++;
+    if (cat === 'COUNSELOR') counselors++;
+    else if (cat === 'PSYCHOLOGIST') psychologists++;
     else psychometricians++;
   });
 
@@ -140,7 +153,7 @@ export default function Colleagues() {
     setRegForm({
       accountRole: 'PROFESSIONAL',
       name: '',
-      title: 'Psychometrician',
+      title: 'Guidance Counselor',
       instId: '',
       email: '',
       dept: 'Guidance & Counseling Center',
@@ -160,8 +173,7 @@ export default function Colleagues() {
     const role = e.target.value;
     setRegForm((prev) => ({
       ...prev,
-      accountRole: role,
-      title: role === 'SUPER_ADMIN' ? 'Psychometrician' : prev.title
+      accountRole: role
     }));
   };
 
@@ -294,7 +306,7 @@ export default function Colleagues() {
           <div className="colleagues-header-info">
             <h1>Campus Counseling Team</h1>
             <p className="colleagues-header-desc">
-              Manage and collaborate with verified campus mental health professionals (Psychometricians and Psychologists).
+              Manage and collaborate with verified campus mental health professionals (Guidance Counselors, Psychometricians, and Psychologists).
             </p>
           </div>
           <div className="colleagues-header-actions">
@@ -336,6 +348,19 @@ export default function Colleagues() {
               {total}
             </div>
             <div className="colleague-stat-title">Total Staff</div>
+          </div>
+
+          <div
+            className={`stat-card interactive ${
+              currentFilter === 'COUNSELOR' ? 'active-filter' : ''
+            }`}
+            id="cardCounselor"
+            onClick={() => setCurrentFilter('COUNSELOR')}
+          >
+            <div className="colleague-stat-num" id="statCounselors">
+              {counselors}
+            </div>
+            <div className="colleague-stat-title">Guidance Counselors</div>
           </div>
 
           <div
@@ -395,6 +420,15 @@ export default function Colleagues() {
               onClick={() => setCurrentFilter('ALL')}
             >
               All Roles ({total})
+            </button>
+            <button
+              className={`directory-filter-btn ${
+                currentFilter === 'COUNSELOR' ? 'active' : ''
+              }`}
+              id="filterBtnCounselor"
+              onClick={() => setCurrentFilter('COUNSELOR')}
+            >
+              Guidance Counselors ({counselors})
             </button>
             <button
               className={`directory-filter-btn ${
@@ -549,7 +583,13 @@ export default function Colleagues() {
                           </div>
                           <div className="colleague-role-title">
                             {c.role === 'SUPER_ADMIN' || c.role === 'ADMIN'
-                              ? 'Lead Psychometrician'
+                              ? (cat === 'COUNSELOR'
+                                  ? 'Lead Guidance Counselor'
+                                  : cat === 'PSYCHOLOGIST'
+                                  ? 'Lead Psychologist'
+                                  : 'Lead Psychometrician')
+                              : cat === 'COUNSELOR'
+                              ? 'Guidance Counselor'
                               : cat === 'PSYCHOLOGIST'
                               ? 'Psychologist'
                               : 'Psychometrician'}
@@ -665,7 +705,7 @@ export default function Colleagues() {
                     <i className="fas fa-user-plus"></i>
                   </div>
                   <h4>Register a Colleague</h4>
-                  <p>Add fellow campus psychometricians or psychologists to collaborate on student wellbeing.</p>
+                  <p>Add fellow campus guidance counselors, psychometricians, or psychologists to collaborate on student wellbeing.</p>
                   <button className="dash-btn-primary" onClick={openRegisterColleagueModal}>
                     <i className="fas fa-user-plus"></i> Add Colleague
                   </button>
@@ -679,7 +719,7 @@ export default function Colleagues() {
       {/* Register Colleague Modal */}
       {registerModalOpen && (
         <div className="cred-modal-overlay" id="registerColleagueModal" style={{ display: 'flex' }}>
-          <div className="cred-modal" style={{ maxWidth: '520px' }}>
+          <div className="cred-modal" style={{ maxWidth: '640px' }}>
             <div className="cred-modal-header">
               <h3>
                 <i className="fas fa-user-plus" style={{ color: '#243E4C' }}></i> Register Guidance Colleague
@@ -698,11 +738,12 @@ export default function Colleagues() {
                     <select
                       className="form-input"
                       id="colleagueAccountRole"
+                      style={{ fontSize: '0.84rem' }}
                       value={regForm.accountRole}
                       onChange={handleAccountRoleChange}
                     >
-                      <option value="PROFESSIONAL">Counseling Staff (Psychologist / Psychometrician)</option>
-                      <option value="SUPER_ADMIN">Guidance Supervisor (Lead Psychometrician)</option>
+                      <option value="PROFESSIONAL">Counseling Staff (Guidance Counselor / Psychologist / Psychometrician)</option>
+                      <option value="SUPER_ADMIN">Guidance Supervisor (Lead Guidance Counselor / Lead Psychometrician)</option>
                     </select>
                     <span style={{ fontSize: '0.75rem', color: '#728590', marginTop: '0.25rem', display: 'block' }}>
                       Guidance Supervisors have clinical oversight authority to manage the team and clinic operations.
@@ -716,7 +757,7 @@ export default function Colleagues() {
                     <input
                       className="form-input"
                       id="colleagueName"
-                      placeholder="e.g. Dr. Clara Reyes, RPsy"
+                      placeholder="e.g. Maria Santos, RGC or Dr. Clara Reyes, RPsy"
                       value={regForm.name}
                       onChange={(e) => setRegForm({ ...regForm, name: e.target.value })}
                     />
@@ -732,6 +773,7 @@ export default function Colleagues() {
                       value={regForm.title}
                       onChange={(e) => setRegForm({ ...regForm, title: e.target.value })}
                     >
+                      <option value="Guidance Counselor">Guidance Counselor</option>
                       <option value="Psychometrician">Psychometrician</option>
                       <option value="Psychologist">Psychologist</option>
                     </select>

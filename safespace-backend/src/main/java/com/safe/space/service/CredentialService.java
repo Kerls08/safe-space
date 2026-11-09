@@ -319,7 +319,7 @@ public class CredentialService {
         // 4. Clean professional role & office
         String title = (request.getTitle() != null && !request.getTitle().trim().isBlank())
                 ? request.getTitle().trim()
-                : "Psychometrician";
+                : "Guidance Counselor";
 
         String baseDept = (request.getDepartment() != null && !request.getDepartment().trim().isBlank())
                 ? request.getDepartment().trim()
@@ -1080,8 +1080,8 @@ public class CredentialService {
         if (role == null) return "STUDENT";
         return switch (role.toUpperCase().trim()) {
             case "STUDENT", "S" -> "STUDENT";
-            case "PROFESSIONAL", "PRO", "P", "COUNSELOR", "PSYCHOLOGIST", "STAFF" -> "PROFESSIONAL";
-            case "SUPER_ADMIN", "SUPERADMIN", "LEAD", "LEAD_PSYCHOMETRICIAN" -> "SUPER_ADMIN";
+            case "PROFESSIONAL", "PRO", "P", "COUNSELOR", "GUIDANCE_COUNSELOR", "PSYCHOLOGIST", "PSYCHOMETRICIAN", "STAFF" -> "PROFESSIONAL";
+            case "SUPER_ADMIN", "SUPERADMIN", "LEAD", "LEAD_COUNSELOR", "LEAD_GUIDANCE_COUNSELOR", "LEAD_PSYCHOMETRICIAN" -> "SUPER_ADMIN";
             case "MAINTENANCE", "MAINT", "IT", "DEVOPS" -> "MAINTENANCE";
             case "ADMIN", "A", "SYSADMIN", "ADMINISTRATOR" -> "SUPER_ADMIN";
             default -> throw new IllegalArgumentException("Invalid role: " + role + ". Must be STUDENT, PROFESSIONAL, SUPER_ADMIN, or MAINTENANCE.");
