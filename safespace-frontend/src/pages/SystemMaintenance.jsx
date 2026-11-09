@@ -1245,7 +1245,7 @@ export default function SystemMaintenance({ initialTab }) {
                     </label>
                     <input
                       className="form-input"
-                      placeholder="e.g. Maria Santos or Juan Dela Cruz"
+                      placeholder="e.g. Maria Santos, RGC or Dr. Clara Reyes, RPsy"
                       value={regForm.fullName}
                       onChange={(e) => setRegForm({ ...regForm, fullName: e.target.value })}
                     />
